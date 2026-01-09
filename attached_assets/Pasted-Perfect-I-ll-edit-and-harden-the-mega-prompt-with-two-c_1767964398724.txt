@@ -1,0 +1,325 @@
+Perfect. I’ll **edit and harden the mega prompt**, with two clear changes:
+
+1. **Mobile-first is now a hard requirement** (not optional)
+2. **Tech stack selection is delegated to Replit**, but within strict enterprise constraints
+3. The **“lock-this-in for future apps” instruction is explicitly embedded** so Replit treats it as a persistent build standard
+
+Below is the **REVISED MEGA PROMPT**.
+You will replace the previous one with this going forward.
+
+---
+
+# 🔒 MASTER MEGA PROMPT FOR REPLIT
+
+### (LOCKED STANDARD FOR ALL FUTURE APPS)
+
+> **IMPORTANT:**
+> The following constraints are **permanent defaults** for this project **and all future applications built under this prompt**.
+> Treat them as non-negotiable system rules, not project preferences.
+
+---
+
+## GLOBAL BUILD CONSTRAINTS (LOCK THESE IN)
+
+For this application **and all future applications**:
+
+* The app must be **mobile-first by design**
+* The app must be **fully usable on desktop browsers**
+* The app must be **secure and watertight**
+* The app must be **production-grade**, not a prototype
+* The app must be **scalable to millions of users and transactions**
+* The app must be **easy to maintain and extend**
+* The app must include a **full admin interface**
+* No business logic may be hard-coded
+* All rules must be configurable via admin
+* Clean separation of concerns is mandatory
+* Architecture must support future integrations without refactoring
+* Performance, security, and reliability take priority over speed of development
+
+These constraints are **locked in permanently**.
+
+---
+
+## ROLE & CONTEXT
+
+You are a senior full-stack engineering team consisting of:
+
+* Product Architect
+* Backend Engineer
+* Frontend Engineer
+* Security Engineer
+* DevOps Engineer
+
+You are building a **mobile-first, scalable, secure commerce and logistics platform** for a luxury import business operating between the **UK and South Africa**.
+
+The business sells **luxury fashion items (e.g. Gucci, Louis Vuitton)** sourced from the UK and sold to customers in South Africa.
+
+The platform must allow customers to:
+
+* Browse products
+* Calculate final landed cost (shipping + customs)
+* Pay upfront
+* Track orders
+* Collect goods with minimal human involvement
+
+This system must support the business goal of **earning revenue without constant owner involvement**.
+
+This is **not a demo**. Build this as a real production system.
+
+---
+
+## 1. PLATFORM TYPE (MANDATORY)
+
+* **Mobile-first web application**
+* Optimised first for smartphones
+* Fully responsive for tablets and desktops
+* Accessible via browser (no app store dependency)
+* Designed so it can later be wrapped into a native mobile app if required
+
+---
+
+## 2. TECH STACK SELECTION (YOU DECIDE)
+
+You are responsible for selecting the **most appropriate modern tech stack** based on:
+
+* Scalability
+* Security
+* Maintainability
+* Performance
+* Replit deployment compatibility
+* Long-term extensibility
+
+⚠️ **Do not ask for stack confirmation.**
+⚠️ **Do not default to lightweight demo stacks.**
+
+Before implementation:
+
+* Explain **why** you chose the stack
+* Explain how it supports mobile-first performance and scale
+
+---
+
+## 3. USER ROLES
+
+### 3.1 Customer
+
+* Browse products
+* View product details
+* Select shipping method (Air or Sea)
+* See real-time shipping cost
+* See real-time customs duty
+* See **final landed price before payment**
+* Place an order
+* Upload proof of payment (manual payments)
+* Track order status
+
+### 3.2 Admin (Owner / Staff)
+
+* Secure authentication
+* Product management
+* Shipping rules management
+* Customs duty rules per country
+* Order management
+* Payment verification
+* Runner / delivery tracking
+* Revenue and transaction reporting
+* User and permission management
+
+---
+
+## 4. CORE FEATURES (DETAILED)
+
+### 4.1 Product Catalogue
+
+* Brand
+* Product name
+* Description
+* Images
+* Base price (GBP or USD)
+* Category
+* Availability
+
+All product data must be managed via the admin interface.
+
+---
+
+### 4.2 Shipping Cost Engine (RULE-BASED)
+
+* Two shipping options:
+
+  * Air Freight
+  * Sea Freight
+* Shipping cost calculated using:
+
+  * Weight
+  * Shipping method
+  * Admin-defined rate tables
+* All shipping rules editable via admin
+* Costs displayed instantly to customer
+
+---
+
+### 4.3 Customs Duty Engine (RULE-BASED)
+
+* Automatic customs calculation
+* Rules defined per destination country
+* Admin-configurable percentages and thresholds
+* No hard-coded duty values
+* Display duty transparently to customers
+
+---
+
+### 4.4 Final Pricing Logic (CRITICAL)
+
+Final price must be calculated server-side as:
+
+```
+Final Price =
+Product Base Price
++ Shipping Cost
++ Customs Duty
++ Configurable Service Fees
+```
+
+No hidden costs.
+No manual overrides.
+
+---
+
+### 4.5 Payment Workflow (PHASE 1 – MANUAL COMPATIBLE)
+
+* Customer selects payment method
+* If external/manual payment:
+
+  * Customer uploads proof of payment
+  * Order status = “Pending Verification”
+* Admin verifies payment
+* Order status = “Confirmed”
+
+System must be **payment-gateway ready** without redesign.
+
+---
+
+### 4.6 Order & Fulfilment Lifecycle
+
+Order statuses:
+
+* Pending Payment
+* Pending Verification
+* Confirmed
+* Shipped
+* Arrived
+* Ready for Collection
+* Completed
+
+All state changes must be logged for audit.
+
+Runner actions must be:
+
+* Controlled
+* Logged
+* Limited to delivery milestones
+
+---
+
+## 5. ADMIN INTERFACE (MANDATORY)
+
+Admin dashboard must be:
+
+* Accessible via desktop browser
+* Mobile-usable where practical
+* Clear and non-technical
+
+Must include:
+
+* Secure login
+* Role-based access
+* Product CRUD
+* Shipping rules editor
+* Customs rules editor
+* Order pipeline view
+* Payment verification tools
+* Revenue analytics
+* Exportable reports
+* Activity and audit logs
+
+---
+
+## 6. SECURITY REQUIREMENTS
+
+* Secure authentication
+* Encrypted sensitive data
+* Server-side validation for all calculations
+* Secure file upload handling
+* Protection against:
+
+  * SQL injection
+  * XSS
+  * CSRF
+* No trust in client-side calculations
+
+---
+
+## 7. SCALABILITY & ARCHITECTURE
+
+* Modular architecture
+* Clear separation:
+
+  * Frontend
+  * Backend
+  * Database
+* Environment-based configuration
+* Designed to scale to **millions of users and transactions**
+* Future integrations must be pluggable without refactoring
+
+---
+
+## 8. DELIVERABLES REQUIRED
+
+You must provide:
+
+1. System architecture overview
+2. Stack justification
+3. Database schema
+4. API design
+5. Frontend structure
+6. Admin panel design
+7. Security model
+8. Step-by-step implementation plan
+9. Initial working version
+
+---
+
+## 9. BUSINESS OBJECTIVE (DO NOT IGNORE)
+
+This platform must:
+
+* Enforce prepayment before movement
+* Replace conversations with rules
+* Remove middleman dependency
+* Allow the business to earn revenue **without constant owner involvement**
+
+All design decisions must support this objective.
+
+---
+
+**BEGIN DESIGN AND IMPLEMENTATION IMMEDIATELY.**
+
+---
+
+## ✅ WHY THIS VERSION IS BETTER
+
+* Mobile-first is now **hard-coded**
+* Replit is **forced to think like an architect**
+* Tech stack bias is removed
+* Your standards are now **reusable across projects**
+* This aligns perfectly with *Making Money While Sleeping* systems logic
+
+If you want next, I can:
+
+* Create a **second mega prompt for the admin app only**
+* Create a **security-only audit prompt**
+* Convert this into a **repeatable template for client work**
+* Add a **multi-vendor / marketplace future extension**
+
+Say the direction.
