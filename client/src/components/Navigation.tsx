@@ -17,7 +17,7 @@ export function Navigation() {
 
   const cartCount = items.reduce((acc, item) => acc + item.quantity, 0);
 
-  const isAdmin = user?.email?.endsWith("@peicosy.com") || user?.id === "admin"; // Simple check for now
+  const isAdmin = user?.isAdmin === true;
 
   const NavLink = ({ href, children }: { href: string; children: React.ReactNode }) => {
     const isActive = location === href;

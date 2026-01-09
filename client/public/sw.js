@@ -1,6 +1,15 @@
-const CACHE_NAME = 'peicosy-v1';
+const CACHE_NAME = 'peicosy-v2';
+const SHELL_ASSETS = [
+  '/',
+  '/manifest.json'
+];
 
 self.addEventListener('install', (event) => {
+  event.waitUntil(
+    caches.open(CACHE_NAME).then((cache) => {
+      return cache.addAll(SHELL_ASSETS);
+    })
+  );
   self.skipWaiting();
 });
 
@@ -45,7 +54,10 @@ self.addEventListener('fetch', (event) => {
           if (event.request.mode === 'navigate') {
             return caches.match('/');
           }
-          return new Response('Offline', { status: 503 });
+          return new Response('Offline - Please reconnect to continue', { 
+            status: 503,
+            headers: { 'Content-Type': 'text/html' }
+          });
         });
       })
   );
