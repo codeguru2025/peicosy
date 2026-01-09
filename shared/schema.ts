@@ -1,18 +1,130 @@
-import { sql } from "drizzle-orm";
-import { pgTable, text, varchar } from "drizzle-orm/pg-core";
+import { pgTable, text, serial, integer, boolean, timestamp, numeric, varchar, jsonb } from "drizzle-orm/pg-core";
+import { relations } from "drizzle-orm";
 import { createInsertSchema } from "drizzle-zod";
 import { z } from "zod";
 
-export const users = pgTable("users", {
-  id: varchar("id").primaryKey().default(sql`gen_random_uuid()`),
-  username: text("username").notNull().unique(),
-  password: text("password").notNull(),
+// Import Auth Models
+export * from "./models/auth";
+import { users } from "./models/auth";
+
+// === PRODUCTS ===
+export const products = pgTable("products", {
+  id: serial("id").primaryKey(),
+  brand: text("brand").notNull(),
+  name: text("name").notNull(),
+  description: text("description").notNull(),
+  price: numeric("price", { precision: 10, scale: 2 }).notNull(),
+  currency: text("currency").notNull().default("GBP"),
+  category: text("category").notNull(),
+  imageUrl: text("image_url").notNull(),
+  stock: integer("stock").notNull().default(0),
+  isAvailable: boolean("is_available").default(true),
+  createdAt: timestamp("created_at").defaultNow(),
 });
 
-export const insertUserSchema = createInsertSchema(users).pick({
-  username: true,
-  password: true,
+export const insertProductSchema = createInsertSchema(products).omit({ id: true, createdAt: true });
+
+// === SHIPPING RATES ===
+export const shippingRates = pgTable("shipping_rates", {
+  id: serial("id").primaryKey(),
+  method: text("method").notNull(), // 'air' | 'sea'
+  minWeight: numeric("min_weight", { precision: 10, scale: 2 }).notNull(), // kg
+  maxWeight: numeric("max_weight", { precision: 10, scale: 2 }).notNull(), // kg
+  rate: numeric("rate", { precision: 10, scale: 2 }).notNull(), // per kg or flat? Assuming flat rate for range for simplicity, or rate per kg. Let's say rate per kg.
+  currency: text("currency").notNull().default("GBP"),
 });
 
-export type InsertUser = z.infer<typeof insertUserSchema>;
-export type User = typeof users.$inferSelect;
+export const insertShippingRateSchema = createInsertSchema(shippingRates).omit({ id: true });
+
+// === CUSTOMS RULES ===
+export const customsRules = pgTable("customs_rules", {
+  id: serial("id").primaryKey(),
+  countryCode: text("country_code").notNull(), // 'ZA'
+  category: text("category").notNull(),
+  dutyPercentage: numeric("duty_percentage", { precision: 5, scale: 2 }).notNull(), // e.g. 45.00 for 45%
+  threshold: numeric("threshold", { precision: 10, scale: 2 }).default('0'), // Value above which duty applies
+  currency: text("currency").notNull().default("ZAR"),
+});
+
+export const insertCustomsRuleSchema = createInsertSchema(customsRules).omit({ id: true });
+
+// === ORDERS ===
+export const orders = pgTable("orders", {
+  id: serial("id").primaryKey(),
+  userId: varchar("user_id").notNull().references(() => users.id),
+  status: text("status").notNull().default("pending_payment"), 
+  // pending_payment, pending_verification, confirmed, shipped, arrived, ready_collection, completed
+  totalAmount: numeric("total_amount", { precision: 10, scale: 2 }).notNull(),
+  currency: text("currency").notNull().default("GBP"),
+  shippingMethod: text("shipping_method").notNull(),
+  shippingCost: numeric("shipping_cost", { precision: 10, scale: 2 }).notNull(),
+  customsDuty: numeric("customs_duty", { precision: 10, scale: 2 }).notNull(),
+  shippingAddress: jsonb("shipping_address").notNull(),
+  proofOfPaymentUrl: text("proof_of_payment_url"),
+  createdAt: timestamp("created_at").defaultNow(),
+  updatedAt: timestamp("updated_at").defaultNow(),
+});
+
+export const insertOrderSchema = createInsertSchema(orders).omit({ id: true, createdAt: true, updatedAt: true, status: true });
+
+// === ORDER ITEMS ===
+export const orderItems = pgTable("order_items", {
+  id: serial("id").primaryKey(),
+  orderId: integer("order_id").notNull().references(() => orders.id),
+  productId: integer("product_id").notNull().references(() => products.id),
+  quantity: integer("quantity").notNull(),
+  priceAtPurchase: numeric("price_at_purchase", { precision: 10, scale: 2 }).notNull(),
+});
+
+export const insertOrderItemSchema = createInsertSchema(orderItems).omit({ id: true });
+
+// === RELATIONS ===
+export const productsRelations = relations(products, ({ many }) => ({
+  orderItems: many(orderItems),
+}));
+
+export const ordersRelations = relations(orders, ({ one, many }) => ({
+  user: one(users, {
+    fields: [orders.userId],
+    references: [users.id],
+  }),
+  items: many(orderItems),
+}));
+
+export const orderItemsRelations = relations(orderItems, ({ one }) => ({
+  order: one(orders, {
+    fields: [orderItems.orderId],
+    references: [orders.id],
+  }),
+  product: one(products, {
+    fields: [orderItems.productId],
+    references: [products.id],
+  }),
+}));
+
+// === TYPES ===
+export type Product = typeof products.$inferSelect;
+export type InsertProduct = z.infer<typeof insertProductSchema>;
+
+export type ShippingRate = typeof shippingRates.$inferSelect;
+export type InsertShippingRate = z.infer<typeof insertShippingRateSchema>;
+
+export type CustomsRule = typeof customsRules.$inferSelect;
+export type InsertCustomsRule = z.infer<typeof insertCustomsRuleSchema>;
+
+export type Order = typeof orders.$inferSelect;
+export type InsertOrder = z.infer<typeof insertOrderSchema>;
+
+export type OrderItem = typeof orderItems.$inferSelect;
+export type InsertOrderItem = z.infer<typeof insertOrderItemSchema>;
+
+// Extended Order type for API responses
+export type OrderWithItems = Order & {
+  items: (OrderItem & { product: Product })[];
+};
+
+export type CreateOrderRequest = {
+  items: { productId: number; quantity: number }[];
+  shippingMethod: 'air' | 'sea';
+  shippingAddress: any;
+};

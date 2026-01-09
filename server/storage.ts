@@ -1,38 +1,151 @@
-import { type User, type InsertUser } from "@shared/schema";
-import { randomUUID } from "crypto";
-
-// modify the interface with any CRUD methods
-// you might need
+import { db } from "./db";
+import { 
+  products, 
+  orders, 
+  orderItems, 
+  users, 
+  shippingRates, 
+  customsRules,
+  type Product, 
+  type InsertProduct,
+  type Order,
+  type InsertOrder,
+  type OrderItem,
+  type InsertOrderItem,
+  type ShippingRate,
+  type CustomsRule,
+  type OrderWithItems
+} from "@shared/schema";
+import { eq, desc, sql } from "drizzle-orm";
+import { authStorage } from "./replit_integrations/auth";
 
 export interface IStorage {
-  getUser(id: string): Promise<User | undefined>;
-  getUserByUsername(username: string): Promise<User | undefined>;
-  createUser(user: InsertUser): Promise<User>;
+  // Products
+  getProducts(category?: string, search?: string): Promise<Product[]>;
+  getProduct(id: number): Promise<Product | undefined>;
+  createProduct(product: InsertProduct): Promise<Product>;
+  updateProduct(id: number, product: Partial<InsertProduct>): Promise<Product | undefined>;
+  deleteProduct(id: number): Promise<void>;
+
+  // Orders
+  getOrders(userId: string): Promise<OrderWithItems[]>; // User's orders
+  getAllOrders(): Promise<OrderWithItems[]>; // Admin
+  getOrder(id: number): Promise<OrderWithItems | undefined>;
+  createOrder(order: InsertOrder, items: InsertOrderItem[]): Promise<Order>;
+  updateOrderStatus(id: number, status: string, proofUrl?: string): Promise<Order | undefined>;
+
+  // Dashboard
+  getDashboardStats(): Promise<{ totalRevenue: number, activeOrders: number, pendingVerifications: number }>;
 }
 
-export class MemStorage implements IStorage {
-  private users: Map<string, User>;
-
-  constructor() {
-    this.users = new Map();
+export class DatabaseStorage implements IStorage {
+  // Products
+  async getProducts(category?: string, search?: string): Promise<Product[]> {
+    let query = db.select().from(products);
+    if (category) {
+      query = query.where(eq(products.category, category)) as any;
+    }
+    // Simple search implementation
+    return await query.orderBy(desc(products.createdAt));
   }
 
-  async getUser(id: string): Promise<User | undefined> {
-    return this.users.get(id);
+  async getProduct(id: number): Promise<Product | undefined> {
+    const [product] = await db.select().from(products).where(eq(products.id, id));
+    return product;
   }
 
-  async getUserByUsername(username: string): Promise<User | undefined> {
-    return Array.from(this.users.values()).find(
-      (user) => user.username === username,
-    );
+  async createProduct(product: InsertProduct): Promise<Product> {
+    const [newProduct] = await db.insert(products).values(product).returning();
+    return newProduct;
   }
 
-  async createUser(insertUser: InsertUser): Promise<User> {
-    const id = randomUUID();
-    const user: User = { ...insertUser, id };
-    this.users.set(id, user);
-    return user;
+  async updateProduct(id: number, updates: Partial<InsertProduct>): Promise<Product | undefined> {
+    const [updated] = await db
+      .update(products)
+      .set(updates)
+      .where(eq(products.id, id))
+      .returning();
+    return updated;
+  }
+
+  async deleteProduct(id: number): Promise<void> {
+    await db.delete(products).where(eq(products.id, id));
+  }
+
+  // Orders
+  async getOrders(userId: string): Promise<OrderWithItems[]> {
+    const userOrders = await db.select().from(orders).where(eq(orders.userId, userId)).orderBy(desc(orders.createdAt));
+    return Promise.all(userOrders.map(o => this.getOrderWithItems(o)));
+  }
+
+  async getAllOrders(): Promise<OrderWithItems[]> {
+    const allOrders = await db.select().from(orders).orderBy(desc(orders.createdAt));
+    return Promise.all(allOrders.map(o => this.getOrderWithItems(o)));
+  }
+
+  async getOrder(id: number): Promise<OrderWithItems | undefined> {
+    const [order] = await db.select().from(orders).where(eq(orders.id, id));
+    if (!order) return undefined;
+    return this.getOrderWithItems(order);
+  }
+
+  private async getOrderWithItems(order: Order): Promise<OrderWithItems> {
+    const items = await db
+      .select({
+        id: orderItems.id,
+        orderId: orderItems.orderId,
+        productId: orderItems.productId,
+        quantity: orderItems.quantity,
+        priceAtPurchase: orderItems.priceAtPurchase,
+        product: products
+      })
+      .from(orderItems)
+      .leftJoin(products, eq(orderItems.productId, products.id))
+      .where(eq(orderItems.orderId, order.id));
+    
+    // @ts-ignore - simple join mapping
+    return { ...order, items };
+  }
+
+  async createOrder(orderData: InsertOrder, itemsData: InsertOrderItem[]): Promise<Order> {
+    return await db.transaction(async (tx) => {
+      const [newOrder] = await tx.insert(orders).values(orderData).returning();
+      
+      const itemsWithOrderId = itemsData.map(item => ({
+        ...item,
+        orderId: newOrder.id
+      }));
+      
+      await tx.insert(orderItems).values(itemsWithOrderId);
+      
+      return newOrder;
+    });
+  }
+
+  async updateOrderStatus(id: number, status: string, proofUrl?: string): Promise<Order | undefined> {
+    const updates: any = { status };
+    if (proofUrl) {
+      updates.proofOfPaymentUrl = proofUrl;
+    }
+    
+    const [updated] = await db
+      .update(orders)
+      .set(updates)
+      .where(eq(orders.id, id))
+      .returning();
+    return updated;
+  }
+
+  async getDashboardStats(): Promise<{ totalRevenue: number, activeOrders: number, pendingVerifications: number }> {
+    // This is a simplified implementation
+    const allOrders = await db.select().from(orders);
+    
+    const totalRevenue = allOrders.reduce((sum, order) => sum + Number(order.totalAmount), 0);
+    const activeOrders = allOrders.filter(o => o.status !== 'completed' && o.status !== 'cancelled').length;
+    const pendingVerifications = allOrders.filter(o => o.status === 'pending_verification').length;
+
+    return { totalRevenue, activeOrders, pendingVerifications };
   }
 }
 
-export const storage = new MemStorage();
+export const storage = new DatabaseStorage();
