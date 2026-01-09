@@ -37,11 +37,13 @@ export function Navigation() {
     <nav className="sticky top-0 z-40 w-full border-b border-white/5 bg-background/90 backdrop-blur-2xl">
       <div className="container mx-auto px-6 h-24 flex items-center justify-between">
         {/* Logo */}
-        <Link href="/" className="flex items-center gap-6 group">
-          <img src={logoUrl} alt="Peicosy" className="h-12 w-auto object-contain transition-transform duration-700 ease-in-out group-hover:scale-105" />
-          <div className="flex flex-col border-l border-white/10 pl-6">
-            <span className="font-serif text-2xl font-light tracking-[0.2em] uppercase text-foreground leading-none">Peicosy</span>
-            <span className="text-[9px] uppercase tracking-[0.5em] text-muted-foreground font-medium mt-2">Private Client</span>
+        <Link href="/" className="flex items-center gap-5 group">
+          <div className="relative bg-white rounded-xl p-2 shadow-lg shadow-primary/20 transition-all duration-500 group-hover:shadow-primary/40 group-hover:scale-105">
+            <img src={logoUrl} alt="Peicosy" className="h-14 w-14 object-contain" />
+          </div>
+          <div className="flex flex-col">
+            <span className="font-serif text-3xl font-medium tracking-[0.15em] uppercase text-white leading-none">Peicosy</span>
+            <span className="text-[10px] uppercase tracking-[0.4em] text-primary font-bold mt-1">Private Client</span>
           </div>
         </Link>
 

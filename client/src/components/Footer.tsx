@@ -7,9 +7,11 @@ export function Footer() {
       <div className="container mx-auto px-8">
         <div className="grid grid-cols-1 md:grid-cols-4 gap-24 mb-32">
           <div className="space-y-8 col-span-1 md:col-span-2">
-            <div className="flex items-center gap-6">
-              <img src={logoUrl} alt="Peicosy" className="h-10 w-auto object-contain opacity-80" />
-              <h3 className="font-serif text-3xl font-light tracking-widest uppercase">Peicosy</h3>
+            <div className="flex items-center gap-5">
+              <div className="bg-white rounded-xl p-2 shadow-lg shadow-primary/20">
+                <img src={logoUrl} alt="Peicosy" className="h-12 w-12 object-contain" />
+              </div>
+              <h3 className="font-serif text-3xl font-medium tracking-[0.15em] uppercase text-white">Peicosy</h3>
             </div>
             <p className="text-muted-foreground max-w-sm font-light leading-relaxed tracking-wide">
               An exclusive bridge between London's luxury heritage and South Africa's private client landscape. Discrete, secure, and bespoke.
