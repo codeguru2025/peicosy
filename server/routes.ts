@@ -25,7 +25,76 @@ export async function registerRoutes(
 
   // 3. API Routes
 
-  // --- Admin Login (username/password) ---
+  // --- User Registration ---
+  app.post("/api/auth/register", async (req, res) => {
+    try {
+      const { username, password, email, firstName, lastName } = req.body;
+      
+      if (!username || !password) {
+        return res.status(400).json({ message: "Username and password are required" });
+      }
+      
+      if (username.length < 3) {
+        return res.status(400).json({ message: "Username must be at least 3 characters" });
+      }
+      
+      if (password.length < 6) {
+        return res.status(400).json({ message: "Password must be at least 6 characters" });
+      }
+      
+      // Check if username already exists
+      const existingUser = await storage.getUserByUsername(username);
+      if (existingUser) {
+        return res.status(409).json({ message: "Username already taken" });
+      }
+      
+      // Check if email already exists (if provided)
+      if (email) {
+        const existingEmail = await storage.getUserByEmail(email);
+        if (existingEmail) {
+          return res.status(409).json({ message: "Email already registered" });
+        }
+      }
+      
+      const hashedPassword = hashPassword(password);
+      
+      const user = await storage.createUser({
+        username,
+        password: hashedPassword,
+        email: email || null,
+        firstName: firstName || null,
+        lastName: lastName || null,
+        isAdmin: false,
+      });
+      
+      // Set up session
+      (req as any).session.passport = {
+        user: {
+          id: user.id,
+          claims: {
+            sub: user.id,
+            email: user.email,
+            first_name: user.firstName,
+            last_name: user.lastName,
+            profile_image: user.profileImageUrl,
+          },
+        },
+      };
+      
+      res.status(201).json({
+        id: user.id,
+        email: user.email,
+        firstName: user.firstName,
+        lastName: user.lastName,
+        username: user.username,
+      });
+    } catch (err) {
+      console.error("Registration error:", err);
+      res.status(500).json({ message: "Internal Server Error" });
+    }
+  });
+
+  // --- User Login (username/password) ---
   app.post("/api/auth/login", async (req, res) => {
     try {
       const { username, password } = req.body;

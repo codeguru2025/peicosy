@@ -4,7 +4,7 @@ import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { Globe, Lock, User, Loader2 } from "lucide-react";
-import { useLocation } from "wouter";
+import { useLocation, Link } from "wouter";
 import { useToast } from "@/hooks/use-toast";
 import { queryClient, apiRequest } from "@/lib/queryClient";
 import logoUrl from "@/assets/logo.png";
@@ -172,6 +172,15 @@ export default function Login() {
                 )}
               </Button>
             </form>
+
+            <div className="text-center space-y-4">
+              <p className="text-sm text-muted-foreground">
+                Don't have an account?{" "}
+                <Link href="/signup" className="text-primary font-medium hover:underline" data-testid="link-signup">
+                  Create Account
+                </Link>
+              </p>
+            </div>
 
             <div className="grid grid-cols-2 gap-6 text-center text-xs">
               <div className="flex flex-col items-center gap-4 p-6 rounded-2xl bg-white border border-border shadow-sm hover:shadow-lg hover:border-primary/20 transition-all duration-500">

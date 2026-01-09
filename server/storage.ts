@@ -52,6 +52,8 @@ export interface IStorage {
 
   // Users
   getUserByUsername(username: string): Promise<User | undefined>;
+  getUserByEmail(email: string): Promise<User | undefined>;
+  createUser(user: { username: string; password: string; email?: string | null; firstName?: string | null; lastName?: string | null; isAdmin?: boolean }): Promise<User>;
 }
 
 export class DatabaseStorage implements IStorage {
@@ -202,6 +204,23 @@ export class DatabaseStorage implements IStorage {
   // Users
   async getUserByUsername(username: string): Promise<User | undefined> {
     const [user] = await db.select().from(users).where(eq(users.username, username));
+    return user;
+  }
+
+  async getUserByEmail(email: string): Promise<User | undefined> {
+    const [user] = await db.select().from(users).where(eq(users.email, email));
+    return user;
+  }
+
+  async createUser(userData: { username: string; password: string; email?: string | null; firstName?: string | null; lastName?: string | null; isAdmin?: boolean }): Promise<User> {
+    const [user] = await db.insert(users).values({
+      username: userData.username,
+      password: userData.password,
+      email: userData.email || null,
+      firstName: userData.firstName || null,
+      lastName: userData.lastName || null,
+      isAdmin: userData.isAdmin || false,
+    }).returning();
     return user;
   }
 }
