@@ -2,9 +2,17 @@
 
 ## Overview
 
-Peicosy is a high-end luxury e-commerce platform designed as a "private client" service connecting London's finest luxury goods to elite customers in South Africa. The application features a sophisticated dark-themed UI inspired by global fashion houses (Dior, Jacquemus, Net-a-Porter), targeting fashion-forward users who expect restraint, confidence, and polish.
+Peicosy is a high-end luxury e-commerce platform designed as a "private client" service connecting London's finest luxury goods to elite customers in South Africa. The application features a vibrant light theme with pink primary accents, navy text, and clean white aesthetic. Tagline: "Not for Everyone, Just for You."
 
-The platform includes product browsing, shopping cart functionality, order management, and an admin dashboard for managing products, orders, and viewing analytics.
+The platform includes product browsing, dynamic landed cost calculation, proof of payment uploads, order management, and an admin dashboard for managing products, orders, and viewing analytics.
+
+## Recent Changes (January 2026)
+
+- **Dynamic Landed Cost Calculator**: Both frontend and backend now use database-driven shipping rates and customs rules. Order totals are calculated using actual rates, not hardcoded values.
+- **Proof of Payment Upload**: Orders page allows users to upload payment proof via object storage with presigned URLs.
+- **Admin Product Management**: Admin dashboard includes tabs for creating and deleting products.
+- **Admin Order Management**: Admin dashboard allows viewing all orders and updating order status.
+- **Product Details Page**: Individual product pages at /product/:id with landed cost estimates and add-to-cart functionality.
 
 ## User Preferences
 
