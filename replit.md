@@ -8,11 +8,14 @@ The platform includes product browsing, dynamic landed cost calculation, proof o
 
 ## Recent Changes (January 2026)
 
-- **Dynamic Landed Cost Calculator**: Both frontend and backend now use database-driven shipping rates and customs rules. Order totals are calculated using actual rates, not hardcoded values.
-- **Proof of Payment Upload**: Orders page allows users to upload payment proof via object storage with presigned URLs.
-- **Admin Product Management**: Admin dashboard includes tabs for creating and deleting products.
-- **Admin Order Management**: Admin dashboard allows viewing all orders and updating order status.
-- **Product Details Page**: Individual product pages at /product/:id with landed cost estimates and add-to-cart functionality.
+- **PWA (Progressive Web App)**: Full PWA support with manifest.json, service worker, and install prompts for mobile devices
+- **Splash Screen**: Elegant animated splash screen with Peicosy logo displayed while the app loads
+- **Bcrypt Password Security**: Upgraded from SHA-256 to bcrypt (12 salt rounds) for secure password hashing with automatic migration for existing users
+- **User Registration**: New /signup page allows users to create accounts with username/password authentication
+- **Mobile-First Design**: Enhanced responsive design with optimized breakpoints for mobile devices (h-16 header, smaller logo, touch-friendly buttons)
+- **Dynamic Landed Cost Calculator**: Both frontend and backend now use database-driven shipping rates and customs rules
+- **Proof of Payment Upload**: Orders page allows users to upload payment proof via object storage
+- **Admin Product/Order Management**: Admin dashboard for managing products and orders
 
 ## User Preferences
 
@@ -42,9 +45,17 @@ Preferred communication style: Simple, everyday language.
 - **Schema Location**: `shared/schema.ts` (shared between client/server)
 
 ### Authentication
-- **Provider**: Replit Auth (OpenID Connect)
+- **Provider**: Username/password authentication with bcrypt hashing
+- **Password Security**: bcrypt with 12 salt rounds
 - **Session Storage**: PostgreSQL-backed sessions via connect-pg-simple
 - **Session Management**: Express sessions with Passport.js
+- **Default Admin**: username "peicosy", password "admin123" (change for production)
+
+### PWA Features
+- **Manifest**: client/public/manifest.json with app metadata and icons
+- **Service Worker**: client/public/sw.js for offline caching
+- **Splash Screen**: client/src/components/SplashScreen.tsx with animated logo
+- **Theme Color**: #ec4899 (signature pink)
 
 ### File Structure
 ```
