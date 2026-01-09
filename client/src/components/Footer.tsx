@@ -1,4 +1,5 @@
 import { Link } from "wouter";
+import { Mail, Phone, Globe } from "lucide-react";
 import logoUrl from "@/assets/logo.png";
 
 export function Footer() {
@@ -16,6 +17,20 @@ export function Footer() {
             <p className="text-white/70 max-w-sm font-light leading-relaxed tracking-wide">
               An exclusive bridge between London's luxury heritage and South Africa's private client landscape. Discrete, secure, and bespoke.
             </p>
+            <div className="space-y-3 pt-4">
+              <a href="mailto:infor@peicosy.com" className="flex items-center gap-3 text-white/70 hover:text-primary transition-colors duration-300">
+                <Mail className="w-4 h-4 text-primary" />
+                <span className="text-sm font-light tracking-wider">infor@peicosy.com</span>
+              </a>
+              <a href="tel:+447770123806" className="flex items-center gap-3 text-white/70 hover:text-primary transition-colors duration-300">
+                <Phone className="w-4 h-4 text-primary" />
+                <span className="text-sm font-light tracking-wider">+44 7770 123806</span>
+              </a>
+              <a href="https://www.peicosy.com" target="_blank" rel="noopener noreferrer" className="flex items-center gap-3 text-white/70 hover:text-primary transition-colors duration-300">
+                <Globe className="w-4 h-4 text-primary" />
+                <span className="text-sm font-light tracking-wider">www.peicosy.com</span>
+              </a>
+            </div>
           </div>
           
           <div className="space-y-6">
