@@ -35,11 +35,11 @@ export function Navigation() {
 
   return (
     <nav className="sticky top-0 z-40 w-full border-b border-white/5 bg-background/90 backdrop-blur-2xl">
-      <div className="container mx-auto px-6 h-24 flex items-center justify-between">
+      <div className="container mx-auto px-6 h-32 flex items-center justify-between">
         {/* Logo */}
         <Link href="/" className="flex items-center gap-5 group">
-          <div className="relative bg-white rounded-xl p-2 shadow-lg shadow-primary/20 transition-all duration-500 group-hover:shadow-primary/40 group-hover:scale-105">
-            <img src={logoUrl} alt="Peicosy" className="h-14 w-14 object-contain" />
+          <div className="relative bg-white rounded-2xl p-3 shadow-lg shadow-primary/20 transition-all duration-500 group-hover:shadow-primary/40 group-hover:scale-105">
+            <img src={logoUrl} alt="Peicosy" className="h-[84px] w-[84px] object-contain" />
           </div>
           <div className="flex flex-col">
             <span className="font-serif text-3xl font-medium tracking-[0.15em] uppercase text-white leading-none">Peicosy</span>

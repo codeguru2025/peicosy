@@ -8,8 +8,8 @@ export function Footer() {
         <div className="grid grid-cols-1 md:grid-cols-4 gap-24 mb-32">
           <div className="space-y-8 col-span-1 md:col-span-2">
             <div className="flex items-center gap-5">
-              <div className="bg-white rounded-xl p-2 shadow-lg shadow-primary/20">
-                <img src={logoUrl} alt="Peicosy" className="h-12 w-12 object-contain" />
+              <div className="bg-white rounded-2xl p-3 shadow-lg shadow-primary/20">
+                <img src={logoUrl} alt="Peicosy" className="h-[72px] w-[72px] object-contain" />
               </div>
               <h3 className="font-serif text-3xl font-medium tracking-[0.15em] uppercase text-white">Peicosy</h3>
             </div>
