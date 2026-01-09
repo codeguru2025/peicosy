@@ -54,45 +54,57 @@ export default function Home() {
       </section>
 
       {/* Features Grid */}
-      <section className="py-20 bg-background">
-        <div className="container mx-auto px-4">
-          <div className="grid grid-cols-1 md:grid-cols-3 gap-8">
+      <section className="py-40 bg-background">
+        <div className="container mx-auto px-8">
+          <div className="flex items-center justify-center gap-6 mb-20">
+            <div className="h-[1px] w-16 bg-white/10"></div>
+            <span className="text-muted-foreground uppercase tracking-[0.6em] text-[10px] font-light">The Promise</span>
+            <div className="h-[1px] w-16 bg-white/10"></div>
+          </div>
+          <div className="grid grid-cols-1 md:grid-cols-3 gap-12">
             <FeatureCard 
               icon={Plane}
-              title="Fast & Secure Shipping"
-              description="Reliable air and sea freight options with real-time tracking from London to Johannesburg."
+              title="Secure Logistics"
+              description="Bespoke air and sea freight with real-time tracking from London to Johannesburg."
             />
             <FeatureCard 
               icon={ShieldCheck}
-              title="Customs Handled"
-              description="No surprises. We calculate and handle all duties and taxes upfront so you don't have to."
+              title="Customs Concierge"
+              description="Full duty and tax calculation handled discreetly. No surprises upon arrival."
             />
             <FeatureCard 
               icon={CreditCard}
-              title="Transparent Pricing"
-              description="See the full landed cost instantly. What you see is exactly what you pay."
+              title="Landed Transparency"
+              description="Complete cost visibility from the moment of selection. What you see is what you pay."
             />
           </div>
         </div>
       </section>
 
       {/* Featured Products */}
-      <section className="py-20 bg-muted/30">
-        <div className="container mx-auto px-4">
-          <div className="flex items-center justify-between mb-12">
-            <h2 className="font-serif text-3xl font-bold text-ink">Latest Arrivals</h2>
+      <section className="py-40 bg-white/[0.01]">
+        <div className="container mx-auto px-8">
+          <div className="flex flex-col md:flex-row items-start md:items-center justify-between mb-20 gap-8">
+            <div>
+              <div className="flex items-center gap-4 mb-6">
+                <div className="h-[1px] w-12 bg-primary"></div>
+                <span className="text-primary uppercase tracking-[0.5em] text-[10px] font-bold">New Acquisitions</span>
+              </div>
+              <h2 className="font-serif text-5xl font-light tracking-tight">Latest Arrivals</h2>
+            </div>
             <Link href="/shop">
-              <Button variant="link" className="text-primary gap-2">View All <ArrowRight className="w-4 h-4" /></Button>
+              <Button variant="ghost" className="text-[10px] uppercase tracking-[0.4em] font-light hover:bg-white/5 rounded-full px-8 py-6 border border-white/10">
+                View Collection <ArrowRight className="w-4 h-4 ml-3" />
+              </Button>
             </Link>
           </div>
           
-          <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-6">
+          <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-12">
             {featuredProducts ? featuredProducts.slice(0, 4).map((product) => (
               <ProductCard key={product.id} product={product} />
             )) : (
-              // Loading skeletons
               Array(4).fill(0).map((_, i) => (
-                <div key={i} className="bg-card rounded-2xl h-80 animate-pulse" />
+                <div key={i} className="bg-white/5 rounded-[2rem] aspect-[3/4] animate-pulse" />
               ))
             )}
           </div>

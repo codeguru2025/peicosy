@@ -19,16 +19,15 @@ export function Navigation() {
 
   const isAdmin = user?.email?.endsWith("@peicosy.com") || user?.id === "admin"; // Simple check for now
 
-  const NavLink = ({ href, children, icon: Icon }: { href: string; children: React.ReactNode; icon?: any }) => {
+  const NavLink = ({ href, children }: { href: string; children: React.ReactNode }) => {
     const isActive = location === href;
     return (
       <Link href={href} className={`
-        flex items-center gap-2 px-4 py-2 rounded-full transition-all duration-200
+        text-[11px] uppercase tracking-[0.3em] font-light transition-all duration-500
         ${isActive 
-          ? 'bg-primary/10 text-primary font-medium' 
-          : 'text-muted-foreground hover:text-foreground hover:bg-muted/50'}
+          ? 'text-primary' 
+          : 'text-muted-foreground hover:text-foreground'}
       `}>
-        {Icon && <Icon className="w-4 h-4" />}
         {children}
       </Link>
     );
@@ -79,39 +78,39 @@ export function Navigation() {
           {/* Mobile Menu */}
           <Sheet open={mobileMenuOpen} onOpenChange={setMobileMenuOpen}>
             <SheetTrigger asChild>
-              <Button variant="ghost" size="icon" className="md:hidden">
+              <Button variant="ghost" size="icon" className="md:hidden hover:bg-white/5">
                 <Menu className="w-5 h-5" />
               </Button>
             </SheetTrigger>
-            <SheetContent side="right" className="w-[300px] sm:w-[400px]">
-              <div className="flex flex-col gap-4 mt-8">
+            <SheetContent side="right" className="w-[320px] bg-background border-l border-white/5">
+              <div className="flex flex-col gap-2 mt-16">
                 <Link href="/shop" onClick={() => setMobileMenuOpen(false)}>
-                  <Button variant="ghost" className="w-full justify-start text-lg">
-                    <ShoppingBag className="mr-2 w-5 h-5" /> Shop
-                  </Button>
+                  <div className="py-4 px-2 text-[11px] uppercase tracking-[0.4em] font-light text-muted-foreground hover:text-foreground transition-colors duration-500">
+                    Collection
+                  </div>
                 </Link>
                 {isAuthenticated && (
                   <Link href="/orders" onClick={() => setMobileMenuOpen(false)}>
-                    <Button variant="ghost" className="w-full justify-start text-lg">
-                      <Package className="mr-2 w-5 h-5" /> My Orders
-                    </Button>
+                    <div className="py-4 px-2 text-[11px] uppercase tracking-[0.4em] font-light text-muted-foreground hover:text-foreground transition-colors duration-500">
+                      Portfolio
+                    </div>
                   </Link>
                 )}
                 {isAuthenticated && isAdmin && (
                   <Link href="/admin" onClick={() => setMobileMenuOpen(false)}>
-                    <Button variant="ghost" className="w-full justify-start text-lg">
-                      <LayoutDashboard className="mr-2 w-5 h-5" /> Dashboard
-                    </Button>
+                    <div className="py-4 px-2 text-[11px] uppercase tracking-[0.4em] font-light text-muted-foreground hover:text-foreground transition-colors duration-500">
+                      Management
+                    </div>
                   </Link>
                 )}
-                <div className="my-4 border-t" />
+                <div className="my-8 border-t border-white/5" />
                 {isAuthenticated ? (
-                  <Button variant="outline" onClick={() => logout()}>
-                    <LogOut className="mr-2 w-4 h-4" /> Logout
+                  <Button variant="ghost" onClick={() => logout()} className="justify-start text-[11px] uppercase tracking-[0.4em] font-light text-muted-foreground hover:text-foreground hover:bg-transparent">
+                    Logout
                   </Button>
                 ) : (
                   <Link href="/login" onClick={() => setMobileMenuOpen(false)}>
-                    <Button className="w-full">Login</Button>
+                    <Button className="w-full rounded-full h-14 text-[10px] uppercase tracking-[0.4em] font-bold">Access</Button>
                   </Link>
                 )}
               </div>

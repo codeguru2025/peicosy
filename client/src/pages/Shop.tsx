@@ -18,28 +18,43 @@ export default function Shop() {
       <Navigation />
       <CartDrawer />
       
-      <div className="bg-navy py-12 text-white">
-        <div className="container mx-auto px-4 text-center">
-          <h1 className="font-serif text-4xl font-bold mb-4">Our Collection</h1>
-          <p className="text-gray-400 max-w-xl mx-auto">Discover hand-picked items from top UK retailers, ready to be shipped directly to you.</p>
+      {/* Editorial Header */}
+      <div className="pt-32 pb-20 px-8">
+        <div className="container mx-auto text-center max-w-3xl">
+          <div className="flex items-center justify-center gap-6 mb-8">
+            <div className="h-[1px] w-16 bg-primary"></div>
+            <span className="text-primary uppercase tracking-[0.6em] text-[10px] font-bold">The Registry</span>
+            <div className="h-[1px] w-16 bg-primary"></div>
+          </div>
+          <h1 className="font-serif text-6xl lg:text-8xl font-light mb-8 tracking-tight">The Collection</h1>
+          <p className="text-muted-foreground max-w-xl mx-auto font-light leading-relaxed tracking-wide">
+            Hand-selected acquisitions from London's most distinguished ateliers.
+          </p>
         </div>
       </div>
 
-      <div className="container mx-auto px-4 py-8 flex-1">
+      <div className="container mx-auto px-8 pb-32 flex-1">
         {/* Filters & Search */}
-        <div className="flex flex-col md:flex-row gap-4 mb-8 items-center justify-between">
-          <div className="relative w-full md:w-96">
-            <Search className="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-muted-foreground" />
+        <div className="flex flex-col md:flex-row gap-8 mb-20 items-center justify-between">
+          <div className="relative w-full md:w-[400px]">
+            <Search className="absolute left-6 top-1/2 -translate-y-1/2 w-4 h-4 text-muted-foreground" />
             <Input 
-              placeholder="Search brands, products..." 
-              className="pl-10 rounded-full border-muted-foreground/20"
+              placeholder="Search the archive..." 
+              className="pl-14 h-14 rounded-full border-white/10 bg-white/5 text-sm tracking-wider placeholder:text-muted-foreground/50 focus:border-primary/30"
               value={search}
               onChange={(e) => setSearch(e.target.value)}
+              data-testid="input-search"
             />
           </div>
-          <div className="flex gap-2 overflow-x-auto pb-2 md:pb-0">
+          <div className="flex gap-4 overflow-x-auto pb-2 md:pb-0">
              {['All', 'Fashion', 'Tech', 'Home', 'Beauty'].map(cat => (
-               <Button key={cat} variant="outline" size="sm" className="rounded-full border-muted-foreground/20">
+               <Button 
+                 key={cat} 
+                 variant="ghost" 
+                 size="sm" 
+                 className="rounded-full border border-white/10 text-[10px] uppercase tracking-[0.3em] px-8 py-5 hover:bg-white/5 hover:border-white/20 transition-all duration-500"
+                 data-testid={`button-category-${cat.toLowerCase()}`}
+               >
                  {cat}
                </Button>
              ))}
@@ -47,13 +62,13 @@ export default function Shop() {
         </div>
 
         {isLoading ? (
-          <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-6">
+          <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-12">
             {Array(8).fill(0).map((_, i) => (
-              <div key={i} className="bg-card rounded-2xl h-96 animate-pulse" />
+              <div key={i} className="bg-white/5 rounded-[2rem] aspect-[3/4] animate-pulse" />
             ))}
           </div>
         ) : (
-          <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-6">
+          <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-12">
             {products?.map((product) => (
               <ProductCard key={product.id} product={product} />
             ))}
@@ -61,8 +76,8 @@ export default function Shop() {
         )}
         
         {products?.length === 0 && (
-          <div className="text-center py-20">
-             <p className="text-muted-foreground text-lg">No products found matching your search.</p>
+          <div className="text-center py-32">
+             <p className="text-muted-foreground text-lg font-light tracking-wider">No acquisitions match your inquiry.</p>
           </div>
         )}
       </div>
@@ -79,26 +94,31 @@ function ProductCard({ product }: { product: Product }) {
   const { addItem } = useCart();
   
   return (
-    <div className="group bg-card rounded-2xl overflow-hidden border hover:shadow-lg transition-all duration-300 flex flex-col">
-      <div className="aspect-[4/5] relative overflow-hidden bg-muted">
+    <div className="group bg-transparent overflow-hidden transition-all duration-700 flex flex-col" data-testid={`card-product-${product.id}`}>
+      <div className="aspect-[3/4] relative overflow-hidden bg-white/5 rounded-[2rem]">
         <img 
           src={product.imageUrl} 
           alt={product.name}
-          className="object-cover w-full h-full group-hover:scale-105 transition-transform duration-500"
+          className="object-cover w-full h-full grayscale hover:grayscale-0 transition-all duration-1000 group-hover:scale-110"
         />
-        <div className="absolute bottom-4 left-4 right-4 translate-y-full group-hover:translate-y-0 transition-transform duration-300">
-          <Button className="w-full rounded-full bg-white/90 hover:bg-white text-ink shadow-lg backdrop-blur-sm" onClick={() => addItem(product)}>
-            Add to Bag
+        <div className="absolute inset-0 bg-black/20 opacity-0 group-hover:opacity-100 transition-opacity duration-700"></div>
+        <div className="absolute bottom-8 left-8 right-8 translate-y-12 opacity-0 group-hover:translate-y-0 group-hover:opacity-100 transition-all duration-700">
+          <Button 
+            className="w-full rounded-full bg-white text-background hover:bg-primary hover:text-white text-[10px] uppercase tracking-[0.3em] font-bold py-6 shadow-2xl" 
+            onClick={() => addItem(product)}
+            data-testid={`button-add-${product.id}`}
+          >
+            Acquire
           </Button>
         </div>
       </div>
-      <div className="p-4 flex-1 flex flex-col">
-        <p className="text-xs font-bold text-primary mb-1 uppercase tracking-wider">{product.brand}</p>
+      <div className="pt-8 flex-1 flex flex-col px-4">
+        <p className="text-[10px] font-bold text-primary mb-3 uppercase tracking-[0.4em]">{product.brand}</p>
         <Link href={`/product/${product.id}`} className="block">
-          <h3 className="font-serif font-bold text-lg mb-1 group-hover:text-primary transition-colors line-clamp-1">{product.name}</h3>
+          <h3 className="font-serif font-light text-xl mb-2 group-hover:text-primary transition-colors line-clamp-1 tracking-wide">{product.name}</h3>
         </Link>
         <div className="mt-auto pt-2 flex items-baseline justify-between">
-          <span className="font-medium text-lg">£{product.price}</span>
+          <span className="font-light text-muted-foreground tracking-widest text-sm">£{product.price}</span>
         </div>
       </div>
     </div>
