@@ -5,6 +5,11 @@ import { api } from "@shared/routes";
 import { z } from "zod";
 import { registerAuthRoutes, setupAuth, isAuthenticated } from "./replit_integrations/auth";
 import { registerObjectStorageRoutes } from "./replit_integrations/object_storage";
+import crypto from "crypto";
+
+function hashPassword(password: string): string {
+  return crypto.createHash('sha256').update(password).digest('hex');
+}
 
 export async function registerRoutes(
   httpServer: Server,
@@ -18,6 +23,54 @@ export async function registerRoutes(
   registerObjectStorageRoutes(app);
 
   // 3. API Routes
+
+  // --- Admin Login (username/password) ---
+  app.post("/api/auth/login", async (req, res) => {
+    try {
+      const { username, password } = req.body;
+      
+      if (!username || !password) {
+        return res.status(400).json({ message: "Username and password are required" });
+      }
+      
+      const user = await storage.getUserByUsername(username);
+      
+      if (!user || !user.password) {
+        return res.status(401).json({ message: "Invalid username or password" });
+      }
+      
+      const hashedPassword = hashPassword(password);
+      
+      if (user.password !== hashedPassword) {
+        return res.status(401).json({ message: "Invalid username or password" });
+      }
+      
+      // Set up session manually
+      (req as any).session.passport = {
+        user: {
+          id: user.id,
+          claims: {
+            sub: user.id,
+            email: user.email,
+            first_name: user.firstName,
+            last_name: user.lastName,
+            profile_image: user.profileImageUrl,
+          },
+        },
+      };
+      
+      res.json({
+        id: user.id,
+        email: user.email,
+        firstName: user.firstName,
+        lastName: user.lastName,
+        isAdmin: user.isAdmin,
+      });
+    } catch (err) {
+      console.error("Login error:", err);
+      res.status(500).json({ message: "Internal Server Error" });
+    }
+  });
 
   // --- Products ---
   app.get(api.products.list.path, async (req, res) => {

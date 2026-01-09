@@ -16,7 +16,8 @@ import {
   type ShippingRate,
   type CustomsRule,
   type ExchangeRate,
-  type OrderWithItems
+  type OrderWithItems,
+  type User
 } from "@shared/schema";
 import { eq, desc, sql } from "drizzle-orm";
 import { authStorage } from "./replit_integrations/auth";
@@ -48,6 +49,9 @@ export interface IStorage {
 
   // Dashboard
   getDashboardStats(): Promise<{ totalRevenue: number, activeOrders: number, pendingVerifications: number }>;
+
+  // Users
+  getUserByUsername(username: string): Promise<User | undefined>;
 }
 
 export class DatabaseStorage implements IStorage {
@@ -193,6 +197,12 @@ export class DatabaseStorage implements IStorage {
         .returning();
       return newRate;
     }
+  }
+
+  // Users
+  async getUserByUsername(username: string): Promise<User | undefined> {
+    const [user] = await db.select().from(users).where(eq(users.username, username));
+    return user;
   }
 }
 

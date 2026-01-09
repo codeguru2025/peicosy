@@ -1,14 +1,23 @@
-import { useEffect } from "react";
+import { useEffect, useState } from "react";
 import { useAuth } from "@/hooks/use-auth";
 import { Button } from "@/components/ui/button";
-import { ArrowRight, Globe } from "lucide-react";
+import { Input } from "@/components/ui/input";
+import { Label } from "@/components/ui/label";
+import { ArrowRight, Globe, Lock, User, Loader2 } from "lucide-react";
 import { SiGoogle, SiGithub, SiApple } from "react-icons/si";
 import { useLocation } from "wouter";
+import { useToast } from "@/hooks/use-toast";
+import { queryClient, apiRequest } from "@/lib/queryClient";
 import logoUrl from "@/assets/logo.png";
 
 export default function Login() {
   const { isAuthenticated } = useAuth();
   const [, setLocation] = useLocation();
+  const { toast } = useToast();
+  const [showAdminLogin, setShowAdminLogin] = useState(false);
+  const [username, setUsername] = useState("");
+  const [password, setPassword] = useState("");
+  const [isLoading, setIsLoading] = useState(false);
 
   useEffect(() => {
     if (isAuthenticated) {
@@ -18,6 +27,51 @@ export default function Login() {
 
   const handleLogin = () => {
     window.location.href = "/api/login";
+  };
+
+  const handleAdminLogin = async (e: React.FormEvent) => {
+    e.preventDefault();
+    
+    if (!username.trim() || !password.trim()) {
+      toast({
+        title: "Error",
+        description: "Please enter both username and password",
+        variant: "destructive",
+      });
+      return;
+    }
+    
+    setIsLoading(true);
+    
+    try {
+      const res = await apiRequest("POST", "/api/auth/login", { username, password });
+      const data = await res.json();
+      
+      if (!res.ok) {
+        throw new Error(data.message || "Login failed");
+      }
+      
+      queryClient.invalidateQueries({ queryKey: ["/api/auth/user"] });
+      
+      toast({
+        title: "Welcome back!",
+        description: `Logged in as ${data.firstName || username}`,
+      });
+      
+      if (data.isAdmin) {
+        setLocation("/admin");
+      } else {
+        setLocation("/");
+      }
+    } catch (err: any) {
+      toast({
+        title: "Login Failed",
+        description: err.message || "Invalid username or password",
+        variant: "destructive",
+      });
+    } finally {
+      setIsLoading(false);
+    }
   };
 
   return (
@@ -113,13 +167,78 @@ export default function Login() {
               </div>
             </div>
 
-            <Button 
-              className="w-full h-16 text-[10px] uppercase tracking-[0.4em] font-bold bg-primary hover:bg-primary/90 text-white rounded-full transition-all duration-500 hover:scale-[1.02] shadow-lg shadow-primary/30"
-              onClick={handleLogin}
-              data-testid="button-login"
-            >
-              Email / Password <ArrowRight className="ml-3 w-4 h-4" />
-            </Button>
+            {!showAdminLogin ? (
+              <Button 
+                className="w-full h-16 text-[10px] uppercase tracking-[0.4em] font-bold bg-primary hover:bg-primary/90 text-white rounded-full transition-all duration-500 hover:scale-[1.02] shadow-lg shadow-primary/30"
+                onClick={() => setShowAdminLogin(true)}
+                data-testid="button-show-admin-login"
+              >
+                Admin Login <ArrowRight className="ml-3 w-4 h-4" />
+              </Button>
+            ) : (
+              <form onSubmit={handleAdminLogin} className="space-y-4">
+                <div className="space-y-2">
+                  <Label htmlFor="username" className="text-[10px] uppercase tracking-[0.3em] font-medium text-muted-foreground">
+                    Username
+                  </Label>
+                  <div className="relative">
+                    <User className="absolute left-3 top-1/2 -translate-y-1/2 w-5 h-5 text-muted-foreground" />
+                    <Input
+                      id="username"
+                      type="text"
+                      value={username}
+                      onChange={(e) => setUsername(e.target.value)}
+                      placeholder="Enter username"
+                      className="pl-10 h-14 rounded-xl border-border bg-white focus:border-primary shadow-sm"
+                      data-testid="input-username"
+                    />
+                  </div>
+                </div>
+                
+                <div className="space-y-2">
+                  <Label htmlFor="password" className="text-[10px] uppercase tracking-[0.3em] font-medium text-muted-foreground">
+                    Password
+                  </Label>
+                  <div className="relative">
+                    <Lock className="absolute left-3 top-1/2 -translate-y-1/2 w-5 h-5 text-muted-foreground" />
+                    <Input
+                      id="password"
+                      type="password"
+                      value={password}
+                      onChange={(e) => setPassword(e.target.value)}
+                      placeholder="Enter password"
+                      className="pl-10 h-14 rounded-xl border-border bg-white focus:border-primary shadow-sm"
+                      data-testid="input-password"
+                    />
+                  </div>
+                </div>
+                
+                <Button
+                  type="submit"
+                  disabled={isLoading}
+                  className="w-full h-14 rounded-full text-[10px] uppercase tracking-[0.4em] font-bold bg-primary hover:bg-primary/90 text-white transition-all duration-500 shadow-lg shadow-primary/30"
+                  data-testid="button-login"
+                >
+                  {isLoading ? (
+                    <>
+                      <Loader2 className="w-4 h-4 animate-spin mr-2" />
+                      Signing in...
+                    </>
+                  ) : (
+                    "Sign In"
+                  )}
+                </Button>
+                
+                <Button
+                  type="button"
+                  variant="ghost"
+                  className="w-full text-sm text-muted-foreground"
+                  onClick={() => setShowAdminLogin(false)}
+                >
+                  Back to other options
+                </Button>
+              </form>
+            )}
 
             <div className="grid grid-cols-2 gap-6 text-center text-xs">
               <div className="flex flex-col items-center gap-4 p-6 rounded-2xl bg-white border border-border shadow-sm hover:shadow-lg hover:border-primary/20 transition-all duration-500">
