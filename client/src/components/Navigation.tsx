@@ -23,10 +23,10 @@ export function Navigation() {
     const isActive = location === href;
     return (
       <Link href={href} className={`
-        text-[11px] uppercase tracking-[0.3em] font-light transition-all duration-500
+        text-[11px] uppercase tracking-[0.3em] font-medium transition-all duration-500
         ${isActive 
           ? 'text-primary' 
-          : 'text-muted-foreground hover:text-foreground'}
+          : 'text-secondary hover:text-primary'}
       `}>
         {children}
       </Link>
@@ -34,17 +34,11 @@ export function Navigation() {
   };
 
   return (
-    <nav className="sticky top-0 z-40 w-full border-b border-white/5 bg-background/90 backdrop-blur-2xl">
-      <div className="container mx-auto px-6 h-32 flex items-center justify-between">
+    <nav className="sticky top-0 z-40 w-full border-b border-primary/10 bg-white shadow-lg shadow-primary/5">
+      <div className="container mx-auto px-6 h-28 flex items-center justify-between">
         {/* Logo */}
-        <Link href="/" className="flex items-center gap-5 group">
-          <div className="relative bg-white rounded-2xl p-3 shadow-lg shadow-primary/20 transition-all duration-500 group-hover:shadow-primary/40 group-hover:scale-105">
-            <img src={logoUrl} alt="Peicosy" className="h-[84px] w-[84px] object-contain" />
-          </div>
-          <div className="flex flex-col">
-            <span className="font-serif text-3xl font-medium tracking-[0.15em] uppercase text-white leading-none">Peicosy</span>
-            <span className="text-[10px] uppercase tracking-[0.4em] text-primary font-bold mt-1">Private Client</span>
-          </div>
+        <Link href="/" className="group transition-transform duration-500 hover:scale-105">
+          <img src={logoUrl} alt="Peicosy" className="h-20 w-auto object-contain" />
         </Link>
 
         {/* Desktop Nav */}
@@ -58,61 +52,61 @@ export function Navigation() {
 
         {/* Actions */}
         <div className="flex items-center gap-6">
-          <Button variant="ghost" size="icon" onClick={() => toggleCart(true)} className="relative hover:bg-white/5">
-            <ShoppingBag className="w-5 h-5 font-light" />
+          <Button variant="ghost" size="icon" onClick={() => toggleCart(true)} className="relative text-secondary hover:bg-primary/10">
+            <ShoppingBag className="w-5 h-5" />
             {cartCount > 0 && (
-              <Badge className="absolute -top-1 -right-1 h-4 w-4 flex items-center justify-center p-0 text-[9px] bg-primary text-primary-foreground border-none">
+              <Badge className="absolute -top-1 -right-1 h-4 w-4 flex items-center justify-center p-0 text-[9px] bg-primary text-white border-none">
                 {cartCount}
               </Badge>
             )}
           </Button>
 
           {isAuthenticated ? (
-            <Button variant="ghost" size="sm" onClick={() => logout()} className="hidden md:flex text-xs uppercase tracking-widest font-light hover:bg-white/5">
+            <Button variant="ghost" size="sm" onClick={() => logout()} className="hidden md:flex text-xs uppercase tracking-widest font-medium text-secondary hover:bg-primary/10 hover:text-primary">
               Logout
             </Button>
           ) : (
             <Link href="/login" className="hidden md:block">
-              <Button variant="outline" size="sm" className="rounded-full px-8 border-white/20 text-xs uppercase tracking-widest font-light hover:bg-white hover:text-background transition-colors duration-500">Access</Button>
+              <Button size="sm" className="rounded-full px-8 bg-primary hover:bg-primary/90 text-white text-xs uppercase tracking-widest font-bold shadow-lg shadow-primary/30">Access</Button>
             </Link>
           )}
 
           {/* Mobile Menu */}
           <Sheet open={mobileMenuOpen} onOpenChange={setMobileMenuOpen}>
             <SheetTrigger asChild>
-              <Button variant="ghost" size="icon" className="md:hidden hover:bg-white/5">
+              <Button variant="ghost" size="icon" className="md:hidden text-secondary hover:bg-primary/10">
                 <Menu className="w-5 h-5" />
               </Button>
             </SheetTrigger>
-            <SheetContent side="right" className="w-[320px] bg-background border-l border-white/5">
+            <SheetContent side="right" className="w-[320px] bg-white border-l border-primary/10">
               <div className="flex flex-col gap-2 mt-16">
                 <Link href="/shop" onClick={() => setMobileMenuOpen(false)}>
-                  <div className="py-4 px-2 text-[11px] uppercase tracking-[0.4em] font-light text-muted-foreground hover:text-foreground transition-colors duration-500">
+                  <div className="py-4 px-2 text-[11px] uppercase tracking-[0.4em] font-medium text-secondary hover:text-primary transition-colors duration-500">
                     Collection
                   </div>
                 </Link>
                 {isAuthenticated && (
                   <Link href="/orders" onClick={() => setMobileMenuOpen(false)}>
-                    <div className="py-4 px-2 text-[11px] uppercase tracking-[0.4em] font-light text-muted-foreground hover:text-foreground transition-colors duration-500">
+                    <div className="py-4 px-2 text-[11px] uppercase tracking-[0.4em] font-medium text-secondary hover:text-primary transition-colors duration-500">
                       Portfolio
                     </div>
                   </Link>
                 )}
                 {isAuthenticated && isAdmin && (
                   <Link href="/admin" onClick={() => setMobileMenuOpen(false)}>
-                    <div className="py-4 px-2 text-[11px] uppercase tracking-[0.4em] font-light text-muted-foreground hover:text-foreground transition-colors duration-500">
+                    <div className="py-4 px-2 text-[11px] uppercase tracking-[0.4em] font-medium text-secondary hover:text-primary transition-colors duration-500">
                       Management
                     </div>
                   </Link>
                 )}
-                <div className="my-8 border-t border-white/5" />
+                <div className="my-8 border-t border-primary/10" />
                 {isAuthenticated ? (
-                  <Button variant="ghost" onClick={() => logout()} className="justify-start text-[11px] uppercase tracking-[0.4em] font-light text-muted-foreground hover:text-foreground hover:bg-transparent">
+                  <Button variant="ghost" onClick={() => logout()} className="justify-start text-[11px] uppercase tracking-[0.4em] font-medium text-secondary hover:text-primary hover:bg-primary/10">
                     Logout
                   </Button>
                 ) : (
                   <Link href="/login" onClick={() => setMobileMenuOpen(false)}>
-                    <Button className="w-full rounded-full h-14 text-[10px] uppercase tracking-[0.4em] font-bold">Access</Button>
+                    <Button className="w-full rounded-full h-14 text-[10px] uppercase tracking-[0.4em] font-bold bg-primary hover:bg-primary/90 text-white">Access</Button>
                   </Link>
                 )}
               </div>
