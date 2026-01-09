@@ -44,7 +44,7 @@ export default function AdminDashboard() {
               value={stats?.pendingVerifications || 0} 
               icon={AlertCircle} 
               description="Payments needing review"
-              alert={stats?.pendingVerifications > 0}
+              alert={(stats?.pendingVerifications ?? 0) > 0}
             />
           </div>
         )}
