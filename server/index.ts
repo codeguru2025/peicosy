@@ -3,9 +3,13 @@ import { registerRoutes } from "./routes";
 import { serveStatic } from "./static";
 import { createServer } from "http";
 import { seedAdminUser } from "./seedAdmin";
+import path from "path";
 
 const app = express();
 const httpServer = createServer(app);
+
+// Serve attached assets (product images)
+app.use('/assets', express.static(path.join(process.cwd(), 'attached_assets')));
 
 declare module "http" {
   interface IncomingMessage {
