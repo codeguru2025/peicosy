@@ -6,10 +6,16 @@ import { z } from "zod";
 import { registerAuthRoutes, setupAuth, isAuthenticated } from "./replit_integrations/auth";
 import { registerObjectStorageRoutes } from "./replit_integrations/object_storage";
 import { generatePayFastForm, isPayFastConfigured, validatePayFastITN } from "./payfast";
-import crypto from "crypto";
+import bcrypt from "bcrypt";
 
-function hashPassword(password: string): string {
-  return crypto.createHash('sha256').update(password).digest('hex');
+const SALT_ROUNDS = 12;
+
+async function hashPassword(password: string): Promise<string> {
+  return bcrypt.hash(password, SALT_ROUNDS);
+}
+
+async function verifyPassword(password: string, hash: string): Promise<boolean> {
+  return bcrypt.compare(password, hash);
 }
 
 export async function registerRoutes(
@@ -56,7 +62,7 @@ export async function registerRoutes(
         }
       }
       
-      const hashedPassword = hashPassword(password);
+      const hashedPassword = await hashPassword(password);
       
       const user = await storage.createUser({
         username,
@@ -109,9 +115,9 @@ export async function registerRoutes(
         return res.status(401).json({ message: "Invalid username or password" });
       }
       
-      const hashedPassword = hashPassword(password);
+      const passwordValid = await verifyPassword(password, user.password);
       
-      if (user.password !== hashedPassword) {
+      if (!passwordValid) {
         return res.status(401).json({ message: "Invalid username or password" });
       }
       

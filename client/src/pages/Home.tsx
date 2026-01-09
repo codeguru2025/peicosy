@@ -15,37 +15,37 @@ export default function Home() {
       <CartDrawer />
       
       {/* Hero Section */}
-      <section className="relative min-h-[100vh] flex items-center overflow-hidden">
+      <section className="relative min-h-[calc(100vh-4rem)] md:min-h-[100vh] flex items-center overflow-hidden">
         {/* Vibrant gradient background */}
         <div className="absolute inset-0 bg-gradient-to-br from-primary via-primary/80 to-secondary"></div>
         <div className="absolute inset-0 bg-[url('https://images.unsplash.com/photo-1558618666-fcd25c85cd64?q=80&w=2000&auto=format&fit=crop')] bg-cover bg-center opacity-20 mix-blend-overlay"></div>
         
         {/* Decorative elements */}
-        <div className="absolute top-20 right-20 w-96 h-96 bg-white/10 rounded-full blur-3xl"></div>
-        <div className="absolute bottom-20 left-20 w-64 h-64 bg-white/10 rounded-full blur-3xl"></div>
+        <div className="absolute top-10 right-10 md:top-20 md:right-20 w-48 md:w-96 h-48 md:h-96 bg-white/10 rounded-full blur-3xl"></div>
+        <div className="absolute bottom-10 left-10 md:bottom-20 md:left-20 w-32 md:w-64 h-32 md:h-64 bg-white/10 rounded-full blur-3xl"></div>
         
-        <div className="container mx-auto px-8 relative z-10">
-          <div className="max-w-5xl space-y-10">
-            <div className="flex items-center gap-6">
-              <div className="h-[2px] w-20 bg-white"></div>
-              <span className="text-white uppercase tracking-[0.6em] text-xs font-bold">The Editorial</span>
+        <div className="container mx-auto px-5 md:px-8 relative z-10">
+          <div className="max-w-5xl space-y-6 md:space-y-10">
+            <div className="flex items-center gap-3 md:gap-6">
+              <div className="h-[2px] w-10 md:w-20 bg-white"></div>
+              <span className="text-white uppercase tracking-[0.4em] md:tracking-[0.6em] text-[10px] md:text-xs font-bold">The Editorial</span>
             </div>
-            <h1 className="font-serif text-6xl md:text-8xl lg:text-[9rem] font-light leading-[0.95] tracking-tight">
+            <h1 className="font-serif text-4xl sm:text-5xl md:text-7xl lg:text-[9rem] font-light leading-[1] md:leading-[0.95] tracking-tight">
               <span className="text-white">Not for</span><br />
               <span className="text-white">Everyone,</span><br />
-              <span className="text-white/90 italic font-normal text-7xl md:text-9xl lg:text-[10rem]">Just for You.</span>
+              <span className="text-white/90 italic font-normal text-5xl sm:text-6xl md:text-8xl lg:text-[10rem]">Just for You.</span>
             </h1>
-            <p className="text-xl text-white/80 max-w-xl font-light leading-relaxed tracking-wide">
+            <p className="text-base md:text-xl text-white/80 max-w-xl font-light leading-relaxed tracking-wide">
               Bespoke luxury logistics and curated commerce. Seamlessly bridging the distance between London's finest and South Africa's elite.
             </p>
-            <div className="flex flex-col sm:flex-row gap-6 pt-8">
+            <div className="flex flex-col sm:flex-row gap-4 md:gap-6 pt-4 md:pt-8">
               <Link href="/shop">
-                <Button size="lg" className="bg-white text-primary hover:bg-white/90 rounded-full px-14 h-16 text-xs uppercase tracking-[0.3em] font-bold shadow-2xl transition-all duration-500 hover:scale-105">
+                <Button size="lg" className="w-full sm:w-auto bg-white text-primary hover:bg-white/90 rounded-full px-8 md:px-14 h-12 md:h-16 text-[10px] md:text-xs uppercase tracking-[0.2em] md:tracking-[0.3em] font-bold shadow-2xl transition-all duration-500 hover:scale-105" data-testid="button-enter-boutique">
                   Enter Boutique
                 </Button>
               </Link>
               <Link href="/about">
-                <Button size="lg" variant="outline" className="text-white border-white/50 hover:bg-white/10 hover:border-white rounded-full px-14 h-16 text-xs uppercase tracking-[0.3em] font-bold backdrop-blur-sm transition-all duration-500">
+                <Button size="lg" variant="outline" className="w-full sm:w-auto text-white border-white/50 hover:bg-white/10 hover:border-white rounded-full px-8 md:px-14 h-12 md:h-16 text-[10px] md:text-xs uppercase tracking-[0.2em] md:tracking-[0.3em] font-bold backdrop-blur-sm transition-all duration-500" data-testid="button-our-legacy">
                   Our Legacy
                 </Button>
               </Link>
@@ -53,21 +53,21 @@ export default function Home() {
           </div>
         </div>
         
-        <div className="absolute bottom-12 left-1/2 -translate-x-1/2 flex flex-col items-center gap-4">
-          <span className="text-white/60 text-[10px] uppercase tracking-[0.5em] font-light">Scroll</span>
-          <div className="w-[1px] h-16 bg-gradient-to-b from-white to-transparent"></div>
+        <div className="absolute bottom-8 md:bottom-12 left-1/2 -translate-x-1/2 flex flex-col items-center gap-3 md:gap-4">
+          <span className="text-white/60 text-[9px] md:text-[10px] uppercase tracking-[0.4em] md:tracking-[0.5em] font-light">Scroll</span>
+          <div className="w-[1px] h-10 md:h-16 bg-gradient-to-b from-white to-transparent"></div>
         </div>
       </section>
 
       {/* Features Grid */}
-      <section className="py-40 bg-background">
-        <div className="container mx-auto px-8">
-          <div className="flex items-center justify-center gap-6 mb-20">
-            <div className="h-[1px] w-16 bg-primary/30"></div>
-            <span className="text-primary uppercase tracking-[0.6em] text-[10px] font-bold">The Promise</span>
-            <div className="h-[1px] w-16 bg-primary/30"></div>
+      <section className="py-16 md:py-40 bg-background">
+        <div className="container mx-auto px-5 md:px-8">
+          <div className="flex items-center justify-center gap-3 md:gap-6 mb-10 md:mb-20">
+            <div className="h-[1px] w-8 md:w-16 bg-primary/30"></div>
+            <span className="text-primary uppercase tracking-[0.4em] md:tracking-[0.6em] text-[9px] md:text-[10px] font-bold">The Promise</span>
+            <div className="h-[1px] w-8 md:w-16 bg-primary/30"></div>
           </div>
-          <div className="grid grid-cols-1 md:grid-cols-3 gap-12">
+          <div className="grid grid-cols-1 md:grid-cols-3 gap-8 md:gap-12">
             <FeatureCard 
               icon={Plane}
               title="Secure Logistics"
@@ -88,24 +88,24 @@ export default function Home() {
       </section>
 
       {/* Featured Products */}
-      <section className="py-40 bg-muted/30">
-        <div className="container mx-auto px-8">
-          <div className="flex flex-col md:flex-row items-start md:items-center justify-between mb-20 gap-8">
+      <section className="py-16 md:py-40 bg-muted/30">
+        <div className="container mx-auto px-5 md:px-8">
+          <div className="flex flex-col md:flex-row items-start md:items-center justify-between mb-10 md:mb-20 gap-6 md:gap-8">
             <div>
-              <div className="flex items-center gap-4 mb-6">
-                <div className="h-[1px] w-12 bg-primary"></div>
-                <span className="text-primary uppercase tracking-[0.5em] text-[10px] font-bold">New Acquisitions</span>
+              <div className="flex items-center gap-3 md:gap-4 mb-4 md:mb-6">
+                <div className="h-[1px] w-8 md:w-12 bg-primary"></div>
+                <span className="text-primary uppercase tracking-[0.4em] md:tracking-[0.5em] text-[9px] md:text-[10px] font-bold">New Acquisitions</span>
               </div>
-              <h2 className="font-serif text-5xl font-light tracking-tight text-secondary">Latest Arrivals</h2>
+              <h2 className="font-serif text-3xl md:text-5xl font-light tracking-tight text-secondary">Latest Arrivals</h2>
             </div>
             <Link href="/shop">
-              <Button variant="outline" className="text-[10px] uppercase tracking-[0.4em] font-medium rounded-full px-8 py-6 border-secondary/20 text-secondary hover:bg-secondary hover:text-white transition-all duration-500">
-                View Collection <ArrowRight className="w-4 h-4 ml-3" />
+              <Button variant="outline" className="text-[9px] md:text-[10px] uppercase tracking-[0.3em] md:tracking-[0.4em] font-medium rounded-full px-6 md:px-8 py-4 md:py-6 border-secondary/20 text-secondary hover:bg-secondary hover:text-white transition-all duration-500" data-testid="button-view-collection">
+                View Collection <ArrowRight className="w-3 md:w-4 h-3 md:h-4 ml-2 md:ml-3" />
               </Button>
             </Link>
           </div>
           
-          <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-12">
+          <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-6 md:gap-12">
             {featuredProducts ? featuredProducts.slice(0, 4).map((product) => (
               <ProductCard key={product.id} product={product} />
             )) : (

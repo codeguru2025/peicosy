@@ -35,10 +35,10 @@ export function Navigation() {
 
   return (
     <nav className="sticky top-0 z-40 w-full border-b border-primary/10 bg-white shadow-lg shadow-primary/5">
-      <div className="container mx-auto px-6 h-28 flex items-center justify-between">
+      <div className="container mx-auto px-4 md:px-6 h-16 md:h-28 flex items-center justify-between">
         {/* Logo */}
         <Link href="/" className="group transition-transform duration-500 hover:scale-105">
-          <img src={logoUrl} alt="Peicosy" className="h-20 w-auto object-contain" />
+          <img src={logoUrl} alt="Peicosy" className="h-10 md:h-20 w-auto object-contain" />
         </Link>
 
         {/* Desktop Nav */}
@@ -51,8 +51,8 @@ export function Navigation() {
         </div>
 
         {/* Actions */}
-        <div className="flex items-center gap-6">
-          <Button variant="ghost" size="icon" onClick={() => toggleCart(true)} className="relative text-secondary hover:bg-primary/10">
+        <div className="flex items-center gap-2 md:gap-6">
+          <Button variant="ghost" size="icon" onClick={() => toggleCart(true)} className="relative text-secondary hover:bg-primary/10" data-testid="button-cart">
             <ShoppingBag className="w-5 h-5" />
             {cartCount > 0 && (
               <Badge className="absolute -top-1 -right-1 h-4 w-4 flex items-center justify-center p-0 text-[9px] bg-primary text-white border-none">
