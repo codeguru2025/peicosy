@@ -2,6 +2,7 @@ import { useEffect } from "react";
 import { useAuth } from "@/hooks/use-auth";
 import { Button } from "@/components/ui/button";
 import { ArrowRight, Globe } from "lucide-react";
+import { SiGoogle, SiGithub, SiApple } from "react-icons/si";
 import { useLocation } from "wouter";
 import logoUrl from "@/assets/logo.png";
 
@@ -14,6 +15,10 @@ export default function Login() {
       setLocation("/");
     }
   }, [isAuthenticated, setLocation]);
+
+  const handleLogin = () => {
+    window.location.href = "/api/login";
+  };
 
   return (
     <div className="min-h-screen grid grid-cols-1 lg:grid-cols-2 bg-background">
@@ -52,13 +57,13 @@ export default function Login() {
 
       {/* Right Side - Access Portal */}
       <div className="flex flex-col items-center justify-center p-12 bg-background">
-        <div className="w-full max-w-md space-y-16">
+        <div className="w-full max-w-md space-y-12">
           <div className="text-center space-y-4 lg:hidden">
             <img src={logoUrl} alt="Peicosy" className="h-20 mx-auto object-contain" />
             <p className="text-[10px] uppercase tracking-[0.5em] text-muted-foreground">Private Client</p>
           </div>
 
-          <div className="space-y-12">
+          <div className="space-y-10">
             <div className="text-center space-y-4">
               <div className="flex items-center justify-center gap-4 mb-8">
                 <div className="h-[1px] w-12 bg-primary"></div>
@@ -66,36 +71,70 @@ export default function Login() {
                 <div className="h-[1px] w-12 bg-primary"></div>
               </div>
               <h3 className="font-serif text-4xl font-light tracking-wide text-secondary">Welcome Back</h3>
-              <p className="text-muted-foreground font-light tracking-wider text-sm">Enter your private portfolio</p>
+              <p className="text-muted-foreground font-light tracking-wider text-sm">Sign in to your private portfolio</p>
             </div>
 
-            <Button 
-              className="w-full h-16 text-[10px] uppercase tracking-[0.4em] font-bold bg-primary hover:bg-primary/90 text-white rounded-full transition-all duration-500 hover:scale-[1.02] shadow-lg shadow-primary/30"
-              onClick={() => window.location.href = "/api/login"}
-              data-testid="button-login"
-            >
-              Continue with Replit <ArrowRight className="ml-3 w-4 h-4" />
-            </Button>
+            {/* OAuth Login Options */}
+            <div className="space-y-4">
+              <Button 
+                className="w-full h-14 text-sm font-medium bg-white border border-border text-secondary hover:bg-muted hover:border-primary/20 rounded-xl transition-all duration-300 shadow-sm hover:shadow-md"
+                onClick={handleLogin}
+                data-testid="button-login-google"
+              >
+                <SiGoogle className="w-5 h-5 mr-3 text-[#4285F4]" />
+                Continue with Google
+              </Button>
+              
+              <Button 
+                className="w-full h-14 text-sm font-medium bg-[#24292F] text-white hover:bg-[#24292F]/90 rounded-xl transition-all duration-300 shadow-sm hover:shadow-md"
+                onClick={handleLogin}
+                data-testid="button-login-github"
+              >
+                <SiGithub className="w-5 h-5 mr-3" />
+                Continue with GitHub
+              </Button>
+              
+              <Button 
+                className="w-full h-14 text-sm font-medium bg-black text-white hover:bg-black/90 rounded-xl transition-all duration-300 shadow-sm hover:shadow-md"
+                onClick={handleLogin}
+                data-testid="button-login-apple"
+              >
+                <SiApple className="w-5 h-5 mr-3" />
+                Continue with Apple
+              </Button>
+            </div>
 
             <div className="relative">
               <div className="absolute inset-0 flex items-center">
                 <span className="w-full border-t border-border" />
               </div>
               <div className="relative flex justify-center text-[9px] uppercase tracking-[0.4em]">
-                <span className="bg-background px-6 text-muted-foreground">Secure Access</span>
+                <span className="bg-background px-6 text-muted-foreground">Or continue with</span>
               </div>
             </div>
 
+            <Button 
+              className="w-full h-16 text-[10px] uppercase tracking-[0.4em] font-bold bg-primary hover:bg-primary/90 text-white rounded-full transition-all duration-500 hover:scale-[1.02] shadow-lg shadow-primary/30"
+              onClick={handleLogin}
+              data-testid="button-login"
+            >
+              Email / Password <ArrowRight className="ml-3 w-4 h-4" />
+            </Button>
+
             <div className="grid grid-cols-2 gap-6 text-center text-xs">
-              <div className="flex flex-col items-center gap-4 p-8 rounded-2xl bg-white border border-border shadow-sm hover:shadow-lg hover:border-primary/20 transition-all duration-500">
-                <Globe className="w-6 h-6 text-primary" />
-                <span className="text-muted-foreground font-light tracking-wider">Global Logistics</span>
+              <div className="flex flex-col items-center gap-4 p-6 rounded-2xl bg-white border border-border shadow-sm hover:shadow-lg hover:border-primary/20 transition-all duration-500">
+                <Globe className="w-5 h-5 text-primary" />
+                <span className="text-muted-foreground font-light tracking-wider text-[10px]">Global Logistics</span>
               </div>
-              <div className="flex flex-col items-center gap-4 p-8 rounded-2xl bg-white border border-border shadow-sm hover:shadow-lg hover:border-primary/20 transition-all duration-500">
-                <span className="font-serif text-2xl text-primary font-light">£</span>
-                <span className="text-muted-foreground font-light tracking-wider">Landed Costs</span>
+              <div className="flex flex-col items-center gap-4 p-6 rounded-2xl bg-white border border-border shadow-sm hover:shadow-lg hover:border-primary/20 transition-all duration-500">
+                <span className="font-serif text-xl text-primary font-light">£</span>
+                <span className="text-muted-foreground font-light tracking-wider text-[10px]">Landed Costs</span>
               </div>
             </div>
+
+            <p className="text-center text-[10px] text-muted-foreground/60 tracking-wider">
+              Secure authentication powered by Replit
+            </p>
           </div>
         </div>
       </div>
