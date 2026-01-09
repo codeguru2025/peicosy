@@ -4,15 +4,21 @@ import { useCart } from "@/hooks/use-cart";
 import { Minus, Plus, Trash2, ArrowRight } from "lucide-react";
 import { ScrollArea } from "@/components/ui/scroll-area";
 import { useLocation } from "wouter";
+import { useExchangeRate, formatZAR } from "@/hooks/use-shipping";
 
 export function CartDrawer() {
   const { items, isOpen, toggleCart, updateQuantity, removeItem, total } = useCart();
   const [, setLocation] = useLocation();
+  const exchangeRateQuery = useExchangeRate();
+  const exchangeRate = exchangeRateQuery.data?.rate || 23.50;
 
   const handleCheckout = () => {
     toggleCart(false);
     setLocation("/checkout");
   };
+
+  const totalGBP = total();
+  const totalZAR = totalGBP * exchangeRate;
 
   return (
     <Sheet open={isOpen} onOpenChange={toggleCart}>
@@ -37,59 +43,70 @@ export function CartDrawer() {
           <>
             <ScrollArea className="flex-1 -mx-6 px-6 my-6">
               <div className="space-y-8">
-                {items.map((item) => (
-                  <div key={item.product.id} className="flex gap-6" data-testid={`cart-item-${item.product.id}`}>
-                    <div className="h-28 w-28 rounded-2xl bg-muted overflow-hidden flex-shrink-0">
-                      <img 
-                        src={item.product.imageUrl} 
-                        alt={item.product.name}
-                        className="h-full w-full object-cover grayscale hover:grayscale-0 transition-all duration-700"
-                      />
-                    </div>
-                    <div className="flex-1 flex flex-col justify-between py-1">
-                      <div>
-                        <p className="text-[9px] font-bold text-primary uppercase tracking-[0.4em] mb-1">{item.product.brand}</p>
-                        <h4 className="font-serif font-light text-lg line-clamp-1 tracking-wide text-secondary">{item.product.name}</h4>
+                {items.map((item) => {
+                  const itemPriceGBP = Number(item.product.price) * item.quantity;
+                  const itemPriceZAR = itemPriceGBP * exchangeRate;
+                  
+                  return (
+                    <div key={item.product.id} className="flex gap-6" data-testid={`cart-item-${item.product.id}`}>
+                      <div className="h-28 w-28 rounded-2xl bg-muted overflow-hidden flex-shrink-0">
+                        <img 
+                          src={item.product.imageUrl} 
+                          alt={item.product.name}
+                          className="h-full w-full object-cover grayscale hover:grayscale-0 transition-all duration-700"
+                        />
                       </div>
-                      <div className="flex items-center justify-between mt-3">
-                        <div className="flex items-center gap-4 border border-border rounded-full px-4 py-2">
-                          <button 
-                            onClick={() => updateQuantity(item.product.id, item.quantity - 1)}
-                            className="p-1 text-secondary hover:text-primary transition-colors duration-300"
-                            data-testid={`button-decrease-${item.product.id}`}
-                          >
-                            <Minus className="w-3 h-3" />
-                          </button>
-                          <span className="text-sm w-5 text-center font-medium text-secondary">{item.quantity}</span>
-                          <button 
-                            onClick={() => updateQuantity(item.product.id, item.quantity + 1)}
-                            className="p-1 text-secondary hover:text-primary transition-colors duration-300"
-                            data-testid={`button-increase-${item.product.id}`}
-                          >
-                            <Plus className="w-3 h-3" />
-                          </button>
+                      <div className="flex-1 flex flex-col justify-between py-1">
+                        <div>
+                          <p className="text-[9px] font-bold text-primary uppercase tracking-[0.4em] mb-1">{item.product.brand}</p>
+                          <h4 className="font-serif font-light text-lg line-clamp-1 tracking-wide text-secondary">{item.product.name}</h4>
                         </div>
-                        <div className="flex items-center gap-6">
-                          <span className="font-medium tracking-widest text-sm text-secondary">£{(Number(item.product.price) * item.quantity).toFixed(2)}</span>
-                          <button 
-                            onClick={() => removeItem(item.product.id)}
-                            className="text-muted-foreground hover:text-primary transition-colors duration-300"
-                            data-testid={`button-remove-${item.product.id}`}
-                          >
-                            <Trash2 className="w-4 h-4" />
-                          </button>
+                        <div className="flex items-center justify-between mt-3">
+                          <div className="flex items-center gap-4 border border-border rounded-full px-4 py-2">
+                            <button 
+                              onClick={() => updateQuantity(item.product.id, item.quantity - 1)}
+                              className="p-1 text-secondary hover:text-primary transition-colors duration-300"
+                              data-testid={`button-decrease-${item.product.id}`}
+                            >
+                              <Minus className="w-3 h-3" />
+                            </button>
+                            <span className="text-sm w-5 text-center font-medium text-secondary">{item.quantity}</span>
+                            <button 
+                              onClick={() => updateQuantity(item.product.id, item.quantity + 1)}
+                              className="p-1 text-secondary hover:text-primary transition-colors duration-300"
+                              data-testid={`button-increase-${item.product.id}`}
+                            >
+                              <Plus className="w-3 h-3" />
+                            </button>
+                          </div>
+                          <div className="flex items-center gap-6">
+                            <div className="text-right">
+                              <span className="font-medium tracking-widest text-sm text-secondary block">{formatZAR(itemPriceZAR)}</span>
+                              <span className="text-[10px] text-muted-foreground">£{itemPriceGBP.toFixed(2)}</span>
+                            </div>
+                            <button 
+                              onClick={() => removeItem(item.product.id)}
+                              className="text-muted-foreground hover:text-primary transition-colors duration-300"
+                              data-testid={`button-remove-${item.product.id}`}
+                            >
+                              <Trash2 className="w-4 h-4" />
+                            </button>
+                          </div>
                         </div>
                       </div>
                     </div>
-                  </div>
-                ))}
+                  );
+                })}
               </div>
             </ScrollArea>
             
             <div className="border-t border-border pt-8 space-y-8">
-              <div className="flex items-center justify-between text-xl font-serif font-light tracking-wide text-secondary">
-                <span>Subtotal</span>
-                <span>£{total().toFixed(2)}</span>
+              <div className="flex items-center justify-between">
+                <span className="text-xl font-serif font-light tracking-wide text-secondary">Subtotal</span>
+                <div className="text-right">
+                  <span className="text-xl font-serif font-light tracking-wide text-secondary block">{formatZAR(totalZAR)}</span>
+                  <span className="text-sm text-muted-foreground">£{totalGBP.toFixed(2)}</span>
+                </div>
               </div>
               <p className="text-[10px] uppercase tracking-[0.3em] text-muted-foreground text-center font-light">
                 Duties and shipping calculated at checkout

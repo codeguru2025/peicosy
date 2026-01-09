@@ -3,8 +3,7 @@ import { useAuth } from "@/hooks/use-auth";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
-import { ArrowRight, Globe, Lock, User, Loader2 } from "lucide-react";
-import { SiGoogle, SiGithub, SiApple } from "react-icons/si";
+import { Globe, Lock, User, Loader2 } from "lucide-react";
 import { useLocation } from "wouter";
 import { useToast } from "@/hooks/use-toast";
 import { queryClient, apiRequest } from "@/lib/queryClient";
@@ -14,7 +13,6 @@ export default function Login() {
   const { isAuthenticated } = useAuth();
   const [, setLocation] = useLocation();
   const { toast } = useToast();
-  const [showAdminLogin, setShowAdminLogin] = useState(false);
   const [username, setUsername] = useState("");
   const [password, setPassword] = useState("");
   const [isLoading, setIsLoading] = useState(false);
@@ -25,11 +23,7 @@ export default function Login() {
     }
   }, [isAuthenticated, setLocation]);
 
-  const handleLogin = () => {
-    window.location.href = "/api/login";
-  };
-
-  const handleAdminLogin = async (e: React.FormEvent) => {
+  const handleLogin = async (e: React.FormEvent) => {
     e.preventDefault();
     
     if (!username.trim() || !password.trim()) {
@@ -76,13 +70,11 @@ export default function Login() {
 
   return (
     <div className="min-h-screen grid grid-cols-1 lg:grid-cols-2 bg-background">
-      {/* Left Side - Editorial Brand */}
       <div className="relative hidden lg:flex flex-col justify-between p-16 bg-gradient-to-br from-primary via-primary/90 to-secondary overflow-hidden">
         <div className="absolute inset-0 z-0">
           <div className="absolute inset-0 bg-[url('https://images.unsplash.com/photo-1558618666-fcd25c85cd64?q=80&w=2000&auto=format&fit=crop')] bg-cover bg-center opacity-20 mix-blend-overlay"></div>
         </div>
         
-        {/* Decorative elements */}
         <div className="absolute top-20 right-20 w-64 h-64 bg-white/10 rounded-full blur-3xl"></div>
         <div className="absolute bottom-20 left-20 w-48 h-48 bg-white/10 rounded-full blur-3xl"></div>
         
@@ -109,7 +101,6 @@ export default function Login() {
         </div>
       </div>
 
-      {/* Right Side - Access Portal */}
       <div className="flex flex-col items-center justify-center p-12 bg-background">
         <div className="w-full max-w-md space-y-12">
           <div className="text-center space-y-4 lg:hidden">
@@ -128,117 +119,59 @@ export default function Login() {
               <p className="text-muted-foreground font-light tracking-wider text-sm">Sign in to your private portfolio</p>
             </div>
 
-            {/* OAuth Login Options */}
-            <div className="space-y-4">
-              <Button 
-                className="w-full h-14 text-sm font-medium bg-white border border-border text-secondary hover:bg-muted hover:border-primary/20 rounded-xl transition-all duration-300 shadow-sm hover:shadow-md"
-                onClick={handleLogin}
-                data-testid="button-login-google"
-              >
-                <SiGoogle className="w-5 h-5 mr-3 text-[#4285F4]" />
-                Continue with Google
-              </Button>
-              
-              <Button 
-                className="w-full h-14 text-sm font-medium bg-[#24292F] text-white hover:bg-[#24292F]/90 rounded-xl transition-all duration-300 shadow-sm hover:shadow-md"
-                onClick={handleLogin}
-                data-testid="button-login-github"
-              >
-                <SiGithub className="w-5 h-5 mr-3" />
-                Continue with GitHub
-              </Button>
-              
-              <Button 
-                className="w-full h-14 text-sm font-medium bg-black text-white hover:bg-black/90 rounded-xl transition-all duration-300 shadow-sm hover:shadow-md"
-                onClick={handleLogin}
-                data-testid="button-login-apple"
-              >
-                <SiApple className="w-5 h-5 mr-3" />
-                Continue with Apple
-              </Button>
-            </div>
-
-            <div className="relative">
-              <div className="absolute inset-0 flex items-center">
-                <span className="w-full border-t border-border" />
-              </div>
-              <div className="relative flex justify-center text-[9px] uppercase tracking-[0.4em]">
-                <span className="bg-background px-6 text-muted-foreground">Or continue with</span>
-              </div>
-            </div>
-
-            {!showAdminLogin ? (
-              <Button 
-                className="w-full h-16 text-[10px] uppercase tracking-[0.4em] font-bold bg-primary hover:bg-primary/90 text-white rounded-full transition-all duration-500 hover:scale-[1.02] shadow-lg shadow-primary/30"
-                onClick={() => setShowAdminLogin(true)}
-                data-testid="button-show-admin-login"
-              >
-                Admin Login <ArrowRight className="ml-3 w-4 h-4" />
-              </Button>
-            ) : (
-              <form onSubmit={handleAdminLogin} className="space-y-4">
-                <div className="space-y-2">
-                  <Label htmlFor="username" className="text-[10px] uppercase tracking-[0.3em] font-medium text-muted-foreground">
-                    Username
-                  </Label>
-                  <div className="relative">
-                    <User className="absolute left-3 top-1/2 -translate-y-1/2 w-5 h-5 text-muted-foreground" />
-                    <Input
-                      id="username"
-                      type="text"
-                      value={username}
-                      onChange={(e) => setUsername(e.target.value)}
-                      placeholder="Enter username"
-                      className="pl-10 h-14 rounded-xl border-border bg-white focus:border-primary shadow-sm"
-                      data-testid="input-username"
-                    />
-                  </div>
+            <form onSubmit={handleLogin} className="space-y-6">
+              <div className="space-y-2">
+                <Label htmlFor="username" className="text-[10px] uppercase tracking-[0.3em] font-medium text-muted-foreground">
+                  Username
+                </Label>
+                <div className="relative">
+                  <User className="absolute left-4 top-1/2 -translate-y-1/2 w-5 h-5 text-muted-foreground" />
+                  <Input
+                    id="username"
+                    type="text"
+                    value={username}
+                    onChange={(e) => setUsername(e.target.value)}
+                    placeholder="Enter username"
+                    className="pl-12 h-14 rounded-xl border-border bg-white focus:border-primary shadow-sm"
+                    data-testid="input-username"
+                  />
                 </div>
-                
-                <div className="space-y-2">
-                  <Label htmlFor="password" className="text-[10px] uppercase tracking-[0.3em] font-medium text-muted-foreground">
-                    Password
-                  </Label>
-                  <div className="relative">
-                    <Lock className="absolute left-3 top-1/2 -translate-y-1/2 w-5 h-5 text-muted-foreground" />
-                    <Input
-                      id="password"
-                      type="password"
-                      value={password}
-                      onChange={(e) => setPassword(e.target.value)}
-                      placeholder="Enter password"
-                      className="pl-10 h-14 rounded-xl border-border bg-white focus:border-primary shadow-sm"
-                      data-testid="input-password"
-                    />
-                  </div>
+              </div>
+              
+              <div className="space-y-2">
+                <Label htmlFor="password" className="text-[10px] uppercase tracking-[0.3em] font-medium text-muted-foreground">
+                  Password
+                </Label>
+                <div className="relative">
+                  <Lock className="absolute left-4 top-1/2 -translate-y-1/2 w-5 h-5 text-muted-foreground" />
+                  <Input
+                    id="password"
+                    type="password"
+                    value={password}
+                    onChange={(e) => setPassword(e.target.value)}
+                    placeholder="Enter password"
+                    className="pl-12 h-14 rounded-xl border-border bg-white focus:border-primary shadow-sm"
+                    data-testid="input-password"
+                  />
                 </div>
-                
-                <Button
-                  type="submit"
-                  disabled={isLoading}
-                  className="w-full h-14 rounded-full text-[10px] uppercase tracking-[0.4em] font-bold bg-primary hover:bg-primary/90 text-white transition-all duration-500 shadow-lg shadow-primary/30"
-                  data-testid="button-login"
-                >
-                  {isLoading ? (
-                    <>
-                      <Loader2 className="w-4 h-4 animate-spin mr-2" />
-                      Signing in...
-                    </>
-                  ) : (
-                    "Sign In"
-                  )}
-                </Button>
-                
-                <Button
-                  type="button"
-                  variant="ghost"
-                  className="w-full text-sm text-muted-foreground"
-                  onClick={() => setShowAdminLogin(false)}
-                >
-                  Back to other options
-                </Button>
-              </form>
-            )}
+              </div>
+              
+              <Button
+                type="submit"
+                disabled={isLoading}
+                className="w-full h-16 rounded-full text-[10px] uppercase tracking-[0.4em] font-bold bg-primary hover:bg-primary/90 text-white transition-all duration-500 hover:scale-[1.02] shadow-lg shadow-primary/30"
+                data-testid="button-login"
+              >
+                {isLoading ? (
+                  <>
+                    <Loader2 className="w-4 h-4 animate-spin mr-2" />
+                    Signing in...
+                  </>
+                ) : (
+                  "Sign In"
+                )}
+              </Button>
+            </form>
 
             <div className="grid grid-cols-2 gap-6 text-center text-xs">
               <div className="flex flex-col items-center gap-4 p-6 rounded-2xl bg-white border border-border shadow-sm hover:shadow-lg hover:border-primary/20 transition-all duration-500">
@@ -246,13 +179,13 @@ export default function Login() {
                 <span className="text-muted-foreground font-light tracking-wider text-[10px]">Global Logistics</span>
               </div>
               <div className="flex flex-col items-center gap-4 p-6 rounded-2xl bg-white border border-border shadow-sm hover:shadow-lg hover:border-primary/20 transition-all duration-500">
-                <span className="font-serif text-xl text-primary font-light">£</span>
+                <span className="font-serif text-xl text-primary font-light">R</span>
                 <span className="text-muted-foreground font-light tracking-wider text-[10px]">Landed Costs</span>
               </div>
             </div>
 
             <p className="text-center text-[10px] text-muted-foreground/60 tracking-wider">
-              Secure authentication powered by Replit
+              Private client access only
             </p>
           </div>
         </div>
