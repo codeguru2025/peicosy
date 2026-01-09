@@ -3,7 +3,7 @@ import type { Server } from "http";
 import { storage } from "./storage";
 import { api } from "@shared/routes";
 import { z } from "zod";
-import { registerAuthRoutes, setupAuth, isAuthenticated } from "./replit_integrations/auth";
+import { registerAuthRoutes, setupAuth, isAuthenticated, isAdmin } from "./replit_integrations/auth";
 import { registerObjectStorageRoutes } from "./replit_integrations/object_storage";
 import { generatePayFastForm, isPayFastConfigured, validatePayFastITN } from "./payfast";
 import bcrypt from "bcrypt";
@@ -73,26 +73,34 @@ export async function registerRoutes(
         isAdmin: false,
       });
       
-      // Set up session
-      (req as any).session.passport = {
-        user: {
-          id: user.id,
-          claims: {
-            sub: user.id,
-            email: user.email,
-            first_name: user.firstName,
-            last_name: user.lastName,
-            profile_image: user.profileImageUrl,
-          },
+      // Create session user object compatible with Passport and isAuthenticated
+      const sessionExpiry = Math.floor(Date.now() / 1000) + (7 * 24 * 60 * 60); // 1 week
+      const sessionUser = {
+        id: user.id,
+        expires_at: sessionExpiry,
+        claims: {
+          sub: user.id,
+          email: user.email,
+          first_name: user.firstName,
+          last_name: user.lastName,
+          profile_image: user.profileImageUrl,
         },
       };
       
-      res.status(201).json({
-        id: user.id,
-        email: user.email,
-        firstName: user.firstName,
-        lastName: user.lastName,
-        username: user.username,
+      // Use Passport's login method for proper session handling
+      req.login(sessionUser, (err) => {
+        if (err) {
+          console.error("Session login error:", err);
+          return res.status(500).json({ message: "Failed to create session" });
+        }
+        
+        res.status(201).json({
+          id: user.id,
+          email: user.email,
+          firstName: user.firstName,
+          lastName: user.lastName,
+          username: user.username,
+        });
       });
     } catch (err) {
       console.error("Registration error:", err);
@@ -121,26 +129,34 @@ export async function registerRoutes(
         return res.status(401).json({ message: "Invalid username or password" });
       }
       
-      // Set up session manually
-      (req as any).session.passport = {
-        user: {
-          id: user.id,
-          claims: {
-            sub: user.id,
-            email: user.email,
-            first_name: user.firstName,
-            last_name: user.lastName,
-            profile_image: user.profileImageUrl,
-          },
+      // Create session user object compatible with Passport and isAuthenticated
+      const sessionExpiry = Math.floor(Date.now() / 1000) + (7 * 24 * 60 * 60); // 1 week
+      const sessionUser = {
+        id: user.id,
+        expires_at: sessionExpiry,
+        claims: {
+          sub: user.id,
+          email: user.email,
+          first_name: user.firstName,
+          last_name: user.lastName,
+          profile_image: user.profileImageUrl,
         },
       };
       
-      res.json({
-        id: user.id,
-        email: user.email,
-        firstName: user.firstName,
-        lastName: user.lastName,
-        isAdmin: user.isAdmin,
+      // Use Passport's login method for proper session handling
+      req.login(sessionUser, (err) => {
+        if (err) {
+          console.error("Session login error:", err);
+          return res.status(500).json({ message: "Failed to create session" });
+        }
+        
+        res.json({
+          id: user.id,
+          email: user.email,
+          firstName: user.firstName,
+          lastName: user.lastName,
+          isAdmin: user.isAdmin,
+        });
       });
     } catch (err) {
       console.error("Login error:", err);
@@ -301,15 +317,75 @@ export async function registerRoutes(
   });
 
   // --- Admin ---
-  app.get(api.admin.dashboard.path, isAuthenticated, async (req, res) => {
+  app.get(api.admin.dashboard.path, isAuthenticated, isAdmin, async (req, res) => {
     const stats = await storage.getDashboardStats();
     res.json(stats);
   });
 
-  app.get(api.admin.orders.path, isAuthenticated, async (req, res) => {
-    // TODO: Check admin role
+  app.get(api.admin.orders.path, isAuthenticated, isAdmin, async (req, res) => {
     const orders = await storage.getAllOrders();
     res.json(orders);
+  });
+
+  // --- Admin Analytics ---
+  app.get("/api/admin/analytics", isAuthenticated, isAdmin, async (req, res) => {
+    try {
+      const analytics = await storage.getAnalytics();
+      res.json(analytics);
+    } catch (err) {
+      console.error("Analytics error:", err);
+      res.status(500).json({ message: "Failed to load analytics" });
+    }
+  });
+
+  // --- Admin Export ---
+  app.get("/api/admin/export/:entity", isAuthenticated, isAdmin, async (req, res) => {
+    try {
+      const entity = req.params.entity as 'products' | 'orders' | 'users' | 'transactions';
+      const format = (req.query.format as string) || 'json';
+      
+      if (!['products', 'orders', 'users', 'transactions'].includes(entity)) {
+        return res.status(400).json({ message: "Invalid entity type" });
+      }
+      
+      const data = await storage.getExportData(entity);
+      const filename = `${entity}-export-${new Date().toISOString().slice(0,10)}`;
+      
+      if (format === 'csv') {
+        res.setHeader('Content-Type', 'text/csv; charset=utf-8');
+        res.setHeader('Content-Disposition', `attachment; filename="${filename}.csv"`);
+        
+        if (data.length === 0) {
+          return res.send('No data available\n');
+        }
+        
+        const headers = Object.keys(data[0]);
+        const csvRows = [
+          headers.join(','),
+          ...data.map(row => 
+            headers.map(h => {
+              const value = row[h];
+              if (value === null || value === undefined) return '';
+              const stringValue = String(value);
+              if (stringValue.includes(',') || stringValue.includes('"') || stringValue.includes('\n')) {
+                return `"${stringValue.replace(/"/g, '""')}"`;
+              }
+              return stringValue;
+            }).join(',')
+          )
+        ];
+        
+        return res.send(csvRows.join('\n'));
+      }
+      
+      // JSON format
+      res.setHeader('Content-Type', 'application/json; charset=utf-8');
+      res.setHeader('Content-Disposition', `attachment; filename="${filename}.json"`);
+      return res.send(JSON.stringify(data, null, 2));
+    } catch (err) {
+      console.error("Export error:", err);
+      res.status(500).json({ message: "Failed to export data" });
+    }
   });
 
   // --- Shipping & Landed Cost Calculator ---

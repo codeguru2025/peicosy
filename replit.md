@@ -8,6 +8,14 @@ The platform includes product browsing, dynamic landed cost calculation, proof o
 
 ## Recent Changes (January 2026)
 
+- **Admin Reports & Analytics**: New Reports tab in admin dashboard with:
+  - Key business metrics (total revenue, orders, average order value, customer count)
+  - Revenue trend chart (12 months)
+  - Order status distribution pie chart
+  - Top products by revenue
+  - Category performance analysis
+- **Data Export**: Export all database tables (products, orders, customers, transactions) in CSV or JSON format
+- **Admin Authorization**: Added isAdmin middleware for secure admin-only endpoints
 - **PWA (Progressive Web App)**: Full PWA support with manifest.json, service worker, and install prompts for mobile devices
 - **Splash Screen**: Elegant animated splash screen with Peicosy logo displayed while the app loads
 - **Bcrypt Password Security**: Upgraded from SHA-256 to bcrypt (12 salt rounds) for secure password hashing with automatic migration for existing users

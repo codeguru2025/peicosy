@@ -11,8 +11,9 @@ import { Label } from "@/components/ui/label";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogTrigger } from "@/components/ui/dialog";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
-import { BarChart, Bar, XAxis, YAxis, Tooltip, ResponsiveContainer } from "recharts";
-import { DollarSign, Package, AlertCircle, Plus, Pencil, Trash2, Eye, Check, Settings } from "lucide-react";
+import { BarChart, Bar, XAxis, YAxis, Tooltip, ResponsiveContainer, PieChart as RechartsPie, Pie, Cell, LineChart, Line, Legend } from "recharts";
+import { useQuery } from "@tanstack/react-query";
+import { DollarSign, Package, AlertCircle, Plus, Pencil, Trash2, Eye, Check, Settings, Download, FileSpreadsheet, TrendingUp, Users, ShoppingBag, BarChart3, PieChart } from "lucide-react";
 import { useForm } from "react-hook-form";
 import { useToast } from "@/hooks/use-toast";
 
@@ -45,6 +46,9 @@ export default function AdminDashboard() {
             <TabsTrigger value="settings" className="rounded-xl text-[10px] uppercase tracking-[0.3em] font-bold px-6 py-3 data-[state=active]:bg-white data-[state=active]:text-secondary data-[state=active]:shadow-sm" data-testid="tab-settings">
               Settings
             </TabsTrigger>
+            <TabsTrigger value="reports" className="rounded-xl text-[10px] uppercase tracking-[0.3em] font-bold px-6 py-3 data-[state=active]:bg-white data-[state=active]:text-secondary data-[state=active]:shadow-sm" data-testid="tab-reports">
+              Reports
+            </TabsTrigger>
           </TabsList>
 
           <TabsContent value="overview" className="space-y-8">
@@ -61,6 +65,10 @@ export default function AdminDashboard() {
 
           <TabsContent value="settings" className="space-y-8">
             <SettingsTab />
+          </TabsContent>
+
+          <TabsContent value="reports" className="space-y-8">
+            <ReportsTab />
           </TabsContent>
         </Tabs>
       </div>
@@ -484,6 +492,279 @@ function SettingsTab() {
           </div>
         </CardContent>
       </Card>
+    </div>
+  );
+}
+
+function ReportsTab() {
+  const { data: analytics, isLoading } = useQuery<any>({
+    queryKey: ["/api/admin/analytics"],
+  });
+  const { toast } = useToast();
+  const [isExporting, setIsExporting] = useState<string | null>(null);
+
+  const handleExport = async (entity: string, format: 'csv' | 'json') => {
+    setIsExporting(`${entity}-${format}`);
+    try {
+      const response = await fetch(`/api/admin/export/${entity}?format=${format}`, {
+        credentials: 'include'
+      });
+      
+      if (!response.ok) throw new Error('Export failed');
+      
+      const blob = await response.blob();
+      const url = window.URL.createObjectURL(blob);
+      const a = document.createElement('a');
+      a.href = url;
+      a.download = `${entity}-export-${new Date().toISOString().slice(0,10)}.${format}`;
+      document.body.appendChild(a);
+      a.click();
+      window.URL.revokeObjectURL(url);
+      document.body.removeChild(a);
+      
+      toast({
+        title: "Export Complete",
+        description: `${entity} data exported as ${format.toUpperCase()}`,
+      });
+    } catch (err) {
+      toast({
+        title: "Export Failed",
+        description: "Unable to export data. Please try again.",
+        variant: "destructive",
+      });
+    } finally {
+      setIsExporting(null);
+    }
+  };
+
+  const COLORS = ['hsl(var(--primary))', 'hsl(var(--secondary))', '#10b981', '#f59e0b', '#8b5cf6', '#ec4899'];
+
+  const orderStatusData = analytics?.ordersByStatus 
+    ? Object.entries(analytics.ordersByStatus).map(([name, value]) => ({ name, value }))
+    : [];
+
+  const shippingData = analytics?.shippingMethodDistribution
+    ? Object.entries(analytics.shippingMethodDistribution).map(([name, value]) => ({ 
+        name: name === 'air' ? 'Air Freight' : 'Sea Freight', 
+        value 
+      }))
+    : [];
+
+  return (
+    <div className="space-y-8">
+      <div className="flex flex-col md:flex-row justify-between items-start md:items-center gap-4">
+        <h2 className="font-serif text-2xl font-light text-secondary">Reports & Analytics</h2>
+      </div>
+
+      {isLoading ? (
+        <div className="grid grid-cols-1 md:grid-cols-4 gap-6">
+          {[1,2,3,4].map(i => <div key={i} className="h-32 bg-muted animate-pulse rounded-xl"></div>)}
+        </div>
+      ) : (
+        <>
+          <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-6">
+            <StatCard 
+              title="Total Revenue" 
+              value={`£${(analytics?.totalRevenue || 0).toFixed(2)}`} 
+              icon={DollarSign} 
+              description="Lifetime revenue"
+            />
+            <StatCard 
+              title="Total Orders" 
+              value={analytics?.totalOrders || 0} 
+              icon={ShoppingBag} 
+              description="All time orders"
+            />
+            <StatCard 
+              title="Avg Order Value" 
+              value={`£${(analytics?.averageOrderValue || 0).toFixed(2)}`} 
+              icon={TrendingUp} 
+              description="Per order average"
+            />
+            <StatCard 
+              title="Customers" 
+              value={analytics?.customerCount || 0} 
+              icon={Users} 
+              description={`${(analytics?.repeatCustomerRate || 0).toFixed(0)}% repeat rate`}
+            />
+          </div>
+
+          <div className="grid grid-cols-1 lg:grid-cols-2 gap-8">
+            <Card className="border-border shadow-lg">
+              <CardHeader>
+                <CardTitle className="font-serif font-light text-2xl text-secondary flex items-center gap-2">
+                  <BarChart3 className="w-5 h-5 text-primary" />
+                  Revenue Trend (12 Months)
+                </CardTitle>
+              </CardHeader>
+              <CardContent className="h-80">
+                <ResponsiveContainer width="100%" height="100%">
+                  <LineChart data={analytics?.revenueByMonth || []}>
+                    <XAxis dataKey="month" fontSize={10} tickLine={false} axisLine={false} stroke="hsl(var(--muted-foreground))" />
+                    <YAxis fontSize={10} tickLine={false} axisLine={false} tickFormatter={(v) => `£${v}`} stroke="hsl(var(--muted-foreground))" />
+                    <Tooltip 
+                      formatter={(value: number) => [`£${value.toFixed(2)}`, 'Revenue']}
+                      contentStyle={{ backgroundColor: 'hsl(var(--background))', border: '1px solid hsl(var(--border))', borderRadius: '0.75rem' }} 
+                    />
+                    <Line type="monotone" dataKey="revenue" stroke="hsl(var(--primary))" strokeWidth={2} dot={{ fill: 'hsl(var(--primary))' }} />
+                  </LineChart>
+                </ResponsiveContainer>
+              </CardContent>
+            </Card>
+
+            <Card className="border-border shadow-lg">
+              <CardHeader>
+                <CardTitle className="font-serif font-light text-2xl text-secondary flex items-center gap-2">
+                  <PieChart className="w-5 h-5 text-primary" />
+                  Order Status Distribution
+                </CardTitle>
+              </CardHeader>
+              <CardContent className="h-80">
+                {orderStatusData.length > 0 ? (
+                  <ResponsiveContainer width="100%" height="100%">
+                    <RechartsPie>
+                      <Pie
+                        data={orderStatusData}
+                        cx="50%"
+                        cy="50%"
+                        labelLine={false}
+                        label={({ name, percent }) => `${name} (${(percent * 100).toFixed(0)}%)`}
+                        outerRadius={80}
+                        fill="hsl(var(--primary))"
+                        dataKey="value"
+                      >
+                        {orderStatusData.map((_, index) => (
+                          <Cell key={`cell-${index}`} fill={COLORS[index % COLORS.length]} />
+                        ))}
+                      </Pie>
+                      <Tooltip />
+                      <Legend />
+                    </RechartsPie>
+                  </ResponsiveContainer>
+                ) : (
+                  <div className="h-full flex items-center justify-center text-muted-foreground">
+                    No order data available
+                  </div>
+                )}
+              </CardContent>
+            </Card>
+          </div>
+
+          <div className="grid grid-cols-1 lg:grid-cols-2 gap-8">
+            <Card className="border-border shadow-lg">
+              <CardHeader>
+                <CardTitle className="font-serif font-light text-2xl text-secondary">Top Products</CardTitle>
+              </CardHeader>
+              <CardContent>
+                {analytics?.topProducts?.length > 0 ? (
+                  <div className="space-y-3">
+                    {analytics.topProducts.slice(0, 5).map((product: any, i: number) => (
+                      <div key={product.id} className="flex items-center justify-between p-3 rounded-xl bg-muted/50">
+                        <div className="flex items-center gap-3">
+                          <span className="text-sm font-bold text-primary w-6">{i + 1}.</span>
+                          <div>
+                            <p className="text-[9px] text-primary uppercase tracking-[0.3em] font-bold">{product.brand}</p>
+                            <p className="text-sm font-medium text-secondary">{product.name}</p>
+                          </div>
+                        </div>
+                        <div className="text-right">
+                          <p className="font-semibold text-secondary">£{product.revenue.toFixed(2)}</p>
+                          <p className="text-xs text-muted-foreground">{product.totalSold} sold</p>
+                        </div>
+                      </div>
+                    ))}
+                  </div>
+                ) : (
+                  <p className="text-muted-foreground text-center py-8">No sales data yet</p>
+                )}
+              </CardContent>
+            </Card>
+
+            <Card className="border-border shadow-lg">
+              <CardHeader>
+                <CardTitle className="font-serif font-light text-2xl text-secondary">Category Performance</CardTitle>
+              </CardHeader>
+              <CardContent className="h-80">
+                {analytics?.topCategories?.length > 0 ? (
+                  <ResponsiveContainer width="100%" height="100%">
+                    <BarChart data={analytics.topCategories.slice(0, 6)} layout="vertical">
+                      <XAxis type="number" fontSize={10} tickFormatter={(v) => `£${v}`} stroke="hsl(var(--muted-foreground))" />
+                      <YAxis dataKey="category" type="category" fontSize={10} width={80} stroke="hsl(var(--muted-foreground))" />
+                      <Tooltip 
+                        formatter={(value: number) => [`£${value.toFixed(2)}`, 'Revenue']}
+                        contentStyle={{ backgroundColor: 'hsl(var(--background))', border: '1px solid hsl(var(--border))', borderRadius: '0.75rem' }} 
+                      />
+                      <Bar dataKey="revenue" fill="hsl(var(--primary))" radius={[0, 4, 4, 0]} />
+                    </BarChart>
+                  </ResponsiveContainer>
+                ) : (
+                  <div className="h-full flex items-center justify-center text-muted-foreground">
+                    No category data available
+                  </div>
+                )}
+              </CardContent>
+            </Card>
+          </div>
+
+          <Card className="border-border shadow-lg">
+            <CardHeader>
+              <CardTitle className="font-serif font-light text-2xl text-secondary flex items-center gap-2">
+                <Download className="w-5 h-5 text-primary" />
+                Export Data
+              </CardTitle>
+            </CardHeader>
+            <CardContent>
+              <p className="text-muted-foreground mb-6">Download your business data for offline analysis or record-keeping.</p>
+              <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4">
+                {[
+                  { entity: 'products', label: 'Products', icon: Package, description: 'All product catalog' },
+                  { entity: 'orders', label: 'Orders', icon: ShoppingBag, description: 'Order history with items' },
+                  { entity: 'users', label: 'Customers', icon: Users, description: 'Customer directory' },
+                  { entity: 'transactions', label: 'Transactions', icon: DollarSign, description: 'Financial records' },
+                ].map(({ entity, label, icon: Icon, description }) => (
+                  <Card key={entity} className="border-border">
+                    <CardContent className="p-4">
+                      <div className="flex items-center gap-3 mb-3">
+                        <div className="p-2 rounded-lg bg-primary/10">
+                          <Icon className="w-4 h-4 text-primary" />
+                        </div>
+                        <div>
+                          <p className="font-medium text-secondary">{label}</p>
+                          <p className="text-xs text-muted-foreground">{description}</p>
+                        </div>
+                      </div>
+                      <div className="flex gap-2">
+                        <Button
+                          size="sm"
+                          variant="outline"
+                          className="flex-1 gap-1"
+                          onClick={() => handleExport(entity, 'csv')}
+                          disabled={isExporting === `${entity}-csv`}
+                          data-testid={`button-export-${entity}-csv`}
+                        >
+                          <FileSpreadsheet className="w-3 h-3" />
+                          CSV
+                        </Button>
+                        <Button
+                          size="sm"
+                          variant="outline"
+                          className="flex-1 gap-1"
+                          onClick={() => handleExport(entity, 'json')}
+                          disabled={isExporting === `${entity}-json`}
+                          data-testid={`button-export-${entity}-json`}
+                        >
+                          <Download className="w-3 h-3" />
+                          JSON
+                        </Button>
+                      </div>
+                    </CardContent>
+                  </Card>
+                ))}
+              </div>
+            </CardContent>
+          </Card>
+        </>
+      )}
     </div>
   );
 }

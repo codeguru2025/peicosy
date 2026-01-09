@@ -50,6 +50,23 @@ export interface IStorage {
   // Dashboard
   getDashboardStats(): Promise<{ totalRevenue: number, activeOrders: number, pendingVerifications: number }>;
 
+  // Analytics
+  getAnalytics(): Promise<{
+    totalRevenue: number;
+    totalOrders: number;
+    averageOrderValue: number;
+    ordersByStatus: Record<string, number>;
+    revenueByMonth: { month: string; revenue: number }[];
+    topProducts: { id: number; name: string; brand: string; totalSold: number; revenue: number }[];
+    topCategories: { category: string; count: number; revenue: number }[];
+    customerCount: number;
+    repeatCustomerRate: number;
+    shippingMethodDistribution: Record<string, number>;
+  }>;
+
+  // Export Data
+  getExportData(entity: 'products' | 'orders' | 'users' | 'transactions'): Promise<any[]>;
+
   // Users
   getUserByUsername(username: string): Promise<User | undefined>;
   getUserByEmail(email: string): Promise<User | undefined>;
@@ -222,6 +239,191 @@ export class DatabaseStorage implements IStorage {
       isAdmin: userData.isAdmin || false,
     }).returning();
     return user;
+  }
+
+  // Analytics
+  async getAnalytics() {
+    const allOrders = await db.select().from(orders);
+    const allItems = await db.select().from(orderItems);
+    const allProducts = await db.select().from(products);
+    const allUsers = await db.select().from(users).where(eq(users.isAdmin, false));
+
+    // Basic metrics
+    const totalRevenue = allOrders.reduce((sum, o) => sum + Number(o.totalAmount), 0);
+    const totalOrders = allOrders.length;
+    const averageOrderValue = totalOrders > 0 ? totalRevenue / totalOrders : 0;
+
+    // Orders by status
+    const ordersByStatus: Record<string, number> = {};
+    allOrders.forEach(o => {
+      ordersByStatus[o.status] = (ordersByStatus[o.status] || 0) + 1;
+    });
+
+    // Revenue by month (last 12 months)
+    const revenueByMonth: { month: string; revenue: number }[] = [];
+    const now = new Date();
+    for (let i = 11; i >= 0; i--) {
+      const date = new Date(now.getFullYear(), now.getMonth() - i, 1);
+      const monthKey = date.toISOString().slice(0, 7); // YYYY-MM
+      const monthName = date.toLocaleDateString('en-US', { month: 'short', year: '2-digit' });
+      const monthRevenue = allOrders
+        .filter(o => o.createdAt && o.createdAt.toISOString().slice(0, 7) === monthKey)
+        .reduce((sum, o) => sum + Number(o.totalAmount), 0);
+      revenueByMonth.push({ month: monthName, revenue: monthRevenue });
+    }
+
+    // Top products by sales
+    const productSales: Record<number, { totalSold: number; revenue: number }> = {};
+    allItems.forEach(item => {
+      if (!productSales[item.productId]) {
+        productSales[item.productId] = { totalSold: 0, revenue: 0 };
+      }
+      productSales[item.productId].totalSold += item.quantity;
+      productSales[item.productId].revenue += Number(item.priceAtPurchase) * item.quantity;
+    });
+
+    const topProducts = Object.entries(productSales)
+      .map(([id, data]) => {
+        const product = allProducts.find(p => p.id === Number(id));
+        return {
+          id: Number(id),
+          name: product?.name || 'Unknown',
+          brand: product?.brand || 'Unknown',
+          ...data
+        };
+      })
+      .sort((a, b) => b.revenue - a.revenue)
+      .slice(0, 10);
+
+    // Top categories
+    const categorySales: Record<string, { count: number; revenue: number }> = {};
+    allItems.forEach(item => {
+      const product = allProducts.find(p => p.id === item.productId);
+      const category = product?.category || 'Other';
+      if (!categorySales[category]) {
+        categorySales[category] = { count: 0, revenue: 0 };
+      }
+      categorySales[category].count += item.quantity;
+      categorySales[category].revenue += Number(item.priceAtPurchase) * item.quantity;
+    });
+
+    const topCategories = Object.entries(categorySales)
+      .map(([category, data]) => ({ category, ...data }))
+      .sort((a, b) => b.revenue - a.revenue);
+
+    // Customer metrics
+    const customerCount = allUsers.length;
+    const ordersByUser: Record<string, number> = {};
+    allOrders.forEach(o => {
+      ordersByUser[o.userId] = (ordersByUser[o.userId] || 0) + 1;
+    });
+    const repeatCustomers = Object.values(ordersByUser).filter(count => count > 1).length;
+    const repeatCustomerRate = Object.keys(ordersByUser).length > 0 
+      ? (repeatCustomers / Object.keys(ordersByUser).length) * 100 
+      : 0;
+
+    // Shipping method distribution
+    const shippingMethodDistribution: Record<string, number> = {};
+    allOrders.forEach(o => {
+      shippingMethodDistribution[o.shippingMethod] = (shippingMethodDistribution[o.shippingMethod] || 0) + 1;
+    });
+
+    return {
+      totalRevenue,
+      totalOrders,
+      averageOrderValue,
+      ordersByStatus,
+      revenueByMonth,
+      topProducts,
+      topCategories,
+      customerCount,
+      repeatCustomerRate,
+      shippingMethodDistribution,
+    };
+  }
+
+  // Export Data
+  async getExportData(entity: 'products' | 'orders' | 'users' | 'transactions'): Promise<any[]> {
+    switch (entity) {
+      case 'products':
+        return await db.select().from(products).orderBy(desc(products.createdAt));
+      
+      case 'orders': {
+        const allOrders = await db.select().from(orders).orderBy(desc(orders.createdAt));
+        return Promise.all(allOrders.map(async (order) => {
+          const items = await db
+            .select({
+              productId: orderItems.productId,
+              quantity: orderItems.quantity,
+              priceAtPurchase: orderItems.priceAtPurchase,
+              productName: products.name,
+              productBrand: products.brand,
+            })
+            .from(orderItems)
+            .leftJoin(products, eq(orderItems.productId, products.id))
+            .where(eq(orderItems.orderId, order.id));
+          
+          const user = await db.select({ email: users.email, username: users.username }).from(users).where(eq(users.id, order.userId));
+          
+          return {
+            orderId: order.id,
+            customerEmail: user[0]?.email || 'N/A',
+            customerUsername: user[0]?.username || 'N/A',
+            status: order.status,
+            totalAmount: order.totalAmount,
+            currency: order.currency,
+            shippingMethod: order.shippingMethod,
+            shippingCost: order.shippingCost,
+            customsDuty: order.customsDuty,
+            itemCount: items.length,
+            items: items.map(i => `${i.productBrand} ${i.productName} x${i.quantity}`).join('; '),
+            createdAt: order.createdAt,
+            updatedAt: order.updatedAt,
+          };
+        }));
+      }
+      
+      case 'users': {
+        const allUsers = await db.select({
+          id: users.id,
+          email: users.email,
+          username: users.username,
+          firstName: users.firstName,
+          lastName: users.lastName,
+          isAdmin: users.isAdmin,
+          createdAt: users.createdAt,
+        }).from(users).orderBy(desc(users.createdAt));
+        return allUsers;
+      }
+      
+      case 'transactions': {
+        const allOrders = await db.select().from(orders).orderBy(desc(orders.createdAt));
+        return Promise.all(allOrders.map(async (order) => {
+          const items = await db.select().from(orderItems).where(eq(orderItems.orderId, order.id));
+          const user = await db.select({ email: users.email, username: users.username }).from(users).where(eq(users.id, order.userId));
+          
+          return {
+            transactionId: `TXN-${order.id}`,
+            orderId: order.id,
+            customerEmail: user[0]?.email || 'N/A',
+            customerUsername: user[0]?.username || 'N/A',
+            subtotal: Number(order.totalAmount) - Number(order.shippingCost) - Number(order.customsDuty),
+            shippingCost: order.shippingCost,
+            customsDuty: order.customsDuty,
+            totalAmount: order.totalAmount,
+            currency: order.currency,
+            shippingMethod: order.shippingMethod,
+            status: order.status,
+            hasPaymentProof: !!order.proofOfPaymentUrl,
+            itemCount: items.length,
+            createdAt: order.createdAt,
+          };
+        }));
+      }
+      
+      default:
+        return [];
+    }
   }
 }
 
