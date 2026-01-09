@@ -5,41 +5,41 @@
 @tailwind utilities;
 
 :root {
-  /* Luxury Palette: Ink, Navy, Pink */
-  --ink: 220 20% 5%;
+  /* Luxury Palette: High-end luxury digital experience */
+  --ink: 220 30% 8%; /* #0B0F1A range */
   --navy: 220 30% 12%;
   --pink: 330 85% 55%;
   --pink-foreground: 0 0% 100%;
   
-  --background: 0 0% 100%;
-  --foreground: 220 20% 5%; /* Ink */
+  --background: 220 30% 8%; /* Deep Charcoal / Midnight Navy */
+  --foreground: 210 40% 95%; /* Soft white */
   
-  --card: 0 0% 100%;
-  --card-foreground: 220 20% 5%;
+  --card: 220 30% 10%;
+  --card-foreground: 210 40% 95%;
   
-  --popover: 0 0% 100%;
-  --popover-foreground: 220 20% 5%;
+  --popover: 220 30% 10%;
+  --popover-foreground: 210 40% 95%;
   
-  --primary: 330 85% 55%; /* Richer Pink */
+  --primary: 330 85% 55%; /* Signature luxury pink */
   --primary-foreground: 0 0% 100%;
   
-  --secondary: 220 30% 12%; /* Deeper Navy */
-  --secondary-foreground: 210 40% 98%;
+  --secondary: 220 30% 15%;
+  --secondary-foreground: 210 40% 95%;
   
-  --muted: 220 10% 96%;
-  --muted-foreground: 220 10% 35%;
+  --muted: 220 30% 15%;
+  --muted-foreground: 220 10% 60%; /* Muted greys */
   
-  --accent: 330 85% 97%;
-  --accent-foreground: 330 85% 35%;
+  --accent: 220 30% 15%;
+  --accent-foreground: 330 85% 60%;
   
   --destructive: 0 84% 50%;
   --destructive-foreground: 0 0% 98%;
 
-  --border: 220 15% 92%;
-  --input: 220 15% 92%;
-  --ring: 220 20% 5%;
+  --border: 220 30% 15%;
+  --input: 220 30% 15%;
+  --ring: 330 85% 55%;
 
-  --radius: 0.25rem; /* Sharper corners for luxury feel */
+  --radius: 0.75rem; /* Elegant rounded buttons */
   
   /* Fonts */
   --font-serif: 'Playfair Display', serif;

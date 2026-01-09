@@ -1,0 +1,97 @@
+PEICOSY UI TRANSFORMATION PROMPT (PASTE AS-IS)
+
+Transform the entire PEICOSY app UI into a high-end luxury digital experience inspired by global fashion houses (Dior, Jacquemus, Net-a-Porter, Farfetch Private Client).
+
+This is not a startup app and not a generic ecommerce UI. The brand targets elite, fashion-forward users in London and Johannesburg who expect restraint, confidence, and polish.
+
+BRAND & MOOD
+
+Aesthetic: Modern luxury, feminine power, quiet confidence
+
+Emotion: Exclusivity, intimacy, control, desire
+
+Tone: Minimal words, strong hierarchy, intentional whitespace
+
+COLOR PALETTE
+
+Primary background: Deep charcoal / midnight navy (#0B0F1A range)
+
+Accent color: Signature luxury pink (used sparingly for emphasis only)
+
+Text: Soft white / muted greys (never pure white)
+
+Avoid bright colors, gradients, or playful tones
+
+TYPOGRAPHY
+
+Headlines: High-fashion serif (Didot / Playfair Display / Canela-style)
+
+Body text: Clean modern sans-serif (Inter / Helvetica-style)
+
+Strong contrast between headlines and body text
+
+Headlines feel editorial, not tech
+
+LAYOUT & SPACING
+
+Generous margins and padding (luxury breathes)
+
+Clear vertical rhythm
+
+No clutter, no dense blocks
+
+Content should feel curated, not crowded
+
+BUTTONS & INTERACTIONS
+
+Rounded, elegant buttons (not sharp, not cartoonish)
+
+Subtle hover animations (fade, scale 1–2%)
+
+No loud shadows or gimmicks
+
+Primary CTA in pink, secondary in outline or muted tones
+
+NAVIGATION
+
+Clean top navigation
+
+Minimal icons
+
+Smooth transitions
+
+Login and Shop feel discreet, premium, and intentional
+
+HERO SECTION
+
+Large editorial headline
+
+Strong contrast between background and accent text
+
+Headline feels like a fashion campaign, not marketing copy
+
+Subtle motion only (fade-in, parallax scroll)
+
+FORBIDDEN
+
+No material design look
+
+No default Replit UI components
+
+No bright blues or greens
+
+No excessive animations
+
+No “startup” aesthetic
+
+GOAL
+
+The final UI should feel like:
+
+A private members luxury platform
+
+A fashion house digital experience
+
+Something a high-net-worth woman would trust immediately
+
+Make the app feel expensive, restrained, and timeless.

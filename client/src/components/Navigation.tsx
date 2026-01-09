@@ -35,50 +35,44 @@ export function Navigation() {
   };
 
   return (
-    <nav className="sticky top-0 z-40 w-full border-b border-primary/10 bg-white/95 backdrop-blur-xl">
-      <div className="container mx-auto px-4 h-24 flex items-center justify-between">
+    <nav className="sticky top-0 z-40 w-full border-b border-white/5 bg-background/90 backdrop-blur-2xl">
+      <div className="container mx-auto px-6 h-24 flex items-center justify-between">
         {/* Logo */}
-        <Link href="/" className="flex items-center gap-5 group">
-          <div className="relative">
-            <div className="absolute -inset-4 bg-primary/5 rounded-full blur-2xl opacity-0 group-hover:opacity-100 transition-opacity duration-700"></div>
-            <img src={logoUrl} alt="Peicosy" className="h-14 w-auto object-contain relative transition-transform duration-700 ease-out group-hover:scale-110 group-hover:-rotate-3" />
-          </div>
-          <div className="flex flex-col">
-            <span className="font-serif text-3xl font-black tracking-[0.15em] uppercase text-ink leading-none">Peicosy</span>
-            <span className="text-[10px] uppercase tracking-[0.4em] text-primary/60 font-bold mt-2">London • Johannesburg</span>
+        <Link href="/" className="flex items-center gap-6 group">
+          <img src={logoUrl} alt="Peicosy" className="h-12 w-auto object-contain transition-transform duration-700 ease-in-out group-hover:scale-105" />
+          <div className="flex flex-col border-l border-white/10 pl-6">
+            <span className="font-serif text-2xl font-light tracking-[0.2em] uppercase text-foreground leading-none">Peicosy</span>
+            <span className="text-[9px] uppercase tracking-[0.5em] text-muted-foreground font-medium mt-2">Private Client</span>
           </div>
         </Link>
 
         {/* Desktop Nav */}
-        <div className="hidden md:flex items-center gap-1">
-          <NavLink href="/shop" icon={ShoppingBag}>Shop</NavLink>
-          {isAuthenticated && <NavLink href="/orders" icon={Package}>My Orders</NavLink>}
+        <div className="hidden md:flex items-center gap-8">
+          <NavLink href="/shop">Collection</NavLink>
+          {isAuthenticated && <NavLink href="/orders">Portfolio</NavLink>}
           {isAuthenticated && isAdmin && (
-             <NavLink href="/admin" icon={LayoutDashboard}>Admin</NavLink>
+             <NavLink href="/admin">Management</NavLink>
           )}
         </div>
 
         {/* Actions */}
-        <div className="flex items-center gap-2">
-          <Button variant="ghost" size="icon" onClick={() => toggleCart(true)} className="relative">
-            <ShoppingBag className="w-5 h-5" />
+        <div className="flex items-center gap-6">
+          <Button variant="ghost" size="icon" onClick={() => toggleCart(true)} className="relative hover:bg-white/5">
+            <ShoppingBag className="w-5 h-5 font-light" />
             {cartCount > 0 && (
-              <Badge className="absolute -top-1 -right-1 h-5 w-5 flex items-center justify-center p-0 text-[10px] bg-primary text-primary-foreground border-2 border-background">
+              <Badge className="absolute -top-1 -right-1 h-4 w-4 flex items-center justify-center p-0 text-[9px] bg-primary text-primary-foreground border-none">
                 {cartCount}
               </Badge>
             )}
           </Button>
 
           {isAuthenticated ? (
-            <div className="hidden md:flex items-center gap-2 ml-2">
-              <Button variant="ghost" size="sm" onClick={() => logout()}>
-                <LogOut className="w-4 h-4 mr-2" />
-                Logout
-              </Button>
-            </div>
+            <Button variant="ghost" size="sm" onClick={() => logout()} className="hidden md:flex text-xs uppercase tracking-widest font-light hover:bg-white/5">
+              Logout
+            </Button>
           ) : (
             <Link href="/login" className="hidden md:block">
-              <Button size="sm" className="rounded-full px-6 font-medium">Login</Button>
+              <Button variant="outline" size="sm" className="rounded-full px-8 border-white/20 text-xs uppercase tracking-widest font-light hover:bg-white hover:text-background transition-colors duration-500">Access</Button>
             </Link>
           )}
 

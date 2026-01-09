@@ -15,32 +15,31 @@ export default function Home() {
       <CartDrawer />
       
       {/* Hero Section */}
-      <section className="relative min-h-[85vh] flex items-center overflow-hidden bg-navy text-white">
-        <div className="absolute inset-0 bg-[url('https://images.unsplash.com/photo-1539109132314-34a936699561?q=80&w=2000&auto=format&fit=crop')] bg-cover bg-center"></div>
-        <div className="absolute inset-0 bg-gradient-to-r from-navy via-navy/80 to-transparent"></div>
-        <div className="absolute inset-0 bg-black/20"></div>
+      <section className="relative min-h-[95vh] flex items-center overflow-hidden bg-background text-foreground">
+        <div className="absolute inset-0 bg-[url('https://images.unsplash.com/photo-1539109132314-34a936699561?q=80&w=2000&auto=format&fit=crop')] bg-cover bg-center opacity-40"></div>
+        <div className="absolute inset-0 bg-gradient-to-r from-background via-background/60 to-transparent"></div>
         
-        <div className="container mx-auto px-4 relative z-10">
-          <div className="max-w-3xl space-y-8">
-            <div className="flex items-center gap-4">
-              <div className="h-[1px] w-12 bg-pink"></div>
-              <span className="text-pink uppercase tracking-[0.4em] text-xs font-bold">The Collection</span>
+        <div className="container mx-auto px-8 relative z-10">
+          <div className="max-w-4xl space-y-12 animate-in fade-in slide-in-from-left-8 duration-1000">
+            <div className="flex items-center gap-6">
+              <div className="h-[1px] w-16 bg-primary"></div>
+              <span className="text-primary uppercase tracking-[0.6em] text-[10px] font-bold">The Editorial</span>
             </div>
-            <h1 className="font-serif text-6xl lg:text-9xl font-black leading-[1] tracking-tight">
+            <h1 className="font-serif text-7xl lg:text-[10rem] font-light leading-[0.9] tracking-tighter">
               Not for Everyone,<br />
-              <span className="text-pink italic font-normal">Just for You.</span>
+              <span className="text-primary italic font-normal ml-8 lg:ml-24">Just for You.</span>
             </h1>
-            <p className="text-xl text-gray-300 max-w-xl font-light leading-relaxed tracking-wide">
+            <p className="text-xl text-muted-foreground max-w-xl font-light leading-relaxed tracking-wider">
               Bespoke luxury logistics and curated commerce. Seamlessly bridging the distance between London's finest and South Africa's elite.
             </p>
-            <div className="flex flex-col sm:flex-row gap-6 pt-6">
+            <div className="flex flex-col sm:flex-row gap-12 pt-8">
               <Link href="/shop">
-                <Button size="lg" className="bg-pink hover:bg-pink/90 text-white rounded-none px-12 h-14 text-sm uppercase tracking-[0.2em] font-bold shadow-2xl">
+                <Button size="lg" className="bg-primary hover:bg-primary/90 text-primary-foreground rounded-full px-16 h-16 text-[10px] uppercase tracking-[0.4em] font-bold shadow-none transition-all duration-500 hover:scale-105">
                   Enter Boutique
                 </Button>
               </Link>
               <Link href="/about">
-                <Button size="lg" variant="outline" className="text-white border-white/30 hover:bg-white/10 rounded-none px-12 h-14 text-sm uppercase tracking-[0.2em] font-bold backdrop-blur-sm">
+                <Button size="lg" variant="ghost" className="text-foreground hover:bg-white/5 rounded-full px-16 h-16 text-[10px] uppercase tracking-[0.4em] font-bold transition-all duration-500">
                   Our Legacy
                 </Button>
               </Link>
@@ -48,9 +47,9 @@ export default function Home() {
           </div>
         </div>
         
-        <div className="absolute bottom-12 left-1/2 -translate-x-1/2 flex flex-col items-center gap-4 opacity-50">
-          <span className="text-[10px] uppercase tracking-[0.5em]">Scroll to Explore</span>
-          <div className="w-[1px] h-12 bg-gradient-to-b from-pink to-transparent"></div>
+        <div className="absolute bottom-16 left-1/2 -translate-x-1/2 flex flex-col items-center gap-6 opacity-20">
+          <span className="text-[9px] uppercase tracking-[0.6em] font-light">Descent</span>
+          <div className="w-[1px] h-20 bg-gradient-to-b from-primary to-transparent"></div>
         </div>
       </section>
 
@@ -107,12 +106,12 @@ export default function Home() {
 
 function FeatureCard({ icon: Icon, title, description }: any) {
   return (
-    <div className="p-8 rounded-2xl bg-card border hover:shadow-xl hover:-translate-y-1 transition-all duration-300">
-      <div className="w-12 h-12 bg-primary/10 rounded-xl flex items-center justify-center text-primary mb-6">
-        <Icon className="w-6 h-6" />
+    <div className="p-12 rounded-3xl bg-white/[0.02] border border-white/5 hover:bg-white/[0.04] hover:border-white/10 transition-all duration-700 group">
+      <div className="w-16 h-16 bg-primary/5 rounded-2xl flex items-center justify-center text-primary mb-10 group-hover:scale-110 transition-transform duration-700">
+        <Icon className="w-8 h-8 font-light" />
       </div>
-      <h3 className="font-serif text-xl font-bold mb-3">{title}</h3>
-      <p className="text-muted-foreground leading-relaxed">{description}</p>
+      <h3 className="font-serif text-2xl font-light mb-6 tracking-wide">{title}</h3>
+      <p className="text-muted-foreground font-light leading-relaxed tracking-wide text-sm">{description}</p>
     </div>
   );
 }
@@ -124,26 +123,27 @@ function ProductCard({ product }: { product: Product }) {
   const { addItem } = useCart();
   
   return (
-    <div className="group bg-card rounded-2xl overflow-hidden border hover:shadow-lg transition-all duration-300 flex flex-col">
-      <div className="aspect-[4/5] relative overflow-hidden bg-muted">
+    <div className="group bg-transparent overflow-hidden transition-all duration-700 flex flex-col">
+      <div className="aspect-[3/4] relative overflow-hidden bg-white/5 rounded-[2rem]">
         <img 
           src={product.imageUrl} 
           alt={product.name}
-          className="object-cover w-full h-full group-hover:scale-105 transition-transform duration-500"
+          className="object-cover w-full h-full grayscale hover:grayscale-0 transition-all duration-1000 group-hover:scale-110"
         />
-        <div className="absolute bottom-4 left-4 right-4 translate-y-full group-hover:translate-y-0 transition-transform duration-300">
-          <Button className="w-full rounded-full bg-white/90 hover:bg-white text-ink shadow-lg backdrop-blur-sm" onClick={() => addItem(product)}>
-            Add to Bag
+        <div className="absolute inset-0 bg-black/20 opacity-0 group-hover:opacity-100 transition-opacity duration-700"></div>
+        <div className="absolute bottom-8 left-8 right-8 translate-y-12 opacity-0 group-hover:translate-y-0 group-hover:opacity-100 transition-all duration-700">
+          <Button className="w-full rounded-full bg-white text-background hover:bg-primary hover:text-white text-[10px] uppercase tracking-[0.3em] font-bold py-6 shadow-2xl" onClick={() => addItem(product)}>
+            Request Acquisition
           </Button>
         </div>
       </div>
-      <div className="p-4 flex-1 flex flex-col">
-        <p className="text-xs font-bold text-primary mb-1 uppercase tracking-wider">{product.brand}</p>
+      <div className="pt-8 flex-1 flex flex-col px-4">
+        <p className="text-[10px] font-bold text-primary mb-3 uppercase tracking-[0.4em]">{product.brand}</p>
         <Link href={`/product/${product.id}`} className="block">
-          <h3 className="font-serif font-bold text-lg mb-1 group-hover:text-primary transition-colors line-clamp-1">{product.name}</h3>
+          <h3 className="font-serif font-light text-xl mb-2 group-hover:text-primary transition-colors line-clamp-1 tracking-wide">{product.name}</h3>
         </Link>
         <div className="mt-auto pt-2 flex items-baseline justify-between">
-          <span className="font-medium text-lg">£{product.price}</span>
+          <span className="font-light text-muted-foreground tracking-widest text-sm">£{product.price}</span>
         </div>
       </div>
     </div>

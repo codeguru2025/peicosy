@@ -3,51 +3,43 @@ import logoUrl from "@/assets/logo.png";
 
 export function Footer() {
   return (
-    <footer className="bg-navy text-white pt-16 pb-8">
-      <div className="container mx-auto px-4">
-        <div className="grid grid-cols-1 md:grid-cols-4 gap-12 mb-12">
-          <div className="space-y-4">
-            <div className="flex items-center gap-2">
-              <img src={logoUrl} alt="Peicosy" className="h-8 w-auto object-contain" />
-              <h3 className="font-serif text-2xl font-bold">Peicosy</h3>
+    <footer className="bg-background border-t border-white/5 text-foreground pt-32 pb-16">
+      <div className="container mx-auto px-8">
+        <div className="grid grid-cols-1 md:grid-cols-4 gap-24 mb-32">
+          <div className="space-y-8 col-span-1 md:col-span-2">
+            <div className="flex items-center gap-6">
+              <img src={logoUrl} alt="Peicosy" className="h-10 w-auto object-contain opacity-80" />
+              <h3 className="font-serif text-3xl font-light tracking-widest uppercase">Peicosy</h3>
             </div>
-            <p className="text-gray-400 max-w-xs">
-              Luxury commerce and logistics connecting the UK and South Africa.
+            <p className="text-muted-foreground max-w-sm font-light leading-relaxed tracking-wide">
+              An exclusive bridge between London's luxury heritage and South Africa's private client landscape. Discrete, secure, and bespoke.
             </p>
           </div>
           
-          <div>
-            <h4 className="font-bold mb-4 text-pink">Shop</h4>
-            <ul className="space-y-2 text-gray-400">
-              <li><Link href="/shop" className="hover:text-white transition-colors">All Products</Link></li>
-              <li><Link href="/shop?category=fashion" className="hover:text-white transition-colors">Fashion</Link></li>
-              <li><Link href="/shop?category=tech" className="hover:text-white transition-colors">Tech</Link></li>
+          <div className="space-y-6">
+            <h4 className="text-[10px] uppercase tracking-[0.4em] font-bold text-primary">Registry</h4>
+            <ul className="space-y-4 text-sm font-light tracking-wider text-muted-foreground">
+              <li><Link href="/shop" className="hover:text-primary transition-colors duration-300">The Collection</Link></li>
+              <li><Link href="/orders" className="hover:text-primary transition-colors duration-300">Portfolio</Link></li>
+              <li><Link href="/about" className="hover:text-primary transition-colors duration-300">Heritage</Link></li>
             </ul>
           </div>
 
-          <div>
-            <h4 className="font-bold mb-4 text-pink">Support</h4>
-            <ul className="space-y-2 text-gray-400">
-              <li><Link href="/orders" className="hover:text-white transition-colors">Order Status</Link></li>
-              <li><Link href="/shipping" className="hover:text-white transition-colors">Shipping Info</Link></li>
-              <li><Link href="/contact" className="hover:text-white transition-colors">Contact Us</Link></li>
-            </ul>
-          </div>
-
-          <div>
-            <h4 className="font-bold mb-4 text-pink">Legal</h4>
-            <ul className="space-y-2 text-gray-400">
-              <li><Link href="/privacy" className="hover:text-white transition-colors">Privacy Policy</Link></li>
-              <li><Link href="/terms" className="hover:text-white transition-colors">Terms of Service</Link></li>
+          <div className="space-y-6">
+            <h4 className="text-[10px] uppercase tracking-[0.4em] font-bold text-primary">Concierge</h4>
+            <ul className="space-y-4 text-sm font-light tracking-wider text-muted-foreground">
+              <li><Link href="/contact" className="hover:text-primary transition-colors duration-300">Private Inquiry</Link></li>
+              <li><Link href="/terms" className="hover:text-primary transition-colors duration-300">Terms of Service</Link></li>
+              <li><Link href="/privacy" className="hover:text-primary transition-colors duration-300">Data Privacy</Link></li>
             </ul>
           </div>
         </div>
         
-        <div className="border-t border-white/10 pt-8 flex flex-col md:flex-row items-center justify-between gap-4">
-          <p className="text-gray-500 text-sm">© {new Date().getFullYear()} Peicosy. All rights reserved.</p>
+        <div className="border-t border-white/5 pt-16 flex flex-col md:flex-row items-center justify-between gap-8">
+          <p className="text-[10px] uppercase tracking-[0.3em] text-muted-foreground/40 font-light">© {new Date().getFullYear()} Peicosy Private Client. All Rights Reserved.</p>
           <div className="text-center md:text-right">
-            <p className="font-serif italic text-pink text-lg mb-1">Not for Everyone, Just for You</p>
-            <p className="text-xs text-gray-600">Created by Chibikhulu</p>
+            <p className="font-serif italic text-primary text-xl mb-2 font-light tracking-wide">Not for Everyone, Just for You</p>
+            <p className="text-[9px] uppercase tracking-[0.5em] text-muted-foreground/30">Crafted by Chibikhulu</p>
           </div>
         </div>
       </div>
