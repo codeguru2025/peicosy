@@ -5,6 +5,7 @@ import { api } from "@shared/routes";
 import { z } from "zod";
 import { registerAuthRoutes, setupAuth, isAuthenticated } from "./replit_integrations/auth";
 import { registerObjectStorageRoutes } from "./replit_integrations/object_storage";
+import { generatePayFastForm, isPayFastConfigured, validatePayFastITN } from "./payfast";
 import crypto from "crypto";
 
 function hashPassword(password: string): string {
@@ -333,6 +334,98 @@ export async function registerRoutes(
       res.status(204).send();
     } catch (err) {
       res.status(500).json({ message: "Internal Server Error" });
+    }
+  });
+
+  // --- PayFast Payment ---
+  
+  // Check if PayFast is configured
+  app.get("/api/payment/status", (req, res) => {
+    res.json({ 
+      payfast: isPayFastConfigured(),
+      manual: true // Always allow manual bank transfer
+    });
+  });
+
+  // Initiate PayFast payment for an order
+  app.post("/api/payment/payfast/initiate", isAuthenticated, async (req, res) => {
+    try {
+      const { orderId } = req.body;
+      
+      if (!isPayFastConfigured()) {
+        return res.status(503).json({ 
+          message: "PayFast is not configured. Please use manual bank transfer." 
+        });
+      }
+      
+      const order = await storage.getOrder(orderId);
+      if (!order) {
+        return res.status(404).json({ message: "Order not found" });
+      }
+      
+      // Get exchange rate for ZAR amount
+      const exchangeRateData = await storage.getExchangeRate('GBP', 'ZAR');
+      const exchangeRate = exchangeRateData ? Number(exchangeRateData.rate) : 23.50;
+      const amountZAR = Number(order.totalAmount) * exchangeRate;
+      
+      // Get user info
+      const user = req.user as any;
+      
+      // Generate base URL
+      const baseUrl = `${req.protocol}://${req.get('host')}`;
+      
+      const paymentData = generatePayFastForm(
+        {
+          orderId: order.id,
+          amount: amountZAR,
+          itemName: `Peicosy Order #${order.id}`,
+          itemDescription: `Luxury goods order - ${order.items?.length || 0} items`,
+          customerEmail: user.claims?.email || "",
+          customerFirstName: user.claims?.first_name,
+          customerLastName: user.claims?.last_name,
+        },
+        `${baseUrl}/payment/success?order_id=${order.id}`,
+        `${baseUrl}/payment/cancel?order_id=${order.id}`,
+        `${baseUrl}/api/payment/payfast/notify`
+      );
+      
+      res.json(paymentData);
+    } catch (err: any) {
+      console.error("PayFast initiate error:", err);
+      res.status(500).json({ message: err.message || "Failed to initiate payment" });
+    }
+  });
+
+  // PayFast ITN (Instant Transaction Notification) - webhook callback
+  app.post("/api/payment/payfast/notify", async (req, res) => {
+    try {
+      if (!isPayFastConfigured()) {
+        return res.status(503).send("PayFast not configured");
+      }
+      
+      console.log("PayFast ITN received:", req.body);
+      
+      const result = validatePayFastITN(req.body);
+      
+      if (!result.valid) {
+        console.error("Invalid PayFast ITN signature");
+        return res.status(400).send("Invalid signature");
+      }
+      
+      // Update order status based on payment status
+      if (result.paymentStatus === "COMPLETE") {
+        await storage.updateOrderStatus(result.orderId, "confirmed");
+        console.log(`Order ${result.orderId} confirmed via PayFast`);
+      } else if (result.paymentStatus === "CANCELLED") {
+        await storage.updateOrderStatus(result.orderId, "cancelled");
+        console.log(`Order ${result.orderId} cancelled`);
+      }
+      
+      // PayFast expects a 200 OK response
+      res.status(200).send("OK");
+    } catch (err) {
+      console.error("PayFast ITN error:", err);
+      res.status(500).send("Error processing notification");
     }
   });
 

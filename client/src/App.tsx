@@ -12,6 +12,8 @@ import ProductDetails from "@/pages/ProductDetails";
 import Checkout from "@/pages/Checkout";
 import Orders from "@/pages/Orders";
 import AdminDashboard from "@/pages/AdminDashboard";
+import PaymentSuccess from "@/pages/PaymentSuccess";
+import PaymentCancel from "@/pages/PaymentCancel";
 
 function Router() {
   return (
@@ -23,6 +25,8 @@ function Router() {
       <Route path="/checkout" component={Checkout} />
       <Route path="/orders" component={Orders} />
       <Route path="/admin" component={AdminDashboard} />
+      <Route path="/payment/success" component={PaymentSuccess} />
+      <Route path="/payment/cancel" component={PaymentCancel} />
       <Route component={NotFound} />
     </Switch>
   );
