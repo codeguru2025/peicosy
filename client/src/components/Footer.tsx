@@ -1,4 +1,5 @@
 import { Link } from "wouter";
+import logoUrl from "@/assets/logo.png";
 
 export function Footer() {
   return (
@@ -6,7 +7,10 @@ export function Footer() {
       <div className="container mx-auto px-4">
         <div className="grid grid-cols-1 md:grid-cols-4 gap-12 mb-12">
           <div className="space-y-4">
-            <h3 className="font-serif text-2xl font-bold">Peicosy</h3>
+            <div className="flex items-center gap-2">
+              <img src={logoUrl} alt="Peicosy" className="h-8 w-auto object-contain" />
+              <h3 className="font-serif text-2xl font-bold">Peicosy</h3>
+            </div>
             <p className="text-gray-400 max-w-xs">
               Luxury commerce and logistics connecting the UK and South Africa.
             </p>

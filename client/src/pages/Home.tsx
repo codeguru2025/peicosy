@@ -25,10 +25,10 @@ export default function Home() {
               Premium Logistics & Commerce
             </span>
             <h1 className="font-serif text-5xl lg:text-7xl font-bold leading-tight">
-              Curated Luxury from <span className="text-pink">UK to SA</span>.
+              Not for Everyone, <span className="text-pink">Just for You</span>.
             </h1>
             <p className="text-xl text-gray-300 max-w-lg">
-              Shop exclusive brands with transparent landed costs. We handle customs, duties, and secure delivery to your door.
+              Curated luxury from UK to SA. We handle customs, duties, and secure delivery to your door.
             </p>
             <div className="flex flex-col sm:flex-row gap-4 pt-4">
               <Link href="/shop">

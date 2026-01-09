@@ -7,6 +7,8 @@ import { Sheet, SheetContent, SheetTrigger } from "@/components/ui/sheet";
 import { useState } from "react";
 import { Badge } from "@/components/ui/badge";
 
+import logoUrl from "@/assets/logo.png";
+
 export function Navigation() {
   const { user, logout, isAuthenticated } = useAuth();
   const [location] = useLocation();
@@ -37,10 +39,7 @@ export function Navigation() {
       <div className="container mx-auto px-4 h-16 flex items-center justify-between">
         {/* Logo */}
         <Link href="/" className="flex items-center gap-2 group">
-          <div className="w-8 h-8 bg-primary rounded-tr-xl rounded-bl-xl flex items-center justify-center text-primary-foreground font-serif font-bold text-lg group-hover:rotate-12 transition-transform">
-            P
-          </div>
-          <span className="font-serif text-xl font-bold tracking-tight text-ink">Peicosy</span>
+          <img src={logoUrl} alt="Peicosy" className="h-10 w-auto object-contain group-hover:scale-105 transition-transform" />
         </Link>
 
         {/* Desktop Nav */}
