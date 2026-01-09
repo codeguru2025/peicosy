@@ -15,34 +15,42 @@ export default function Home() {
       <CartDrawer />
       
       {/* Hero Section */}
-      <section className="relative overflow-hidden bg-navy text-white py-20 lg:py-32">
-        <div className="absolute inset-0 bg-[url('https://images.unsplash.com/photo-1441986300917-64674bd600d8?q=80&w=2070&auto=format&fit=crop')] bg-cover bg-center opacity-20"></div>
-        <div className="absolute inset-0 bg-gradient-to-t from-navy to-transparent"></div>
+      <section className="relative min-h-[85vh] flex items-center overflow-hidden bg-navy text-white">
+        <div className="absolute inset-0 bg-[url('https://images.unsplash.com/photo-1539109132314-34a936699561?q=80&w=2000&auto=format&fit=crop')] bg-cover bg-center"></div>
+        <div className="absolute inset-0 bg-gradient-to-r from-navy via-navy/80 to-transparent"></div>
+        <div className="absolute inset-0 bg-black/20"></div>
         
         <div className="container mx-auto px-4 relative z-10">
-          <div className="max-w-2xl space-y-6">
-            <span className="inline-block px-4 py-1.5 rounded-full bg-pink/20 text-pink border border-pink/30 text-sm font-medium backdrop-blur-sm">
-              Premium Logistics & Commerce
-            </span>
-            <h1 className="font-serif text-5xl lg:text-7xl font-bold leading-tight">
-              Not for Everyone, <span className="text-pink">Just for You</span>.
+          <div className="max-w-3xl space-y-8">
+            <div className="flex items-center gap-4">
+              <div className="h-[1px] w-12 bg-pink"></div>
+              <span className="text-pink uppercase tracking-[0.4em] text-xs font-bold">The Collection</span>
+            </div>
+            <h1 className="font-serif text-6xl lg:text-9xl font-black leading-[1] tracking-tight">
+              Not for Everyone,<br />
+              <span className="text-pink italic font-normal">Just for You.</span>
             </h1>
-            <p className="text-xl text-gray-300 max-w-lg">
-              Curated luxury from UK to SA. We handle customs, duties, and secure delivery to your door.
+            <p className="text-xl text-gray-300 max-w-xl font-light leading-relaxed tracking-wide">
+              Bespoke luxury logistics and curated commerce. Seamlessly bridging the distance between London's finest and South Africa's elite.
             </p>
-            <div className="flex flex-col sm:flex-row gap-4 pt-4">
+            <div className="flex flex-col sm:flex-row gap-6 pt-6">
               <Link href="/shop">
-                <Button size="lg" className="bg-pink hover:bg-pink/90 text-white rounded-full px-8 h-12 text-lg">
-                  Start Shopping
+                <Button size="lg" className="bg-pink hover:bg-pink/90 text-white rounded-none px-12 h-14 text-sm uppercase tracking-[0.2em] font-bold shadow-2xl">
+                  Enter Boutique
                 </Button>
               </Link>
               <Link href="/about">
-                <Button size="lg" variant="outline" className="text-white border-white/20 hover:bg-white/10 rounded-full px-8 h-12 text-lg">
-                  How it Works
+                <Button size="lg" variant="outline" className="text-white border-white/30 hover:bg-white/10 rounded-none px-12 h-14 text-sm uppercase tracking-[0.2em] font-bold backdrop-blur-sm">
+                  Our Legacy
                 </Button>
               </Link>
             </div>
           </div>
+        </div>
+        
+        <div className="absolute bottom-12 left-1/2 -translate-x-1/2 flex flex-col items-center gap-4 opacity-50">
+          <span className="text-[10px] uppercase tracking-[0.5em]">Scroll to Explore</span>
+          <div className="w-[1px] h-12 bg-gradient-to-b from-pink to-transparent"></div>
         </div>
       </section>
 

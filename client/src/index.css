@@ -6,40 +6,40 @@
 
 :root {
   /* Luxury Palette: Ink, Navy, Pink */
-  --ink: 220 15% 10%;
-  --navy: 220 30% 15%;
-  --pink: 330 85% 60%;
+  --ink: 220 20% 5%;
+  --navy: 220 30% 12%;
+  --pink: 330 85% 55%;
   --pink-foreground: 0 0% 100%;
   
-  --background: 220 20% 98%;
-  --foreground: 220 15% 10%; /* Ink */
+  --background: 0 0% 100%;
+  --foreground: 220 20% 5%; /* Ink */
   
   --card: 0 0% 100%;
-  --card-foreground: 220 15% 10%;
+  --card-foreground: 220 20% 5%;
   
   --popover: 0 0% 100%;
-  --popover-foreground: 220 15% 10%;
+  --popover-foreground: 220 20% 5%;
   
-  --primary: 330 85% 60%; /* Pink */
+  --primary: 330 85% 55%; /* Richer Pink */
   --primary-foreground: 0 0% 100%;
   
-  --secondary: 220 30% 15%; /* Navy */
+  --secondary: 220 30% 12%; /* Deeper Navy */
   --secondary-foreground: 210 40% 98%;
   
-  --muted: 220 10% 94%;
-  --muted-foreground: 220 10% 40%;
+  --muted: 220 10% 96%;
+  --muted-foreground: 220 10% 35%;
   
-  --accent: 330 85% 96%;
-  --accent-foreground: 330 85% 40%;
+  --accent: 330 85% 97%;
+  --accent-foreground: 330 85% 35%;
   
-  --destructive: 0 84% 60%;
+  --destructive: 0 84% 50%;
   --destructive-foreground: 0 0% 98%;
 
-  --border: 220 15% 90%;
-  --input: 220 15% 90%;
-  --ring: 330 85% 60%;
+  --border: 220 15% 92%;
+  --input: 220 15% 92%;
+  --ring: 220 20% 5%;
 
-  --radius: 0.5rem;
+  --radius: 0.25rem; /* Sharper corners for luxury feel */
   
   /* Fonts */
   --font-serif: 'Playfair Display', serif;

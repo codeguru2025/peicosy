@@ -35,11 +35,18 @@ export function Navigation() {
   };
 
   return (
-    <nav className="sticky top-0 z-40 w-full border-b bg-background/80 backdrop-blur-md">
-      <div className="container mx-auto px-4 h-16 flex items-center justify-between">
+    <nav className="sticky top-0 z-40 w-full border-b border-primary/10 bg-white/95 backdrop-blur-xl">
+      <div className="container mx-auto px-4 h-24 flex items-center justify-between">
         {/* Logo */}
-        <Link href="/" className="flex items-center gap-2 group">
-          <img src={logoUrl} alt="Peicosy" className="h-10 w-auto object-contain group-hover:scale-105 transition-transform" />
+        <Link href="/" className="flex items-center gap-5 group">
+          <div className="relative">
+            <div className="absolute -inset-4 bg-primary/5 rounded-full blur-2xl opacity-0 group-hover:opacity-100 transition-opacity duration-700"></div>
+            <img src={logoUrl} alt="Peicosy" className="h-14 w-auto object-contain relative transition-transform duration-700 ease-out group-hover:scale-110 group-hover:-rotate-3" />
+          </div>
+          <div className="flex flex-col">
+            <span className="font-serif text-3xl font-black tracking-[0.15em] uppercase text-ink leading-none">Peicosy</span>
+            <span className="text-[10px] uppercase tracking-[0.4em] text-primary/60 font-bold mt-2">London • Johannesburg</span>
+          </div>
         </Link>
 
         {/* Desktop Nav */}
