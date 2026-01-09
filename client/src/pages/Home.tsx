@@ -15,31 +15,37 @@ export default function Home() {
       <CartDrawer />
       
       {/* Hero Section */}
-      <section className="relative min-h-[95vh] flex items-center overflow-hidden bg-background text-foreground">
-        <div className="absolute inset-0 bg-[url('https://images.unsplash.com/photo-1539109132314-34a936699561?q=80&w=2000&auto=format&fit=crop')] bg-cover bg-center opacity-40"></div>
-        <div className="absolute inset-0 bg-gradient-to-r from-background via-background/60 to-transparent"></div>
+      <section className="relative min-h-[100vh] flex items-center overflow-hidden">
+        {/* Vibrant gradient background */}
+        <div className="absolute inset-0 bg-gradient-to-br from-pink-900 via-primary/40 to-background"></div>
+        <div className="absolute inset-0 bg-[url('https://images.unsplash.com/photo-1558618666-fcd25c85cd64?q=80&w=2000&auto=format&fit=crop')] bg-cover bg-center opacity-30 mix-blend-overlay"></div>
+        
+        {/* Decorative elements */}
+        <div className="absolute top-20 right-20 w-96 h-96 bg-primary/20 rounded-full blur-3xl"></div>
+        <div className="absolute bottom-20 left-20 w-64 h-64 bg-secondary/30 rounded-full blur-3xl"></div>
         
         <div className="container mx-auto px-8 relative z-10">
-          <div className="max-w-4xl space-y-12 animate-in fade-in slide-in-from-left-8 duration-1000">
+          <div className="max-w-5xl space-y-10">
             <div className="flex items-center gap-6">
-              <div className="h-[1px] w-16 bg-primary"></div>
-              <span className="text-primary uppercase tracking-[0.6em] text-[10px] font-bold">The Editorial</span>
+              <div className="h-[2px] w-20 bg-primary"></div>
+              <span className="text-primary uppercase tracking-[0.6em] text-xs font-bold">The Editorial</span>
             </div>
-            <h1 className="font-serif text-7xl lg:text-[10rem] font-light leading-[0.9] tracking-tighter">
-              Not for Everyone,<br />
-              <span className="text-primary italic font-normal ml-8 lg:ml-24">Just for You.</span>
+            <h1 className="font-serif text-6xl md:text-8xl lg:text-[9rem] font-light leading-[0.95] tracking-tight">
+              <span className="text-white">Not for</span><br />
+              <span className="text-white">Everyone,</span><br />
+              <span className="text-primary italic font-normal text-7xl md:text-9xl lg:text-[10rem]">Just for You.</span>
             </h1>
-            <p className="text-xl text-muted-foreground max-w-xl font-light leading-relaxed tracking-wider">
+            <p className="text-xl text-white/70 max-w-xl font-light leading-relaxed tracking-wide">
               Bespoke luxury logistics and curated commerce. Seamlessly bridging the distance between London's finest and South Africa's elite.
             </p>
-            <div className="flex flex-col sm:flex-row gap-12 pt-8">
+            <div className="flex flex-col sm:flex-row gap-6 pt-8">
               <Link href="/shop">
-                <Button size="lg" className="bg-primary hover:bg-primary/90 text-primary-foreground rounded-full px-16 h-16 text-[10px] uppercase tracking-[0.4em] font-bold shadow-none transition-all duration-500 hover:scale-105">
+                <Button size="lg" className="bg-primary hover:bg-primary/90 text-white rounded-full px-14 h-16 text-xs uppercase tracking-[0.3em] font-bold shadow-2xl shadow-primary/30 transition-all duration-500 hover:scale-105 hover:shadow-primary/50">
                   Enter Boutique
                 </Button>
               </Link>
               <Link href="/about">
-                <Button size="lg" variant="ghost" className="text-foreground hover:bg-white/5 rounded-full px-16 h-16 text-[10px] uppercase tracking-[0.4em] font-bold transition-all duration-500">
+                <Button size="lg" variant="outline" className="text-white border-white/30 hover:bg-white/10 hover:border-white/50 rounded-full px-14 h-16 text-xs uppercase tracking-[0.3em] font-bold backdrop-blur-sm transition-all duration-500">
                   Our Legacy
                 </Button>
               </Link>
@@ -47,9 +53,9 @@ export default function Home() {
           </div>
         </div>
         
-        <div className="absolute bottom-16 left-1/2 -translate-x-1/2 flex flex-col items-center gap-6 opacity-20">
-          <span className="text-[9px] uppercase tracking-[0.6em] font-light">Descent</span>
-          <div className="w-[1px] h-20 bg-gradient-to-b from-primary to-transparent"></div>
+        <div className="absolute bottom-12 left-1/2 -translate-x-1/2 flex flex-col items-center gap-4">
+          <span className="text-white/40 text-[10px] uppercase tracking-[0.5em] font-light">Scroll</span>
+          <div className="w-[1px] h-16 bg-gradient-to-b from-primary to-transparent"></div>
         </div>
       </section>
 

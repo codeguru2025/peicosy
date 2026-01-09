@@ -5,39 +5,39 @@
 @tailwind utilities;
 
 :root {
-  /* Luxury Palette: Pink Primary, Navy Secondary */
-  --ink: 220 30% 8%; /* #0B0F1A range */
-  --navy: 220 40% 18%;
-  --pink: 330 85% 60%;
+  /* Luxury Palette: Vibrant Pink Primary, Navy Secondary */
+  --ink: 220 30% 8%;
+  --navy: 220 50% 25%;
+  --pink: 330 90% 65%;
   --pink-foreground: 0 0% 100%;
   
-  --background: 330 30% 6%; /* Deep pink-tinted charcoal */
-  --foreground: 330 20% 95%; /* Soft pink-tinted white */
+  --background: 330 40% 4%; /* Rich dark with pink undertone */
+  --foreground: 0 0% 98%; /* Clean white */
   
-  --card: 330 25% 8%;
-  --card-foreground: 330 20% 95%;
+  --card: 330 35% 7%;
+  --card-foreground: 0 0% 98%;
   
-  --popover: 330 25% 8%;
-  --popover-foreground: 330 20% 95%;
+  --popover: 330 35% 7%;
+  --popover-foreground: 0 0% 98%;
   
-  --primary: 330 85% 60%; /* Signature luxury pink - MAIN COLOR */
+  --primary: 330 90% 65%; /* Vibrant luxury pink - MAIN COLOR */
   --primary-foreground: 0 0% 100%;
   
-  --secondary: 220 40% 18%; /* Navy blue - SECONDARY */
-  --secondary-foreground: 210 40% 95%;
+  --secondary: 220 50% 25%; /* Rich navy blue - SECONDARY */
+  --secondary-foreground: 210 40% 98%;
   
-  --muted: 330 20% 12%;
-  --muted-foreground: 330 15% 55%; /* Muted pink-greys */
+  --muted: 330 25% 12%;
+  --muted-foreground: 330 10% 60%; /* Softer muted text */
   
-  --accent: 220 40% 18%; /* Navy accent */
-  --accent-foreground: 210 40% 95%;
+  --accent: 330 60% 50%; /* Pink accent */
+  --accent-foreground: 0 0% 100%;
   
   --destructive: 0 84% 50%;
   --destructive-foreground: 0 0% 98%;
 
-  --border: 330 20% 15%;
-  --input: 330 20% 12%;
-  --ring: 330 85% 60%;
+  --border: 330 25% 18%;
+  --input: 330 25% 10%;
+  --ring: 330 90% 65%;
 
   --radius: 0.75rem; /* Elegant rounded buttons */
   
