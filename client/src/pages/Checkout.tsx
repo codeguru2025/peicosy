@@ -6,7 +6,7 @@ import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { Separator } from "@/components/ui/separator";
 import { useCreateOrder } from "@/hooks/use-orders";
-import { useCalculateLandedCost } from "@/hooks/use-shipping";
+import { useCalculateLandedCost, formatZAR } from "@/hooks/use-shipping";
 import { useForm } from "react-hook-form";
 import { useLocation } from "wouter";
 import { useAuth } from "@/hooks/use-auth";
@@ -78,6 +78,13 @@ export default function Checkout() {
   const shippingCost = costData?.shippingCost ?? (shippingMethod === 'air' ? 50 : 20);
   const customsDuty = costData?.customsDuty ?? (total() * 0.45);
   const grandTotal = costData?.total ?? (total() + shippingCost + customsDuty);
+  
+  // ZAR values from API
+  const subtotalZAR = costData?.subtotalZAR ?? 0;
+  const shippingCostZAR = costData?.shippingCostZAR ?? 0;
+  const customsDutyZAR = costData?.customsDutyZAR ?? 0;
+  const grandTotalZAR = costData?.totalZAR ?? 0;
+  const exchangeRate = costData?.exchangeRate ?? 23.50;
 
   return (
     <div className="min-h-screen bg-background flex flex-col">
@@ -180,7 +187,7 @@ export default function Checkout() {
                 {items.map((item) => (
                   <div key={item.product.id} className="flex justify-between text-sm">
                     <span className="text-muted-foreground font-light">{item.product.name} × {item.quantity}</span>
-                    <span className="font-medium tracking-widest text-secondary">£{(Number(item.product.price) * item.quantity).toFixed(2)}</span>
+                    <span className="font-medium tracking-widest text-primary">{formatZAR(Number(item.product.price) * item.quantity * exchangeRate)}</span>
                   </div>
                 ))}
               </div>
@@ -190,15 +197,17 @@ export default function Checkout() {
               <div className="space-y-4 text-sm">
                 <div className="flex justify-between">
                   <span className="text-muted-foreground font-light">Subtotal</span>
-                  <span className="font-medium tracking-widest text-secondary">£{total().toFixed(2)}</span>
+                  <span className="font-medium tracking-widest text-secondary" data-testid="text-subtotal-zar">
+                    {isCalculating ? <Loader2 className="w-4 h-4 animate-spin" /> : formatZAR(subtotalZAR)}
+                  </span>
                 </div>
                 <div className="flex justify-between items-center">
                   <span className="text-muted-foreground font-light flex items-center gap-2">
                     Logistics
                     <span className="text-[9px] uppercase text-primary">{shippingMethod === 'air' ? 'Air' : 'Sea'}</span>
                   </span>
-                  <span className="font-medium tracking-widest text-secondary">
-                    {isCalculating ? <Loader2 className="w-4 h-4 animate-spin" /> : `£${shippingCost.toFixed(2)}`}
+                  <span className="font-medium tracking-widest text-secondary" data-testid="text-shipping-zar">
+                    {isCalculating ? <Loader2 className="w-4 h-4 animate-spin" /> : formatZAR(shippingCostZAR)}
                   </span>
                 </div>
                 <div className="flex justify-between items-center">
@@ -206,19 +215,22 @@ export default function Checkout() {
                     Duties & Taxes
                     <Info className="w-3 h-3 text-muted-foreground/50" />
                   </span>
-                  <span className="font-medium tracking-widest text-secondary">
-                    {isCalculating ? <Loader2 className="w-4 h-4 animate-spin" /> : `£${customsDuty.toFixed(2)}`}
+                  <span className="font-medium tracking-widest text-secondary" data-testid="text-duties-zar">
+                    {isCalculating ? <Loader2 className="w-4 h-4 animate-spin" /> : formatZAR(customsDutyZAR)}
                   </span>
                 </div>
               </div>
               
               <Separator className="my-8 bg-border" />
               
-              <div className="flex justify-between font-serif text-2xl font-light tracking-wide mb-4 text-secondary">
+              <div className="flex justify-between font-serif text-2xl font-bold tracking-wide mb-2 text-primary">
                 <span>Total</span>
-                <span>
-                  {isCalculating ? <Loader2 className="w-6 h-6 animate-spin" /> : `£${grandTotal.toFixed(2)}`}
+                <span data-testid="text-total-zar">
+                  {isCalculating ? <Loader2 className="w-6 h-6 animate-spin" /> : formatZAR(grandTotalZAR)}
                 </span>
+              </div>
+              <div className="flex justify-end text-sm text-muted-foreground mb-4">
+                <span>£{grandTotal.toFixed(2)} GBP</span>
               </div>
               
               <p className="text-[9px] text-muted-foreground mb-8 p-3 bg-muted/50 rounded-xl">

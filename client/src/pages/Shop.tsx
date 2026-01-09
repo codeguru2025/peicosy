@@ -8,10 +8,13 @@ import { useState } from "react";
 import { Link } from "wouter";
 import { Button } from "@/components/ui/button";
 import { useCart } from "@/hooks/use-cart";
+import { useExchangeRate, formatZAR } from "@/hooks/use-shipping";
 
 export default function Shop() {
   const [search, setSearch] = useState("");
   const { data: products, isLoading } = useProducts({ search });
+  const { data: exchangeRateData } = useExchangeRate();
+  const exchangeRate = exchangeRateData?.rate ?? 23.50;
 
   return (
     <div className="min-h-screen bg-background flex flex-col">
@@ -70,7 +73,7 @@ export default function Shop() {
         ) : (
           <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-12">
             {products?.map((product) => (
-              <ProductCard key={product.id} product={product} />
+              <ProductCard key={product.id} product={product} exchangeRate={exchangeRate} />
             ))}
           </div>
         )}
@@ -89,8 +92,9 @@ export default function Shop() {
 
 import { Product } from "@shared/schema";
 
-function ProductCard({ product }: { product: Product }) {
+function ProductCard({ product, exchangeRate }: { product: Product; exchangeRate: number }) {
   const { addItem } = useCart();
+  const priceZAR = Number(product.price) * exchangeRate;
   
   return (
     <div className="group bg-white rounded-[2rem] overflow-hidden transition-all duration-700 flex flex-col shadow-lg hover:shadow-2xl hover:shadow-primary/10" data-testid={`card-product-${product.id}`}>
@@ -116,8 +120,9 @@ function ProductCard({ product }: { product: Product }) {
         <Link href={`/product/${product.id}`} className="block">
           <h3 className="font-serif font-light text-xl mb-2 text-secondary group-hover:text-primary transition-colors line-clamp-1 tracking-wide">{product.name}</h3>
         </Link>
-        <div className="mt-auto pt-2 flex items-baseline justify-between">
-          <span className="font-medium text-secondary tracking-widest text-sm">£{product.price}</span>
+        <div className="mt-auto pt-2 flex flex-col">
+          <span className="font-bold text-primary tracking-wide text-lg" data-testid={`text-price-zar-${product.id}`}>{formatZAR(priceZAR)}</span>
+          <span className="text-muted-foreground text-xs tracking-wider">£{product.price}</span>
         </div>
       </div>
     </div>

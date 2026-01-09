@@ -1,6 +1,6 @@
 import { useProduct } from "@/hooks/use-products";
 import { useCart } from "@/hooks/use-cart";
-import { useCalculateLandedCost } from "@/hooks/use-shipping";
+import { useCalculateLandedCost, useExchangeRate, formatZAR } from "@/hooks/use-shipping";
 import { Navigation } from "@/components/Navigation";
 import { Footer } from "@/components/Footer";
 import { CartDrawer } from "@/components/CartDrawer";
@@ -14,9 +14,12 @@ export default function ProductDetails() {
   const productId = parseInt(params.id || "0");
   const { data: product, isLoading } = useProduct(productId);
   const { mutate: calculateCost, data: costData, isPending: isCalculating } = useCalculateLandedCost();
+  const { data: exchangeRateData } = useExchangeRate();
   const { addItem } = useCart();
   const [, setLocation] = useLocation();
   const [quantity, setQuantity] = useState(1);
+  
+  const exchangeRate = exchangeRateData?.rate ?? 23.50;
 
   // Calculate landed cost when product loads
   useEffect(() => {
@@ -107,9 +110,9 @@ export default function ProductDetails() {
             </div>
 
             <div className="border-t border-b border-border py-8 space-y-4">
-              <div className="flex items-baseline gap-4">
-                <span className="font-serif text-4xl text-secondary">£{product.price}</span>
-                <span className="text-[10px] uppercase tracking-[0.3em] text-muted-foreground">GBP</span>
+              <div className="flex flex-col gap-1">
+                <span className="font-serif text-4xl text-primary font-bold" data-testid="text-price-zar">{formatZAR(Number(product.price) * exchangeRate)}</span>
+                <span className="text-muted-foreground text-sm">£{product.price} GBP</span>
               </div>
               <p className="text-sm text-muted-foreground">
                 Stock: <span className={`font-medium ${Number(product.stock) > 0 ? 'text-green-600' : 'text-red-500'}`}>
@@ -126,24 +129,24 @@ export default function ProductDetails() {
               <div className="space-y-2 text-sm">
                 <div className="flex justify-between">
                   <span className="text-muted-foreground">Product</span>
-                  <span className="text-secondary">£{product.price}</span>
+                  <span className="text-secondary">{formatZAR(Number(product.price) * exchangeRate)}</span>
                 </div>
                 <div className="flex justify-between">
                   <span className="text-muted-foreground">Shipping (Air)</span>
                   <span className="text-secondary">
-                    {isCalculating ? <Loader2 className="w-4 h-4 animate-spin" /> : `£${shippingEstimate.toFixed(2)}`}
+                    {isCalculating ? <Loader2 className="w-4 h-4 animate-spin" /> : formatZAR(shippingEstimate * exchangeRate)}
                   </span>
                 </div>
                 <div className="flex justify-between">
                   <span className="text-muted-foreground">Duties & Taxes</span>
                   <span className="text-secondary">
-                    {isCalculating ? <Loader2 className="w-4 h-4 animate-spin" /> : `£${dutyEstimate.toFixed(2)}`}
+                    {isCalculating ? <Loader2 className="w-4 h-4 animate-spin" /> : formatZAR(dutyEstimate * exchangeRate)}
                   </span>
                 </div>
                 <div className="flex justify-between font-bold pt-2 border-t border-border">
                   <span className="text-secondary">Est. Total</span>
-                  <span className="text-primary font-serif text-lg">
-                    {isCalculating ? <Loader2 className="w-4 h-4 animate-spin" /> : `£${landedCost.toFixed(2)}`}
+                  <span className="text-primary font-serif text-lg" data-testid="text-landed-cost-zar">
+                    {isCalculating ? <Loader2 className="w-4 h-4 animate-spin" /> : formatZAR(landedCost * exchangeRate)}
                   </span>
                 </div>
               </div>
