@@ -3,7 +3,7 @@ import { Button } from "@/components/ui/button";
 import { useCart } from "@/hooks/use-cart";
 import { Minus, Plus, Trash2, ArrowRight } from "lucide-react";
 import { ScrollArea } from "@/components/ui/scroll-area";
-import { Link, useLocation } from "wouter";
+import { useLocation } from "wouter";
 
 export function CartDrawer() {
   const { items, isOpen, toggleCart, updateQuantity, removeItem, total } = useCart();
@@ -16,20 +16,20 @@ export function CartDrawer() {
 
   return (
     <Sheet open={isOpen} onOpenChange={toggleCart}>
-      <SheetContent className="w-full sm:max-w-lg flex flex-col bg-background border-l border-white/5">
+      <SheetContent className="w-full sm:max-w-lg flex flex-col bg-white border-l border-border">
         <SheetHeader className="mb-8">
           <div className="flex items-center gap-4">
             <div className="h-[1px] w-8 bg-primary"></div>
-            <SheetTitle className="font-serif text-3xl font-light tracking-wide">Your Portfolio</SheetTitle>
+            <SheetTitle className="font-serif text-3xl font-light tracking-wide text-secondary">Your Portfolio</SheetTitle>
           </div>
         </SheetHeader>
         
         {items.length === 0 ? (
-          <div className="flex-1 flex flex-col items-center justify-center text-center p-12 text-muted-foreground">
-            <ShoppingBagIcon className="w-20 h-20 mb-8 opacity-10" />
-            <p className="text-xl font-serif font-light tracking-wide mb-2">Empty</p>
-            <p className="text-sm font-light tracking-wider text-muted-foreground/60">Your acquisition list awaits.</p>
-            <Button variant="outline" className="mt-10 rounded-full px-10 border-white/10 text-[10px] uppercase tracking-[0.3em] hover:bg-white/5" onClick={() => toggleCart(false)} data-testid="button-continue-shopping">
+          <div className="flex-1 flex flex-col items-center justify-center text-center p-12">
+            <ShoppingBagIcon className="w-20 h-20 mb-8 text-muted-foreground/20" />
+            <p className="text-xl font-serif font-light tracking-wide mb-2 text-secondary">Empty</p>
+            <p className="text-sm font-light tracking-wider text-muted-foreground">Your acquisition list awaits.</p>
+            <Button variant="outline" className="mt-10 rounded-full px-10 border-border text-[10px] uppercase tracking-[0.3em] text-secondary hover:bg-secondary hover:text-white hover:border-secondary" onClick={() => toggleCart(false)} data-testid="button-continue-shopping">
               Explore Collection
             </Button>
           </div>
@@ -39,7 +39,7 @@ export function CartDrawer() {
               <div className="space-y-8">
                 {items.map((item) => (
                   <div key={item.product.id} className="flex gap-6" data-testid={`cart-item-${item.product.id}`}>
-                    <div className="h-28 w-28 rounded-2xl bg-white/5 overflow-hidden flex-shrink-0">
+                    <div className="h-28 w-28 rounded-2xl bg-muted overflow-hidden flex-shrink-0">
                       <img 
                         src={item.product.imageUrl} 
                         alt={item.product.name}
@@ -49,31 +49,31 @@ export function CartDrawer() {
                     <div className="flex-1 flex flex-col justify-between py-1">
                       <div>
                         <p className="text-[9px] font-bold text-primary uppercase tracking-[0.4em] mb-1">{item.product.brand}</p>
-                        <h4 className="font-serif font-light text-lg line-clamp-1 tracking-wide">{item.product.name}</h4>
+                        <h4 className="font-serif font-light text-lg line-clamp-1 tracking-wide text-secondary">{item.product.name}</h4>
                       </div>
                       <div className="flex items-center justify-between mt-3">
-                        <div className="flex items-center gap-4 border border-white/10 rounded-full px-4 py-2">
+                        <div className="flex items-center gap-4 border border-border rounded-full px-4 py-2">
                           <button 
                             onClick={() => updateQuantity(item.product.id, item.quantity - 1)}
-                            className="p-1 hover:text-primary transition-colors duration-300"
+                            className="p-1 text-secondary hover:text-primary transition-colors duration-300"
                             data-testid={`button-decrease-${item.product.id}`}
                           >
                             <Minus className="w-3 h-3" />
                           </button>
-                          <span className="text-sm w-5 text-center font-light">{item.quantity}</span>
+                          <span className="text-sm w-5 text-center font-medium text-secondary">{item.quantity}</span>
                           <button 
                             onClick={() => updateQuantity(item.product.id, item.quantity + 1)}
-                            className="p-1 hover:text-primary transition-colors duration-300"
+                            className="p-1 text-secondary hover:text-primary transition-colors duration-300"
                             data-testid={`button-increase-${item.product.id}`}
                           >
                             <Plus className="w-3 h-3" />
                           </button>
                         </div>
                         <div className="flex items-center gap-6">
-                          <span className="font-light tracking-widest text-sm">£{(Number(item.product.price) * item.quantity).toFixed(2)}</span>
+                          <span className="font-medium tracking-widest text-sm text-secondary">£{(Number(item.product.price) * item.quantity).toFixed(2)}</span>
                           <button 
                             onClick={() => removeItem(item.product.id)}
-                            className="text-muted-foreground/40 hover:text-primary transition-colors duration-300"
+                            className="text-muted-foreground hover:text-primary transition-colors duration-300"
                             data-testid={`button-remove-${item.product.id}`}
                           >
                             <Trash2 className="w-4 h-4" />
@@ -86,15 +86,15 @@ export function CartDrawer() {
               </div>
             </ScrollArea>
             
-            <div className="border-t border-white/5 pt-8 space-y-8">
-              <div className="flex items-center justify-between text-xl font-serif font-light tracking-wide">
+            <div className="border-t border-border pt-8 space-y-8">
+              <div className="flex items-center justify-between text-xl font-serif font-light tracking-wide text-secondary">
                 <span>Subtotal</span>
                 <span>£{total().toFixed(2)}</span>
               </div>
-              <p className="text-[10px] uppercase tracking-[0.3em] text-muted-foreground/50 text-center font-light">
+              <p className="text-[10px] uppercase tracking-[0.3em] text-muted-foreground text-center font-light">
                 Duties and shipping calculated at checkout
               </p>
-              <Button size="lg" className="w-full rounded-full h-16 gap-3 text-[10px] uppercase tracking-[0.4em] font-bold transition-all duration-500 hover:scale-[1.02]" onClick={handleCheckout} data-testid="button-checkout">
+              <Button size="lg" className="w-full rounded-full h-16 gap-3 text-[10px] uppercase tracking-[0.4em] font-bold bg-primary hover:bg-primary/90 text-white transition-all duration-500 hover:scale-[1.02] shadow-lg shadow-primary/30" onClick={handleCheckout} data-testid="button-checkout">
                 Proceed to Acquisition <ArrowRight className="w-4 h-4" />
               </Button>
             </div>

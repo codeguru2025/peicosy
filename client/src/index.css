@@ -6,38 +6,38 @@
 
 :root {
   /* Luxury Palette: Vibrant Pink Primary, Navy Secondary */
-  --ink: 220 30% 8%;
+  --ink: 220 30% 15%;
   --navy: 220 50% 25%;
-  --pink: 330 90% 65%;
+  --pink: 330 85% 55%;
   --pink-foreground: 0 0% 100%;
   
-  --background: 330 40% 4%; /* Rich dark with pink undertone */
-  --foreground: 0 0% 98%; /* Clean white */
+  --background: 0 0% 98%; /* Clean white background */
+  --foreground: 220 30% 15%; /* Dark navy text */
   
-  --card: 330 35% 7%;
-  --card-foreground: 0 0% 98%;
+  --card: 0 0% 100%;
+  --card-foreground: 220 30% 15%;
   
-  --popover: 330 35% 7%;
-  --popover-foreground: 0 0% 98%;
+  --popover: 0 0% 100%;
+  --popover-foreground: 220 30% 15%;
   
-  --primary: 330 90% 65%; /* Vibrant luxury pink - MAIN COLOR */
+  --primary: 330 85% 55%; /* Vibrant luxury pink - MAIN COLOR */
   --primary-foreground: 0 0% 100%;
   
   --secondary: 220 50% 25%; /* Rich navy blue - SECONDARY */
-  --secondary-foreground: 210 40% 98%;
+  --secondary-foreground: 0 0% 100%;
   
-  --muted: 330 25% 12%;
-  --muted-foreground: 330 10% 60%; /* Softer muted text */
+  --muted: 220 20% 94%;
+  --muted-foreground: 220 15% 45%; /* Softer muted text */
   
-  --accent: 330 60% 50%; /* Pink accent */
-  --accent-foreground: 0 0% 100%;
+  --accent: 330 60% 95%; /* Pink accent background */
+  --accent-foreground: 330 85% 45%;
   
   --destructive: 0 84% 50%;
   --destructive-foreground: 0 0% 98%;
 
-  --border: 330 25% 18%;
-  --input: 330 25% 10%;
-  --ring: 330 90% 65%;
+  --border: 220 20% 88%;
+  --input: 220 20% 94%;
+  --ring: 330 85% 55%;
 
   --radius: 0.75rem; /* Elegant rounded buttons */
   
@@ -47,13 +47,14 @@
 }
 
 .dark {
-  --background: 220 15% 8%;
+  --ink: 220 30% 8%;
+  --background: 220 25% 8%;
   --foreground: 210 40% 98%;
   
-  --card: 220 15% 10%; /* Ink */
+  --card: 220 25% 12%;
   --card-foreground: 210 40% 98%;
   
-  --popover: 220 15% 10%;
+  --popover: 220 25% 10%;
   --popover-foreground: 210 40% 98%;
   
   --primary: 330 85% 60%;
@@ -84,9 +85,8 @@
     @apply bg-background text-foreground font-sans antialiased;
   }
   h1, h2, h3, h4, h5, h6 {
-    @apply font-serif tracking-tight text-ink dark:text-white;
+    @apply font-serif tracking-tight text-secondary;
   }
-  /* Custom utility classes via @apply since we can't edit tailwind.config directly in CSS file */
   .font-serif {
     font-family: var(--font-serif);
   }
@@ -101,6 +101,9 @@
   }
   .bg-navy {
     background-color: hsl(var(--navy));
+  }
+  .text-navy {
+    color: hsl(var(--navy));
   }
   .text-pink {
     color: hsl(var(--pink));

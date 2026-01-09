@@ -17,35 +17,35 @@ export default function Home() {
       {/* Hero Section */}
       <section className="relative min-h-[100vh] flex items-center overflow-hidden">
         {/* Vibrant gradient background */}
-        <div className="absolute inset-0 bg-gradient-to-br from-pink-900 via-primary/40 to-background"></div>
-        <div className="absolute inset-0 bg-[url('https://images.unsplash.com/photo-1558618666-fcd25c85cd64?q=80&w=2000&auto=format&fit=crop')] bg-cover bg-center opacity-30 mix-blend-overlay"></div>
+        <div className="absolute inset-0 bg-gradient-to-br from-primary via-primary/80 to-secondary"></div>
+        <div className="absolute inset-0 bg-[url('https://images.unsplash.com/photo-1558618666-fcd25c85cd64?q=80&w=2000&auto=format&fit=crop')] bg-cover bg-center opacity-20 mix-blend-overlay"></div>
         
         {/* Decorative elements */}
-        <div className="absolute top-20 right-20 w-96 h-96 bg-primary/20 rounded-full blur-3xl"></div>
-        <div className="absolute bottom-20 left-20 w-64 h-64 bg-secondary/30 rounded-full blur-3xl"></div>
+        <div className="absolute top-20 right-20 w-96 h-96 bg-white/10 rounded-full blur-3xl"></div>
+        <div className="absolute bottom-20 left-20 w-64 h-64 bg-white/10 rounded-full blur-3xl"></div>
         
         <div className="container mx-auto px-8 relative z-10">
           <div className="max-w-5xl space-y-10">
             <div className="flex items-center gap-6">
-              <div className="h-[2px] w-20 bg-primary"></div>
-              <span className="text-primary uppercase tracking-[0.6em] text-xs font-bold">The Editorial</span>
+              <div className="h-[2px] w-20 bg-white"></div>
+              <span className="text-white uppercase tracking-[0.6em] text-xs font-bold">The Editorial</span>
             </div>
             <h1 className="font-serif text-6xl md:text-8xl lg:text-[9rem] font-light leading-[0.95] tracking-tight">
               <span className="text-white">Not for</span><br />
               <span className="text-white">Everyone,</span><br />
-              <span className="text-primary italic font-normal text-7xl md:text-9xl lg:text-[10rem]">Just for You.</span>
+              <span className="text-white/90 italic font-normal text-7xl md:text-9xl lg:text-[10rem]">Just for You.</span>
             </h1>
-            <p className="text-xl text-white/70 max-w-xl font-light leading-relaxed tracking-wide">
+            <p className="text-xl text-white/80 max-w-xl font-light leading-relaxed tracking-wide">
               Bespoke luxury logistics and curated commerce. Seamlessly bridging the distance between London's finest and South Africa's elite.
             </p>
             <div className="flex flex-col sm:flex-row gap-6 pt-8">
               <Link href="/shop">
-                <Button size="lg" className="bg-primary hover:bg-primary/90 text-white rounded-full px-14 h-16 text-xs uppercase tracking-[0.3em] font-bold shadow-2xl shadow-primary/30 transition-all duration-500 hover:scale-105 hover:shadow-primary/50">
+                <Button size="lg" className="bg-white text-primary hover:bg-white/90 rounded-full px-14 h-16 text-xs uppercase tracking-[0.3em] font-bold shadow-2xl transition-all duration-500 hover:scale-105">
                   Enter Boutique
                 </Button>
               </Link>
               <Link href="/about">
-                <Button size="lg" variant="outline" className="text-white border-white/30 hover:bg-white/10 hover:border-white/50 rounded-full px-14 h-16 text-xs uppercase tracking-[0.3em] font-bold backdrop-blur-sm transition-all duration-500">
+                <Button size="lg" variant="outline" className="text-white border-white/50 hover:bg-white/10 hover:border-white rounded-full px-14 h-16 text-xs uppercase tracking-[0.3em] font-bold backdrop-blur-sm transition-all duration-500">
                   Our Legacy
                 </Button>
               </Link>
@@ -54,8 +54,8 @@ export default function Home() {
         </div>
         
         <div className="absolute bottom-12 left-1/2 -translate-x-1/2 flex flex-col items-center gap-4">
-          <span className="text-white/40 text-[10px] uppercase tracking-[0.5em] font-light">Scroll</span>
-          <div className="w-[1px] h-16 bg-gradient-to-b from-primary to-transparent"></div>
+          <span className="text-white/60 text-[10px] uppercase tracking-[0.5em] font-light">Scroll</span>
+          <div className="w-[1px] h-16 bg-gradient-to-b from-white to-transparent"></div>
         </div>
       </section>
 
@@ -63,9 +63,9 @@ export default function Home() {
       <section className="py-40 bg-background">
         <div className="container mx-auto px-8">
           <div className="flex items-center justify-center gap-6 mb-20">
-            <div className="h-[1px] w-16 bg-white/10"></div>
-            <span className="text-muted-foreground uppercase tracking-[0.6em] text-[10px] font-light">The Promise</span>
-            <div className="h-[1px] w-16 bg-white/10"></div>
+            <div className="h-[1px] w-16 bg-primary/30"></div>
+            <span className="text-primary uppercase tracking-[0.6em] text-[10px] font-bold">The Promise</span>
+            <div className="h-[1px] w-16 bg-primary/30"></div>
           </div>
           <div className="grid grid-cols-1 md:grid-cols-3 gap-12">
             <FeatureCard 
@@ -88,7 +88,7 @@ export default function Home() {
       </section>
 
       {/* Featured Products */}
-      <section className="py-40 bg-white/[0.01]">
+      <section className="py-40 bg-muted/30">
         <div className="container mx-auto px-8">
           <div className="flex flex-col md:flex-row items-start md:items-center justify-between mb-20 gap-8">
             <div>
@@ -96,10 +96,10 @@ export default function Home() {
                 <div className="h-[1px] w-12 bg-primary"></div>
                 <span className="text-primary uppercase tracking-[0.5em] text-[10px] font-bold">New Acquisitions</span>
               </div>
-              <h2 className="font-serif text-5xl font-light tracking-tight">Latest Arrivals</h2>
+              <h2 className="font-serif text-5xl font-light tracking-tight text-secondary">Latest Arrivals</h2>
             </div>
             <Link href="/shop">
-              <Button variant="ghost" className="text-[10px] uppercase tracking-[0.4em] font-light hover:bg-white/5 rounded-full px-8 py-6 border border-white/10">
+              <Button variant="outline" className="text-[10px] uppercase tracking-[0.4em] font-medium rounded-full px-8 py-6 border-secondary/20 text-secondary hover:bg-secondary hover:text-white transition-all duration-500">
                 View Collection <ArrowRight className="w-4 h-4 ml-3" />
               </Button>
             </Link>
@@ -110,7 +110,7 @@ export default function Home() {
               <ProductCard key={product.id} product={product} />
             )) : (
               Array(4).fill(0).map((_, i) => (
-                <div key={i} className="bg-white/5 rounded-[2rem] aspect-[3/4] animate-pulse" />
+                <div key={i} className="bg-white rounded-[2rem] aspect-[3/4] animate-pulse shadow-lg" />
               ))
             )}
           </div>
@@ -124,11 +124,11 @@ export default function Home() {
 
 function FeatureCard({ icon: Icon, title, description }: any) {
   return (
-    <div className="p-12 rounded-3xl bg-white/[0.02] border border-white/5 hover:bg-white/[0.04] hover:border-white/10 transition-all duration-700 group">
-      <div className="w-16 h-16 bg-primary/5 rounded-2xl flex items-center justify-center text-primary mb-10 group-hover:scale-110 transition-transform duration-700">
-        <Icon className="w-8 h-8 font-light" />
+    <div className="p-12 rounded-3xl bg-white border border-border/50 hover:border-primary/20 hover:shadow-xl hover:shadow-primary/5 transition-all duration-700 group">
+      <div className="w-16 h-16 bg-primary/10 rounded-2xl flex items-center justify-center text-primary mb-10 group-hover:scale-110 group-hover:bg-primary group-hover:text-white transition-all duration-700">
+        <Icon className="w-8 h-8" />
       </div>
-      <h3 className="font-serif text-2xl font-light mb-6 tracking-wide">{title}</h3>
+      <h3 className="font-serif text-2xl font-light mb-6 tracking-wide text-secondary">{title}</h3>
       <p className="text-muted-foreground font-light leading-relaxed tracking-wide text-sm">{description}</p>
     </div>
   );
@@ -141,27 +141,27 @@ function ProductCard({ product }: { product: Product }) {
   const { addItem } = useCart();
   
   return (
-    <div className="group bg-transparent overflow-hidden transition-all duration-700 flex flex-col">
-      <div className="aspect-[3/4] relative overflow-hidden bg-white/5 rounded-[2rem]">
+    <div className="group bg-white rounded-[2rem] overflow-hidden transition-all duration-700 flex flex-col shadow-lg hover:shadow-2xl hover:shadow-primary/10">
+      <div className="aspect-[3/4] relative overflow-hidden">
         <img 
           src={product.imageUrl} 
           alt={product.name}
-          className="object-cover w-full h-full grayscale hover:grayscale-0 transition-all duration-1000 group-hover:scale-110"
+          className="object-cover w-full h-full grayscale group-hover:grayscale-0 transition-all duration-1000 group-hover:scale-110"
         />
-        <div className="absolute inset-0 bg-black/20 opacity-0 group-hover:opacity-100 transition-opacity duration-700"></div>
+        <div className="absolute inset-0 bg-secondary/20 opacity-0 group-hover:opacity-100 transition-opacity duration-700"></div>
         <div className="absolute bottom-8 left-8 right-8 translate-y-12 opacity-0 group-hover:translate-y-0 group-hover:opacity-100 transition-all duration-700">
-          <Button className="w-full rounded-full bg-white text-background hover:bg-primary hover:text-white text-[10px] uppercase tracking-[0.3em] font-bold py-6 shadow-2xl" onClick={() => addItem(product)}>
-            Request Acquisition
+          <Button className="w-full rounded-full bg-primary hover:bg-primary/90 text-white text-[10px] uppercase tracking-[0.3em] font-bold py-6 shadow-2xl" onClick={() => addItem(product)}>
+            Acquire
           </Button>
         </div>
       </div>
-      <div className="pt-8 flex-1 flex flex-col px-4">
+      <div className="p-6 flex-1 flex flex-col">
         <p className="text-[10px] font-bold text-primary mb-3 uppercase tracking-[0.4em]">{product.brand}</p>
         <Link href={`/product/${product.id}`} className="block">
-          <h3 className="font-serif font-light text-xl mb-2 group-hover:text-primary transition-colors line-clamp-1 tracking-wide">{product.name}</h3>
+          <h3 className="font-serif font-light text-xl mb-2 text-secondary group-hover:text-primary transition-colors line-clamp-1 tracking-wide">{product.name}</h3>
         </Link>
         <div className="mt-auto pt-2 flex items-baseline justify-between">
-          <span className="font-light text-muted-foreground tracking-widest text-sm">£{product.price}</span>
+          <span className="font-medium text-secondary tracking-widest text-sm">£{product.price}</span>
         </div>
       </div>
     </div>
