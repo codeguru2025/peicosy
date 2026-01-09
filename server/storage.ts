@@ -19,6 +19,8 @@ import {
 import { eq, desc, sql } from "drizzle-orm";
 import { authStorage } from "./replit_integrations/auth";
 
+export type CreateOrderItem = Omit<InsertOrderItem, 'orderId'>;
+
 export interface IStorage {
   // Products
   getProducts(category?: string, search?: string): Promise<Product[]>;
@@ -31,8 +33,12 @@ export interface IStorage {
   getOrders(userId: string): Promise<OrderWithItems[]>; // User's orders
   getAllOrders(): Promise<OrderWithItems[]>; // Admin
   getOrder(id: number): Promise<OrderWithItems | undefined>;
-  createOrder(order: InsertOrder, items: InsertOrderItem[]): Promise<Order>;
+  createOrder(order: InsertOrder, items: CreateOrderItem[]): Promise<Order>;
   updateOrderStatus(id: number, status: string, proofUrl?: string): Promise<Order | undefined>;
+
+  // Shipping & Customs
+  getShippingRates(): Promise<ShippingRate[]>;
+  getCustomsRules(countryCode: string): Promise<CustomsRule[]>;
 
   // Dashboard
   getDashboardStats(): Promise<{ totalRevenue: number, activeOrders: number, pendingVerifications: number }>;
@@ -107,7 +113,7 @@ export class DatabaseStorage implements IStorage {
     return { ...order, items };
   }
 
-  async createOrder(orderData: InsertOrder, itemsData: InsertOrderItem[]): Promise<Order> {
+  async createOrder(orderData: InsertOrder, itemsData: CreateOrderItem[]): Promise<Order> {
     return await db.transaction(async (tx) => {
       const [newOrder] = await tx.insert(orders).values(orderData).returning();
       
@@ -145,6 +151,15 @@ export class DatabaseStorage implements IStorage {
     const pendingVerifications = allOrders.filter(o => o.status === 'pending_verification').length;
 
     return { totalRevenue, activeOrders, pendingVerifications };
+  }
+
+  // Shipping & Customs
+  async getShippingRates(): Promise<ShippingRate[]> {
+    return await db.select().from(shippingRates);
+  }
+
+  async getCustomsRules(countryCode: string): Promise<CustomsRule[]> {
+    return await db.select().from(customsRules).where(eq(customsRules.countryCode, countryCode));
   }
 }
 

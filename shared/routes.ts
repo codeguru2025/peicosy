@@ -137,6 +137,38 @@ export const api = {
           pendingVerifications: z.number(),
         }),
       }
+    },
+    orders: {
+      method: 'GET' as const,
+      path: '/api/admin/orders',
+      responses: {
+        200: z.array(z.any()),
+      }
+    }
+  },
+  shipping: {
+    rates: {
+      method: 'GET' as const,
+      path: '/api/shipping/rates',
+      responses: {
+        200: z.array(z.custom<typeof shippingRates.$inferSelect>()),
+      }
+    },
+    calculate: {
+      method: 'POST' as const,
+      path: '/api/shipping/calculate',
+      input: z.object({
+        subtotal: z.number(),
+        method: z.enum(['air', 'sea']),
+        category: z.string().optional(),
+      }),
+      responses: {
+        200: z.object({
+          shippingCost: z.number(),
+          customsDuty: z.number(),
+          total: z.number(),
+        }),
+      }
     }
   }
 };

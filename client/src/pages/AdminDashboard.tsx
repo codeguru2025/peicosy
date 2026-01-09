@@ -1,12 +1,22 @@
+import { useState } from "react";
 import { Navigation } from "@/components/Navigation";
 import { Footer } from "@/components/Footer";
-import { useAdminDashboard } from "@/hooks/use-orders";
+import { useAdminDashboard, useAdminOrders, useUpdateOrderStatus } from "@/hooks/use-orders";
+import { useProducts, useCreateProduct, useUpdateProduct, useDeleteProduct } from "@/hooks/use-products";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
+import { Button } from "@/components/ui/button";
+import { Input } from "@/components/ui/input";
+import { Label } from "@/components/ui/label";
+import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
+import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogTrigger } from "@/components/ui/dialog";
+import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { BarChart, Bar, XAxis, YAxis, Tooltip, ResponsiveContainer } from "recharts";
-import { DollarSign, Package, AlertCircle } from "lucide-react";
+import { DollarSign, Package, AlertCircle, Plus, Pencil, Trash2, Eye, Check } from "lucide-react";
+import { useForm } from "react-hook-form";
 
 export default function AdminDashboard() {
   const { data: stats, isLoading } = useAdminDashboard();
+  const [activeTab, setActiveTab] = useState("overview");
 
   return (
     <div className="min-h-screen bg-background flex flex-col">
@@ -19,87 +29,329 @@ export default function AdminDashboard() {
         </div>
         <h1 className="font-serif text-5xl font-light mb-12 tracking-tight text-secondary">Admin Dashboard</h1>
 
-        {isLoading ? (
-           <div className="grid grid-cols-1 md:grid-cols-3 gap-6 mb-8">
-             <div className="h-32 bg-muted animate-pulse rounded-xl"></div>
-             <div className="h-32 bg-muted animate-pulse rounded-xl"></div>
-             <div className="h-32 bg-muted animate-pulse rounded-xl"></div>
-           </div>
-        ) : (
-          <div className="grid grid-cols-1 md:grid-cols-3 gap-6 mb-12">
-            <StatCard 
-              title="Total Revenue" 
-              value={`£${stats?.totalRevenue || 0}`} 
-              icon={DollarSign} 
-              description="Across all orders"
-            />
-            <StatCard 
-              title="Active Orders" 
-              value={stats?.activeOrders || 0} 
-              icon={Package} 
-              description="Orders in progress"
-            />
-            <StatCard 
-              title="Pending Verification" 
-              value={stats?.pendingVerifications || 0} 
-              icon={AlertCircle} 
-              description="Payments needing review"
-              alert={(stats?.pendingVerifications ?? 0) > 0}
-            />
-          </div>
-        )}
+        <Tabs value={activeTab} onValueChange={setActiveTab} className="space-y-8">
+          <TabsList className="bg-muted/50 p-1 rounded-2xl">
+            <TabsTrigger value="overview" className="rounded-xl text-[10px] uppercase tracking-[0.3em] font-bold px-6 py-3 data-[state=active]:bg-white data-[state=active]:text-secondary data-[state=active]:shadow-sm" data-testid="tab-overview">
+              Overview
+            </TabsTrigger>
+            <TabsTrigger value="products" className="rounded-xl text-[10px] uppercase tracking-[0.3em] font-bold px-6 py-3 data-[state=active]:bg-white data-[state=active]:text-secondary data-[state=active]:shadow-sm" data-testid="tab-products">
+              Products
+            </TabsTrigger>
+            <TabsTrigger value="orders" className="rounded-xl text-[10px] uppercase tracking-[0.3em] font-bold px-6 py-3 data-[state=active]:bg-white data-[state=active]:text-secondary data-[state=active]:shadow-sm" data-testid="tab-orders">
+              Orders
+            </TabsTrigger>
+          </TabsList>
 
-        <div className="grid grid-cols-1 lg:grid-cols-2 gap-8">
-           <Card className="border-border shadow-lg">
-             <CardHeader>
-               <CardTitle className="font-serif font-light text-2xl text-secondary">Revenue Overview</CardTitle>
-             </CardHeader>
-             <CardContent className="h-80">
-               <ResponsiveContainer width="100%" height="100%">
-                 <BarChart data={[
-                   { name: 'Mon', total: 1200 },
-                   { name: 'Tue', total: 900 },
-                   { name: 'Wed', total: 1600 },
-                   { name: 'Thu', total: 1400 },
-                   { name: 'Fri', total: 2100 },
-                   { name: 'Sat', total: 1800 },
-                   { name: 'Sun', total: 1000 },
-                 ]}>
-                   <XAxis dataKey="name" fontSize={12} tickLine={false} axisLine={false} stroke="hsl(var(--muted-foreground))" />
-                   <YAxis fontSize={12} tickLine={false} axisLine={false} tickFormatter={(value) => `£${value}`} stroke="hsl(var(--muted-foreground))" />
-                   <Tooltip 
-                     contentStyle={{ 
-                       backgroundColor: 'hsl(var(--background))', 
-                       border: '1px solid hsl(var(--border))',
-                       borderRadius: '0.75rem'
-                     }} 
-                   />
-                   <Bar dataKey="total" fill="hsl(var(--primary))" radius={[4, 4, 0, 0]} />
-                 </BarChart>
-               </ResponsiveContainer>
-             </CardContent>
-           </Card>
+          <TabsContent value="overview" className="space-y-8">
+            <OverviewTab stats={stats} isLoading={isLoading} />
+          </TabsContent>
 
-           <Card className="border-border shadow-lg">
-             <CardHeader>
-               <CardTitle className="font-serif font-light text-2xl text-secondary">Recent Activity</CardTitle>
-             </CardHeader>
-             <CardContent>
-                <div className="space-y-4">
-                  {[1, 2, 3, 4, 5].map((_, i) => (
-                    <div key={i} className="flex items-center gap-4 text-sm p-4 rounded-xl bg-muted/50 hover:bg-muted transition-colors duration-300">
-                      <div className="w-2 h-2 rounded-full bg-primary" />
-                      <span className="font-medium text-secondary">New order received</span>
-                      <span className="text-muted-foreground ml-auto">2 mins ago</span>
-                    </div>
-                  ))}
-                </div>
-             </CardContent>
-           </Card>
-        </div>
+          <TabsContent value="products" className="space-y-8">
+            <ProductsTab />
+          </TabsContent>
+
+          <TabsContent value="orders" className="space-y-8">
+            <OrdersTab />
+          </TabsContent>
+        </Tabs>
       </div>
       
       <Footer />
+    </div>
+  );
+}
+
+function OverviewTab({ stats, isLoading }: { stats: any, isLoading: boolean }) {
+  return (
+    <>
+      {isLoading ? (
+        <div className="grid grid-cols-1 md:grid-cols-3 gap-6 mb-8">
+          <div className="h-32 bg-muted animate-pulse rounded-xl"></div>
+          <div className="h-32 bg-muted animate-pulse rounded-xl"></div>
+          <div className="h-32 bg-muted animate-pulse rounded-xl"></div>
+        </div>
+      ) : (
+        <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
+          <StatCard 
+            title="Total Revenue" 
+            value={`£${(stats?.totalRevenue || 0).toFixed(2)}`} 
+            icon={DollarSign} 
+            description="Across all orders"
+          />
+          <StatCard 
+            title="Active Orders" 
+            value={stats?.activeOrders || 0} 
+            icon={Package} 
+            description="Orders in progress"
+          />
+          <StatCard 
+            title="Pending Verification" 
+            value={stats?.pendingVerifications || 0} 
+            icon={AlertCircle} 
+            description="Payments needing review"
+            alert={(stats?.pendingVerifications ?? 0) > 0}
+          />
+        </div>
+      )}
+
+      <div className="grid grid-cols-1 lg:grid-cols-2 gap-8">
+        <Card className="border-border shadow-lg">
+          <CardHeader>
+            <CardTitle className="font-serif font-light text-2xl text-secondary">Revenue Overview</CardTitle>
+          </CardHeader>
+          <CardContent className="h-80">
+            <ResponsiveContainer width="100%" height="100%">
+              <BarChart data={[
+                { name: 'Mon', total: 1200 },
+                { name: 'Tue', total: 900 },
+                { name: 'Wed', total: 1600 },
+                { name: 'Thu', total: 1400 },
+                { name: 'Fri', total: 2100 },
+                { name: 'Sat', total: 1800 },
+                { name: 'Sun', total: 1000 },
+              ]}>
+                <XAxis dataKey="name" fontSize={12} tickLine={false} axisLine={false} stroke="hsl(var(--muted-foreground))" />
+                <YAxis fontSize={12} tickLine={false} axisLine={false} tickFormatter={(value) => `£${value}`} stroke="hsl(var(--muted-foreground))" />
+                <Tooltip 
+                  contentStyle={{ 
+                    backgroundColor: 'hsl(var(--background))', 
+                    border: '1px solid hsl(var(--border))',
+                    borderRadius: '0.75rem'
+                  }} 
+                />
+                <Bar dataKey="total" fill="hsl(var(--primary))" radius={[4, 4, 0, 0]} />
+              </BarChart>
+            </ResponsiveContainer>
+          </CardContent>
+        </Card>
+
+        <Card className="border-border shadow-lg">
+          <CardHeader>
+            <CardTitle className="font-serif font-light text-2xl text-secondary">Recent Activity</CardTitle>
+          </CardHeader>
+          <CardContent>
+            <div className="space-y-4">
+              {[1, 2, 3, 4, 5].map((_, i) => (
+                <div key={i} className="flex items-center gap-4 text-sm p-4 rounded-xl bg-muted/50 hover:bg-muted transition-colors duration-300">
+                  <div className="w-2 h-2 rounded-full bg-primary" />
+                  <span className="font-medium text-secondary">New order received</span>
+                  <span className="text-muted-foreground ml-auto">2 mins ago</span>
+                </div>
+              ))}
+            </div>
+          </CardContent>
+        </Card>
+      </div>
+    </>
+  );
+}
+
+function ProductsTab() {
+  const { data: products, isLoading } = useProducts({});
+  const { mutate: createProduct, isPending: isCreating } = useCreateProduct();
+  const { mutate: deleteProduct } = useDeleteProduct();
+  const [isAddOpen, setIsAddOpen] = useState(false);
+  const { register, handleSubmit, reset } = useForm();
+
+  const onSubmit = (data: any) => {
+    createProduct({
+      brand: data.brand,
+      name: data.name,
+      description: data.description,
+      price: data.price,
+      currency: "GBP",
+      category: data.category,
+      imageUrl: data.imageUrl || "https://images.unsplash.com/photo-1584917865442-de89df76afd3?w=800&auto=format&fit=crop",
+      stock: parseInt(data.stock) || 0,
+    }, {
+      onSuccess: () => {
+        setIsAddOpen(false);
+        reset();
+      }
+    });
+  };
+
+  return (
+    <div className="space-y-6">
+      <div className="flex justify-between items-center">
+        <h2 className="font-serif text-2xl font-light text-secondary">Product Inventory</h2>
+        <Dialog open={isAddOpen} onOpenChange={setIsAddOpen}>
+          <DialogTrigger asChild>
+            <Button className="gap-2 rounded-full px-6 text-[10px] uppercase tracking-[0.3em] font-bold bg-primary hover:bg-primary/90 text-white" data-testid="button-add-product">
+              <Plus className="w-4 h-4" /> Add Product
+            </Button>
+          </DialogTrigger>
+          <DialogContent className="max-w-lg">
+            <DialogHeader>
+              <DialogTitle className="font-serif text-2xl font-light text-secondary">Add New Product</DialogTitle>
+            </DialogHeader>
+            <form onSubmit={handleSubmit(onSubmit)} className="space-y-4 mt-4">
+              <div className="grid grid-cols-2 gap-4">
+                <div className="space-y-2">
+                  <Label className="text-[10px] uppercase tracking-[0.3em] font-medium text-muted-foreground">Brand</Label>
+                  <Input {...register("brand")} required className="rounded-xl" data-testid="input-brand" />
+                </div>
+                <div className="space-y-2">
+                  <Label className="text-[10px] uppercase tracking-[0.3em] font-medium text-muted-foreground">Name</Label>
+                  <Input {...register("name")} required className="rounded-xl" data-testid="input-name" />
+                </div>
+              </div>
+              <div className="space-y-2">
+                <Label className="text-[10px] uppercase tracking-[0.3em] font-medium text-muted-foreground">Description</Label>
+                <Input {...register("description")} required className="rounded-xl" data-testid="input-description" />
+              </div>
+              <div className="grid grid-cols-3 gap-4">
+                <div className="space-y-2">
+                  <Label className="text-[10px] uppercase tracking-[0.3em] font-medium text-muted-foreground">Price (£)</Label>
+                  <Input {...register("price")} type="number" step="0.01" required className="rounded-xl" data-testid="input-price" />
+                </div>
+                <div className="space-y-2">
+                  <Label className="text-[10px] uppercase tracking-[0.3em] font-medium text-muted-foreground">Category</Label>
+                  <Input {...register("category")} required className="rounded-xl" data-testid="input-category" />
+                </div>
+                <div className="space-y-2">
+                  <Label className="text-[10px] uppercase tracking-[0.3em] font-medium text-muted-foreground">Stock</Label>
+                  <Input {...register("stock")} type="number" required className="rounded-xl" data-testid="input-stock" />
+                </div>
+              </div>
+              <div className="space-y-2">
+                <Label className="text-[10px] uppercase tracking-[0.3em] font-medium text-muted-foreground">Image URL</Label>
+                <Input {...register("imageUrl")} className="rounded-xl" placeholder="https://..." data-testid="input-imageurl" />
+              </div>
+              <Button type="submit" disabled={isCreating} className="w-full rounded-full bg-primary hover:bg-primary/90 text-white text-[10px] uppercase tracking-[0.3em] font-bold h-12" data-testid="button-submit-product">
+                {isCreating ? "Adding..." : "Add Product"}
+              </Button>
+            </form>
+          </DialogContent>
+        </Dialog>
+      </div>
+
+      {isLoading ? (
+        <div className="space-y-4">
+          {[1, 2, 3].map(i => <div key={i} className="h-24 bg-muted animate-pulse rounded-xl"></div>)}
+        </div>
+      ) : (
+        <div className="space-y-4">
+          {products?.map((product: any) => (
+            <Card key={product.id} className="border-border shadow-sm hover:shadow-md transition-shadow" data-testid={`product-row-${product.id}`}>
+              <CardContent className="p-6">
+                <div className="flex items-center gap-6">
+                  <div className="w-16 h-16 rounded-xl bg-muted overflow-hidden flex-shrink-0">
+                    <img src={product.imageUrl} alt={product.name} className="w-full h-full object-cover" />
+                  </div>
+                  <div className="flex-1 min-w-0">
+                    <p className="text-[9px] text-primary uppercase tracking-[0.4em] font-bold">{product.brand}</p>
+                    <p className="font-serif text-lg text-secondary truncate">{product.name}</p>
+                    <p className="text-sm text-muted-foreground">{product.category} • Stock: {product.stock}</p>
+                  </div>
+                  <div className="text-right">
+                    <p className="font-serif text-xl text-secondary">£{product.price}</p>
+                  </div>
+                  <div className="flex gap-2">
+                    <Button size="icon" variant="outline" className="rounded-xl" data-testid={`button-edit-${product.id}`}>
+                      <Pencil className="w-4 h-4" />
+                    </Button>
+                    <Button 
+                      size="icon" 
+                      variant="outline" 
+                      className="rounded-xl text-red-500 hover:text-red-600 hover:bg-red-50"
+                      onClick={() => deleteProduct(product.id)}
+                      data-testid={`button-delete-${product.id}`}
+                    >
+                      <Trash2 className="w-4 h-4" />
+                    </Button>
+                  </div>
+                </div>
+              </CardContent>
+            </Card>
+          ))}
+        </div>
+      )}
+    </div>
+  );
+}
+
+function OrdersTab() {
+  const { data: orders, isLoading } = useAdminOrders();
+  const { mutate: updateStatus, isPending } = useUpdateOrderStatus();
+
+  const handleStatusChange = (orderId: number, newStatus: string) => {
+    updateStatus({ id: orderId, status: newStatus });
+  };
+
+  return (
+    <div className="space-y-6">
+      <h2 className="font-serif text-2xl font-light text-secondary">All Orders</h2>
+
+      {isLoading ? (
+        <div className="space-y-4">
+          {[1, 2, 3].map(i => <div key={i} className="h-32 bg-muted animate-pulse rounded-xl"></div>)}
+        </div>
+      ) : orders?.length === 0 ? (
+        <Card className="border-border">
+          <CardContent className="p-12 text-center">
+            <Package className="w-16 h-16 mx-auto text-muted-foreground/30 mb-4" />
+            <p className="text-muted-foreground">No orders yet</p>
+          </CardContent>
+        </Card>
+      ) : (
+        <div className="space-y-4">
+          {orders?.map((order: any) => (
+            <Card key={order.id} className="border-border shadow-sm hover:shadow-md transition-shadow" data-testid={`admin-order-${order.id}`}>
+              <CardContent className="p-6">
+                <div className="flex flex-col lg:flex-row lg:items-center gap-6">
+                  <div className="flex-1">
+                    <div className="flex items-center gap-4 mb-2">
+                      <span className="text-[10px] text-muted-foreground uppercase tracking-[0.4em]">Order #{order.id}</span>
+                      <OrderStatusBadge status={order.status} />
+                    </div>
+                    <p className="font-serif text-lg text-secondary mb-1">£{order.totalAmount}</p>
+                    <p className="text-sm text-muted-foreground">
+                      {new Date(order.createdAt).toLocaleDateString('en-GB', { day: 'numeric', month: 'short', year: 'numeric' })}
+                      {' • '}{order.items?.length || 0} items
+                    </p>
+                    {order.proofOfPaymentUrl && (
+                      <a href={order.proofOfPaymentUrl} target="_blank" rel="noopener noreferrer" className="text-sm text-primary hover:underline flex items-center gap-1 mt-2">
+                        <Eye className="w-3 h-3" /> View Payment Proof
+                      </a>
+                    )}
+                  </div>
+                  <div className="flex items-center gap-4">
+                    <Select 
+                      value={order.status} 
+                      onValueChange={(val) => handleStatusChange(order.id, val)}
+                      disabled={isPending}
+                    >
+                      <SelectTrigger className="w-48 rounded-xl" data-testid={`select-status-${order.id}`}>
+                        <SelectValue />
+                      </SelectTrigger>
+                      <SelectContent>
+                        <SelectItem value="pending_payment">Pending Payment</SelectItem>
+                        <SelectItem value="pending_verification">Pending Verification</SelectItem>
+                        <SelectItem value="confirmed">Confirmed</SelectItem>
+                        <SelectItem value="shipped">Shipped</SelectItem>
+                        <SelectItem value="arrived">Arrived in SA</SelectItem>
+                        <SelectItem value="ready_collection">Ready for Collection</SelectItem>
+                        <SelectItem value="completed">Completed</SelectItem>
+                      </SelectContent>
+                    </Select>
+                    {order.status === 'pending_verification' && (
+                      <Button 
+                        size="sm"
+                        className="gap-2 rounded-full bg-green-500 hover:bg-green-600 text-white"
+                        onClick={() => handleStatusChange(order.id, 'confirmed')}
+                        data-testid={`button-verify-${order.id}`}
+                      >
+                        <Check className="w-4 h-4" /> Verify
+                      </Button>
+                    )}
+                  </div>
+                </div>
+              </CardContent>
+            </Card>
+          ))}
+        </div>
+      )}
     </div>
   );
 }
@@ -118,5 +370,33 @@ function StatCard({ title, value, icon: Icon, description, alert }: any) {
         <p className="text-xs text-muted-foreground mt-1">{description}</p>
       </CardContent>
     </Card>
+  );
+}
+
+function OrderStatusBadge({ status }: { status: string }) {
+  const styles: Record<string, string> = {
+    pending_payment: "bg-primary/10 text-primary border-primary/30",
+    pending_verification: "bg-blue-500/10 text-blue-600 border-blue-500/30",
+    confirmed: "bg-green-500/10 text-green-600 border-green-500/30",
+    shipped: "bg-purple-500/10 text-purple-600 border-purple-500/30",
+    arrived: "bg-indigo-500/10 text-indigo-600 border-indigo-500/30",
+    ready_collection: "bg-orange-500/10 text-orange-600 border-orange-500/30",
+    completed: "bg-secondary/10 text-secondary border-secondary/30",
+  };
+
+  const labels: Record<string, string> = {
+    pending_payment: "Awaiting Payment",
+    pending_verification: "Verifying",
+    confirmed: "Confirmed",
+    shipped: "In Transit",
+    arrived: "Arrived in SA",
+    ready_collection: "Ready",
+    completed: "Completed"
+  };
+
+  return (
+    <span className={`px-3 py-1 rounded-full text-[9px] font-bold uppercase tracking-[0.2em] border ${styles[status] || styles.completed}`}>
+      {labels[status] || status}
+    </span>
   );
 }

@@ -8,8 +8,8 @@ import NotFound from "@/pages/not-found";
 import Home from "@/pages/Home";
 import Login from "@/pages/Login";
 import Shop from "@/pages/Shop";
-import ProductDetail from "@/pages/Shop"; // Reusing Shop for now as list, separate detail if needed later
-import Cart from "@/pages/Checkout"; // Checkout page
+import ProductDetails from "@/pages/ProductDetails";
+import Checkout from "@/pages/Checkout";
 import Orders from "@/pages/Orders";
 import AdminDashboard from "@/pages/AdminDashboard";
 
@@ -19,10 +19,10 @@ function Router() {
       <Route path="/" component={Home} />
       <Route path="/login" component={Login} />
       <Route path="/shop" component={Shop} />
-      <Route path="/checkout" component={Cart} />
+      <Route path="/product/:id" component={ProductDetails} />
+      <Route path="/checkout" component={Checkout} />
       <Route path="/orders" component={Orders} />
       <Route path="/admin" component={AdminDashboard} />
-      {/* Product detail route would go here, usually /product/:id */}
       <Route component={NotFound} />
     </Switch>
   );

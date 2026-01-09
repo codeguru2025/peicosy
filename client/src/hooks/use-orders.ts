@@ -96,3 +96,14 @@ export function useAdminDashboard() {
     },
   });
 }
+
+export function useAdminOrders() {
+  return useQuery({
+    queryKey: [api.admin.orders.path],
+    queryFn: async () => {
+      const res = await fetch(api.admin.orders.path, { credentials: "include" });
+      if (!res.ok) throw new Error("Failed to fetch all orders");
+      return api.admin.orders.responses[200].parse(await res.json());
+    },
+  });
+}

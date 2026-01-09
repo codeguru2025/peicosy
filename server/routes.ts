@@ -104,10 +104,31 @@ export async function registerRoutes(
         });
       }
 
-      // Add dummy shipping/customs for now
-      const shippingCost = input.shippingMethod === 'air' ? 50 : 20;
-      const customsDuty = totalAmount * 0.45; // 45% duty
-      totalAmount += shippingCost + customsDuty;
+      // Calculate shipping and customs using database rates
+      const subtotal = totalAmount;
+      
+      // Get shipping rate from database
+      const rates = await storage.getShippingRates();
+      const rate = rates.find(r => r.method === input.shippingMethod);
+      const shippingCost = rate ? Number(rate.rate) : (input.shippingMethod === 'air' ? 50 : 20);
+      
+      // Get customs duty from database - use first item's category or 'general'
+      const firstProduct = orderItems.length > 0 ? await storage.getProduct(orderItems[0].productId) : null;
+      const category = firstProduct?.category || 'general';
+      
+      const rules = await storage.getCustomsRules('ZA');
+      let customsDuty = 0;
+      
+      if (rules.length > 0) {
+        const rule = rules.find(r => r.category?.toLowerCase() === category.toLowerCase()) || rules.find(r => r.category === 'general');
+        if (rule && subtotal > Number(rule.threshold || 0)) {
+          customsDuty = subtotal * (Number(rule.dutyPercentage) / 100);
+        }
+      } else {
+        customsDuty = subtotal * 0.45;
+      }
+      
+      totalAmount = subtotal + shippingCost + customsDuty;
 
       const orderData = {
         userId: user.claims.sub,
@@ -156,6 +177,62 @@ export async function registerRoutes(
     res.json(stats);
   });
 
+  app.get(api.admin.orders.path, isAuthenticated, async (req, res) => {
+    // TODO: Check admin role
+    const orders = await storage.getAllOrders();
+    res.json(orders);
+  });
+
+  // --- Shipping & Landed Cost Calculator ---
+  app.get(api.shipping.rates.path, async (req, res) => {
+    const rates = await storage.getShippingRates();
+    res.json(rates);
+  });
+
+  app.post(api.shipping.calculate.path, async (req, res) => {
+    try {
+      const input = api.shipping.calculate.input.parse(req.body);
+      
+      // Get shipping rates
+      const rates = await storage.getShippingRates();
+      const rate = rates.find(r => r.method === input.method);
+      const shippingCost = rate ? Number(rate.rate) : (input.method === 'air' ? 50 : 20);
+      
+      // Get customs rules for South Africa
+      const rules = await storage.getCustomsRules('ZA');
+      let customsDuty = 0;
+      
+      if (rules.length > 0) {
+        // Find matching category rule or use general rule
+        const rule = rules.find(r => r.category === input.category) || rules.find(r => r.category === 'general');
+        if (rule && input.subtotal > Number(rule.threshold || 0)) {
+          customsDuty = input.subtotal * (Number(rule.dutyPercentage) / 100);
+        }
+      } else {
+        // Default: 45% duty
+        customsDuty = input.subtotal * 0.45;
+      }
+      
+      const total = input.subtotal + shippingCost + customsDuty;
+      
+      res.json({ shippingCost, customsDuty, total });
+    } catch (err) {
+      if (err instanceof z.ZodError) {
+        return res.status(400).json({ message: err.errors[0].message });
+      }
+      res.status(500).json({ message: "Internal Server Error" });
+    }
+  });
+
+  // --- Product Delete ---
+  app.delete(api.products.delete.path, isAuthenticated, async (req, res) => {
+    try {
+      await storage.deleteProduct(Number(req.params.id));
+      res.status(204).send();
+    } catch (err) {
+      res.status(500).json({ message: "Internal Server Error" });
+    }
+  });
 
   // Helper to seed data if empty
   await seedDatabase();
@@ -164,10 +241,13 @@ export async function registerRoutes(
 }
 
 async function seedDatabase() {
+  // Always seed shipping rates and customs rules
+  await seedShippingData();
+  
   const existing = await storage.getProducts();
   if (existing.length === 0) {
     console.log("Seeding database...");
-    const products = [
+    const productsData = [
       {
         brand: "Gucci",
         name: "Marmont Matelassé Bag",
@@ -175,7 +255,7 @@ async function seedDatabase() {
         price: "1890.00",
         currency: "GBP",
         category: "Bags",
-        imageUrl: "https://media.gucci.com/style/DarkGray_Center_0_0_800x800/1475575225/443497_DTD1T_1000_001_080_0000_Light-GG-Marmont-small-matelass-shoulder-bag.jpg", // Placeholder
+        imageUrl: "https://images.unsplash.com/photo-1584917865442-de89df76afd3?w=800&auto=format&fit=crop",
         stock: 5
       },
       {
@@ -185,7 +265,7 @@ async function seedDatabase() {
         price: "1450.00",
         currency: "GBP",
         category: "Bags",
-        imageUrl: "https://eu.louisvuitton.com/images/is/image/lv/1/PP_VP_L/louis-vuitton-neverfull-mm-damier-ebene-canvas-handbags--N41358_PM2_Front%20view.png", // Placeholder
+        imageUrl: "https://images.unsplash.com/photo-1548036328-c9fa89d128fa?w=800&auto=format&fit=crop",
         stock: 3
       },
       {
@@ -195,13 +275,77 @@ async function seedDatabase() {
         price: "850.00",
         currency: "GBP",
         category: "Shoes",
-        imageUrl: "https://balenciaga.dam.kering.com/m/6c50785161099e0a/Medium-536737W2FS11000_F.jpg", // Placeholder
+        imageUrl: "https://images.unsplash.com/photo-1542291026-7eec264c27ff?w=800&auto=format&fit=crop",
         stock: 10
+      },
+      {
+        brand: "Hermès",
+        name: "Birkin 30",
+        description: "The iconic Birkin bag in Togo leather with palladium hardware. Handcrafted by skilled artisans.",
+        price: "8500.00",
+        currency: "GBP",
+        category: "Bags",
+        imageUrl: "https://images.unsplash.com/photo-1594223274512-ad4803739b7c?w=800&auto=format&fit=crop",
+        stock: 2
+      },
+      {
+        brand: "Rolex",
+        name: "Datejust 41",
+        description: "The Oyster Perpetual Datejust is the archetype of the classic watch. Oystersteel with Jubilee bracelet.",
+        price: "9800.00",
+        currency: "GBP",
+        category: "Watches",
+        imageUrl: "https://images.unsplash.com/photo-1523170335258-f5ed11844a49?w=800&auto=format&fit=crop",
+        stock: 4
+      },
+      {
+        brand: "Cartier",
+        name: "Love Bracelet",
+        description: "The iconic Love bracelet in 18K yellow gold. Timeless elegance with signature screw motifs.",
+        price: "6750.00",
+        currency: "GBP",
+        category: "Jewelry",
+        imageUrl: "https://images.unsplash.com/photo-1515562141207-7a88fb7ce338?w=800&auto=format&fit=crop",
+        stock: 6
       }
     ];
 
-    for (const p of products) {
+    for (const p of productsData) {
       await storage.createProduct(p);
     }
+
+    console.log("Database seeded successfully!");
+  }
+}
+
+async function seedShippingData() {
+  try {
+    const { db } = await import("./db");
+    const { shippingRates, customsRules } = await import("@shared/schema");
+    
+    // Check if shipping rates exist
+    const existingRates = await storage.getShippingRates();
+    if (existingRates.length === 0) {
+      console.log("Seeding shipping rates...");
+      await db.insert(shippingRates).values([
+        { method: "air", minWeight: "0", maxWeight: "30", rate: "50.00", currency: "GBP" },
+        { method: "sea", minWeight: "0", maxWeight: "100", rate: "20.00", currency: "GBP" },
+      ]);
+    }
+    
+    // Check if customs rules exist
+    const existingRules = await storage.getCustomsRules("ZA");
+    if (existingRules.length === 0) {
+      console.log("Seeding customs rules...");
+      await db.insert(customsRules).values([
+        { countryCode: "ZA", category: "general", dutyPercentage: "45.00", threshold: "0", currency: "ZAR" },
+        { countryCode: "ZA", category: "Bags", dutyPercentage: "40.00", threshold: "0", currency: "ZAR" },
+        { countryCode: "ZA", category: "Shoes", dutyPercentage: "30.00", threshold: "0", currency: "ZAR" },
+        { countryCode: "ZA", category: "Watches", dutyPercentage: "20.00", threshold: "0", currency: "ZAR" },
+        { countryCode: "ZA", category: "Jewelry", dutyPercentage: "25.00", threshold: "0", currency: "ZAR" },
+      ]);
+    }
+  } catch (err) {
+    console.error("Error seeding shipping data:", err);
   }
 }
