@@ -215,7 +215,56 @@ export async function registerRoutes(
       
       const total = input.subtotal + shippingCost + customsDuty;
       
-      res.json({ shippingCost, customsDuty, total });
+      // Get exchange rate for ZAR conversion
+      const exchangeRateData = await storage.getExchangeRate('GBP', 'ZAR');
+      const exchangeRate = exchangeRateData ? Number(exchangeRateData.rate) : 23.50;
+      
+      res.json({ 
+        shippingCost, 
+        customsDuty, 
+        total,
+        subtotalZAR: input.subtotal * exchangeRate,
+        shippingCostZAR: shippingCost * exchangeRate,
+        customsDutyZAR: customsDuty * exchangeRate,
+        totalZAR: total * exchangeRate,
+        exchangeRate
+      });
+    } catch (err) {
+      if (err instanceof z.ZodError) {
+        return res.status(400).json({ message: err.errors[0].message });
+      }
+      res.status(500).json({ message: "Internal Server Error" });
+    }
+  });
+  
+  // --- Exchange Rate ---
+  app.get(api.exchangeRate.get.path, async (req, res) => {
+    try {
+      const exchangeRate = await storage.getExchangeRate('GBP', 'ZAR');
+      if (!exchangeRate) {
+        return res.json({ rate: 23.50, fromCurrency: 'GBP', toCurrency: 'ZAR' });
+      }
+      res.json({
+        rate: Number(exchangeRate.rate),
+        fromCurrency: exchangeRate.fromCurrency,
+        toCurrency: exchangeRate.toCurrency,
+        updatedAt: exchangeRate.updatedAt?.toISOString(),
+      });
+    } catch (err) {
+      res.status(500).json({ message: "Internal Server Error" });
+    }
+  });
+
+  app.put(api.exchangeRate.update.path, isAuthenticated, async (req, res) => {
+    try {
+      const input = api.exchangeRate.update.input.parse(req.body);
+      const updated = await storage.updateExchangeRate('GBP', 'ZAR', input.rate);
+      res.json({
+        rate: Number(updated.rate),
+        fromCurrency: updated.fromCurrency,
+        toCurrency: updated.toCurrency,
+        updatedAt: updated.updatedAt?.toISOString(),
+      });
     } catch (err) {
       if (err instanceof z.ZodError) {
         return res.status(400).json({ message: err.errors[0].message });
@@ -321,7 +370,7 @@ async function seedDatabase() {
 async function seedShippingData() {
   try {
     const { db } = await import("./db");
-    const { shippingRates, customsRules } = await import("@shared/schema");
+    const { shippingRates, customsRules, exchangeRates } = await import("@shared/schema");
     
     // Check if shipping rates exist
     const existingRates = await storage.getShippingRates();
@@ -343,6 +392,16 @@ async function seedShippingData() {
         { countryCode: "ZA", category: "Shoes", dutyPercentage: "30.00", threshold: "0", currency: "ZAR" },
         { countryCode: "ZA", category: "Watches", dutyPercentage: "20.00", threshold: "0", currency: "ZAR" },
         { countryCode: "ZA", category: "Jewelry", dutyPercentage: "25.00", threshold: "0", currency: "ZAR" },
+      ]);
+    }
+    
+    // Check if exchange rate exists
+    const existingRate = await storage.getExchangeRate("GBP", "ZAR");
+    if (!existingRate) {
+      console.log("Seeding exchange rate...");
+      // Default GBP to ZAR rate (approximately 23.50 as of 2026)
+      await db.insert(exchangeRates).values([
+        { fromCurrency: "GBP", toCurrency: "ZAR", rate: "23.50" },
       ]);
     }
   } catch (err) {

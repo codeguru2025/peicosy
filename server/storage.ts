@@ -6,6 +6,7 @@ import {
   users, 
   shippingRates, 
   customsRules,
+  exchangeRates,
   type Product, 
   type InsertProduct,
   type Order,
@@ -14,6 +15,7 @@ import {
   type InsertOrderItem,
   type ShippingRate,
   type CustomsRule,
+  type ExchangeRate,
   type OrderWithItems
 } from "@shared/schema";
 import { eq, desc, sql } from "drizzle-orm";
@@ -39,6 +41,10 @@ export interface IStorage {
   // Shipping & Customs
   getShippingRates(): Promise<ShippingRate[]>;
   getCustomsRules(countryCode: string): Promise<CustomsRule[]>;
+
+  // Exchange Rates
+  getExchangeRate(from: string, to: string): Promise<ExchangeRate | undefined>;
+  updateExchangeRate(from: string, to: string, rate: number): Promise<ExchangeRate>;
 
   // Dashboard
   getDashboardStats(): Promise<{ totalRevenue: number, activeOrders: number, pendingVerifications: number }>;
@@ -160,6 +166,33 @@ export class DatabaseStorage implements IStorage {
 
   async getCustomsRules(countryCode: string): Promise<CustomsRule[]> {
     return await db.select().from(customsRules).where(eq(customsRules.countryCode, countryCode));
+  }
+
+  // Exchange Rates
+  async getExchangeRate(from: string, to: string): Promise<ExchangeRate | undefined> {
+    const [rate] = await db.select().from(exchangeRates)
+      .where(sql`${exchangeRates.fromCurrency} = ${from} AND ${exchangeRates.toCurrency} = ${to}`);
+    return rate;
+  }
+
+  async updateExchangeRate(from: string, to: string, rate: number): Promise<ExchangeRate> {
+    // Check if rate exists
+    const existing = await this.getExchangeRate(from, to);
+    
+    if (existing) {
+      const [updated] = await db
+        .update(exchangeRates)
+        .set({ rate: String(rate), updatedAt: new Date() })
+        .where(eq(exchangeRates.id, existing.id))
+        .returning();
+      return updated;
+    } else {
+      const [newRate] = await db
+        .insert(exchangeRates)
+        .values({ fromCurrency: from, toCurrency: to, rate: String(rate) })
+        .returning();
+      return newRate;
+    }
   }
 }
 

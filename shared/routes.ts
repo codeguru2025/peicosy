@@ -167,6 +167,41 @@ export const api = {
           shippingCost: z.number(),
           customsDuty: z.number(),
           total: z.number(),
+          // ZAR equivalents
+          subtotalZAR: z.number().optional(),
+          shippingCostZAR: z.number().optional(),
+          customsDutyZAR: z.number().optional(),
+          totalZAR: z.number().optional(),
+          exchangeRate: z.number().optional(),
+        }),
+      }
+    }
+  },
+  exchangeRate: {
+    get: {
+      method: 'GET' as const,
+      path: '/api/exchange-rate',
+      responses: {
+        200: z.object({
+          rate: z.number(),
+          fromCurrency: z.string(),
+          toCurrency: z.string(),
+          updatedAt: z.string().optional(),
+        }),
+      }
+    },
+    update: {
+      method: 'PUT' as const,
+      path: '/api/exchange-rate',
+      input: z.object({
+        rate: z.number().positive(),
+      }),
+      responses: {
+        200: z.object({
+          rate: z.number(),
+          fromCurrency: z.string(),
+          toCurrency: z.string(),
+          updatedAt: z.string().optional(),
         }),
       }
     }

@@ -102,7 +102,21 @@ export const orderItemsRelations = relations(orderItems, ({ one }) => ({
   }),
 }));
 
+// === EXCHANGE RATES ===
+export const exchangeRates = pgTable("exchange_rates", {
+  id: serial("id").primaryKey(),
+  fromCurrency: text("from_currency").notNull().default("GBP"),
+  toCurrency: text("to_currency").notNull().default("ZAR"),
+  rate: numeric("rate", { precision: 12, scale: 4 }).notNull(), // e.g., 23.50 means 1 GBP = 23.50 ZAR
+  updatedAt: timestamp("updated_at").defaultNow(),
+});
+
+export const insertExchangeRateSchema = createInsertSchema(exchangeRates).omit({ id: true, updatedAt: true });
+
 // === TYPES ===
+export type ExchangeRate = typeof exchangeRates.$inferSelect;
+export type InsertExchangeRate = z.infer<typeof insertExchangeRateSchema>;
+
 export type Product = typeof products.$inferSelect;
 export type InsertProduct = z.infer<typeof insertProductSchema>;
 
