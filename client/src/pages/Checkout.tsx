@@ -149,7 +149,10 @@ export default function Checkout() {
                               <p className="text-[10px] uppercase tracking-[0.3em] text-muted-foreground mt-1">5-7 business days</p>
                             </div>
                           </div>
-                          <span className="font-medium tracking-widest text-secondary">£50.00</span>
+                          <div className="text-right">
+                            <span className="font-medium tracking-widest text-primary">{formatZAR(50 * exchangeRate)}</span>
+                            <p className="text-[10px] text-muted-foreground">£50.00</p>
+                          </div>
                         </div>
                       </div>
                     </div>
@@ -170,7 +173,10 @@ export default function Checkout() {
                               <p className="text-[10px] uppercase tracking-[0.3em] text-muted-foreground mt-1">4-6 weeks</p>
                             </div>
                           </div>
-                          <span className="font-medium tracking-widest text-secondary">£20.00</span>
+                          <div className="text-right">
+                            <span className="font-medium tracking-widest text-primary">{formatZAR(20 * exchangeRate)}</span>
+                            <p className="text-[10px] text-muted-foreground">£20.00</p>
+                          </div>
                         </div>
                       </div>
                     </div>
@@ -198,7 +204,7 @@ export default function Checkout() {
                 <div className="flex justify-between">
                   <span className="text-muted-foreground font-light">Subtotal</span>
                   <span className="font-medium tracking-widest text-secondary" data-testid="text-subtotal-zar">
-                    {isCalculating ? <Loader2 className="w-4 h-4 animate-spin" /> : formatZAR(subtotalZAR)}
+                    {isCalculating ? <Loader2 className="w-4 h-4 animate-spin" /> : formatZAR(subtotalZAR || total() * exchangeRate)}
                   </span>
                 </div>
                 <div className="flex justify-between items-center">
@@ -207,7 +213,7 @@ export default function Checkout() {
                     <span className="text-[9px] uppercase text-primary">{shippingMethod === 'air' ? 'Air' : 'Sea'}</span>
                   </span>
                   <span className="font-medium tracking-widest text-secondary" data-testid="text-shipping-zar">
-                    {isCalculating ? <Loader2 className="w-4 h-4 animate-spin" /> : formatZAR(shippingCostZAR)}
+                    {isCalculating ? <Loader2 className="w-4 h-4 animate-spin" /> : formatZAR(shippingCostZAR || shippingCost * exchangeRate)}
                   </span>
                 </div>
                 <div className="flex justify-between items-center">
@@ -216,7 +222,7 @@ export default function Checkout() {
                     <Info className="w-3 h-3 text-muted-foreground/50" />
                   </span>
                   <span className="font-medium tracking-widest text-secondary" data-testid="text-duties-zar">
-                    {isCalculating ? <Loader2 className="w-4 h-4 animate-spin" /> : formatZAR(customsDutyZAR)}
+                    {isCalculating ? <Loader2 className="w-4 h-4 animate-spin" /> : formatZAR(customsDutyZAR || customsDuty * exchangeRate)}
                   </span>
                 </div>
               </div>
@@ -226,7 +232,7 @@ export default function Checkout() {
               <div className="flex justify-between font-serif text-2xl font-bold tracking-wide mb-2 text-primary">
                 <span>Total</span>
                 <span data-testid="text-total-zar">
-                  {isCalculating ? <Loader2 className="w-6 h-6 animate-spin" /> : formatZAR(grandTotalZAR)}
+                  {isCalculating ? <Loader2 className="w-6 h-6 animate-spin" /> : formatZAR(grandTotalZAR || grandTotal * exchangeRate)}
                 </span>
               </div>
               <div className="flex justify-end text-sm text-muted-foreground mb-4">

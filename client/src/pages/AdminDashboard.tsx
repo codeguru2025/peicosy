@@ -1,8 +1,9 @@
-import { useState } from "react";
+import { useState, useEffect } from "react";
 import { Navigation } from "@/components/Navigation";
 import { Footer } from "@/components/Footer";
 import { useAdminDashboard, useAdminOrders, useUpdateOrderStatus } from "@/hooks/use-orders";
 import { useProducts, useCreateProduct, useUpdateProduct, useDeleteProduct } from "@/hooks/use-products";
+import { useExchangeRate, useUpdateExchangeRate, formatZAR } from "@/hooks/use-shipping";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
@@ -11,8 +12,9 @@ import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogTrigger } from "@/components/ui/dialog";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { BarChart, Bar, XAxis, YAxis, Tooltip, ResponsiveContainer } from "recharts";
-import { DollarSign, Package, AlertCircle, Plus, Pencil, Trash2, Eye, Check } from "lucide-react";
+import { DollarSign, Package, AlertCircle, Plus, Pencil, Trash2, Eye, Check, Settings } from "lucide-react";
 import { useForm } from "react-hook-form";
+import { useToast } from "@/hooks/use-toast";
 
 export default function AdminDashboard() {
   const { data: stats, isLoading } = useAdminDashboard();
@@ -40,6 +42,9 @@ export default function AdminDashboard() {
             <TabsTrigger value="orders" className="rounded-xl text-[10px] uppercase tracking-[0.3em] font-bold px-6 py-3 data-[state=active]:bg-white data-[state=active]:text-secondary data-[state=active]:shadow-sm" data-testid="tab-orders">
               Orders
             </TabsTrigger>
+            <TabsTrigger value="settings" className="rounded-xl text-[10px] uppercase tracking-[0.3em] font-bold px-6 py-3 data-[state=active]:bg-white data-[state=active]:text-secondary data-[state=active]:shadow-sm" data-testid="tab-settings">
+              Settings
+            </TabsTrigger>
           </TabsList>
 
           <TabsContent value="overview" className="space-y-8">
@@ -52,6 +57,10 @@ export default function AdminDashboard() {
 
           <TabsContent value="orders" className="space-y-8">
             <OrdersTab />
+          </TabsContent>
+
+          <TabsContent value="settings" className="space-y-8">
+            <SettingsTab />
           </TabsContent>
         </Tabs>
       </div>
@@ -352,6 +361,129 @@ function OrdersTab() {
           ))}
         </div>
       )}
+    </div>
+  );
+}
+
+function SettingsTab() {
+  const { data: exchangeRateData, isLoading } = useExchangeRate();
+  const { mutate: updateRate, isPending } = useUpdateExchangeRate();
+  const [rate, setRate] = useState("");
+  const { toast } = useToast();
+
+  useEffect(() => {
+    if (exchangeRateData?.rate) {
+      setRate(exchangeRateData.rate.toString());
+    }
+  }, [exchangeRateData]);
+
+  const handleUpdateRate = () => {
+    if (!rate.trim()) {
+      toast({
+        title: "Invalid Rate",
+        description: "Please enter a value for the exchange rate.",
+        variant: "destructive",
+      });
+      return;
+    }
+    const newRate = parseFloat(rate);
+    if (isNaN(newRate) || newRate <= 0) {
+      toast({
+        title: "Invalid Rate",
+        description: "Please enter a valid positive number for the exchange rate.",
+        variant: "destructive",
+      });
+      return;
+    }
+    updateRate(newRate, {
+      onSuccess: () => {
+        toast({
+          title: "Exchange Rate Updated",
+          description: `GBP to ZAR rate set to ${newRate.toFixed(2)}`,
+        });
+      },
+      onError: () => {
+        toast({
+          title: "Error",
+          description: "Failed to update exchange rate. Please try again.",
+          variant: "destructive",
+        });
+      },
+    });
+  };
+
+  return (
+    <div className="space-y-8">
+      <Card className="border-border shadow-lg">
+        <CardHeader>
+          <CardTitle className="font-serif font-light text-2xl text-secondary flex items-center gap-3">
+            <Settings className="w-6 h-6 text-primary" />
+            Currency Settings
+          </CardTitle>
+        </CardHeader>
+        <CardContent className="space-y-6">
+          <div className="bg-muted/30 border border-border rounded-2xl p-6">
+            <div className="flex items-center gap-4 mb-6">
+              <div className="flex-1">
+                <Label className="text-[10px] uppercase tracking-[0.4em] text-muted-foreground font-bold mb-2 block">
+                  GBP to ZAR Exchange Rate
+                </Label>
+                <p className="text-sm text-muted-foreground mb-4">
+                  Set the exchange rate used to convert product prices from British Pounds (GBP) to South African Rand (ZAR).
+                </p>
+                <div className="flex items-center gap-4">
+                  <div className="flex items-center gap-2">
+                    <span className="text-lg font-bold text-secondary">£1 =</span>
+                    <div className="relative">
+                      <span className="absolute left-3 top-1/2 -translate-y-1/2 text-lg font-bold text-primary">R</span>
+                      <Input
+                        type="number"
+                        step="0.01"
+                        min="0"
+                        value={rate}
+                        onChange={(e) => setRate(e.target.value)}
+                        className="pl-8 w-32 text-lg font-bold"
+                        placeholder="23.50"
+                        disabled={isLoading}
+                        data-testid="input-exchange-rate"
+                      />
+                    </div>
+                  </div>
+                  <Button
+                    onClick={handleUpdateRate}
+                    disabled={isPending || isLoading || !rate.trim() || isNaN(parseFloat(rate)) || parseFloat(rate) <= 0}
+                    className="bg-primary hover:bg-primary/90"
+                    data-testid="button-update-rate"
+                  >
+                    {isPending ? "Updating..." : "Update Rate"}
+                  </Button>
+                </div>
+              </div>
+            </div>
+            
+            {exchangeRateData && (
+              <div className="pt-4 border-t border-border">
+                <p className="text-sm text-muted-foreground">
+                  <span className="font-medium">Current Rate:</span> £1 = R{exchangeRateData.rate.toFixed(2)}
+                </p>
+                <p className="text-[10px] text-muted-foreground/60 mt-1">
+                  Last updated: {exchangeRateData.updatedAt ? new Date(exchangeRateData.updatedAt).toLocaleString() : 'N/A'}
+                </p>
+              </div>
+            )}
+          </div>
+
+          <div className="bg-blue-50 border border-blue-200 rounded-2xl p-6">
+            <h3 className="text-sm font-bold text-blue-800 mb-2">How this works</h3>
+            <ul className="text-sm text-blue-700 space-y-1 list-disc list-inside">
+              <li>Products are stored with prices in GBP (British Pounds)</li>
+              <li>Customers see prices converted to ZAR using this exchange rate</li>
+              <li>Shipping costs and duties are also converted to ZAR</li>
+              <li>Update this rate regularly to reflect current market rates</li>
+            </ul>
+          </div>
+        </CardContent>
+      </Card>
     </div>
   );
 }
