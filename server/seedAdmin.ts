@@ -10,8 +10,14 @@ async function hashPassword(password: string): Promise<string> {
 }
 
 export async function seedAdminUser() {
-  const adminUsername = "peicosy";
-  const adminPassword = "admin123";
+  // Use environment variables for admin credentials, with defaults for initial setup only
+  const adminUsername = process.env.ADMIN_USERNAME || "peicosy";
+  const adminPassword = process.env.ADMIN_PASSWORD || "admin123";
+  
+  // Warn if using default credentials
+  if (!process.env.ADMIN_USERNAME || !process.env.ADMIN_PASSWORD) {
+    console.warn("WARNING: Using default admin credentials. Set ADMIN_USERNAME and ADMIN_PASSWORD environment variables for production.");
+  }
   
   const existingAdmin = await db.select().from(users).where(eq(users.username, adminUsername));
   

@@ -1,6 +1,61 @@
 import type { Express } from "express";
 import { ObjectStorageService, ObjectNotFoundError } from "./objectStorage";
 
+// Security: Allowed file types for uploads (proof of payment images/documents)
+const ALLOWED_MIME_TYPES = [
+  'image/jpeg',
+  'image/jpg',
+  'image/png',
+  'image/gif',
+  'image/webp',
+  'application/pdf',
+];
+
+// Security: Maximum file size (10MB)
+const MAX_FILE_SIZE = 10 * 1024 * 1024;
+
+// Security: Validate file extension matches content type
+const MIME_TO_EXTENSION: Record<string, string[]> = {
+  'image/jpeg': ['.jpg', '.jpeg'],
+  'image/jpg': ['.jpg', '.jpeg'],
+  'image/png': ['.png'],
+  'image/gif': ['.gif'],
+  'image/webp': ['.webp'],
+  'application/pdf': ['.pdf'],
+};
+
+function validateFileUpload(name: string, size: number | undefined, contentType: string | undefined): { valid: boolean; error?: string } {
+  // Validate file name
+  if (!name || typeof name !== 'string') {
+    return { valid: false, error: "Missing or invalid file name" };
+  }
+  
+  // Sanitize file name - remove path traversal attempts
+  const sanitizedName = name.replace(/[/\\]/g, '_').replace(/\.\./g, '_');
+  if (sanitizedName !== name) {
+    return { valid: false, error: "Invalid characters in file name" };
+  }
+  
+  // Validate content type
+  if (!contentType || !ALLOWED_MIME_TYPES.includes(contentType.toLowerCase())) {
+    return { valid: false, error: `File type not allowed. Allowed types: ${ALLOWED_MIME_TYPES.join(', ')}` };
+  }
+  
+  // Validate file extension matches content type
+  const extension = name.toLowerCase().slice(name.lastIndexOf('.'));
+  const allowedExtensions = MIME_TO_EXTENSION[contentType.toLowerCase()];
+  if (!allowedExtensions || !allowedExtensions.includes(extension)) {
+    return { valid: false, error: "File extension does not match content type" };
+  }
+  
+  // Validate file size
+  if (size !== undefined && (typeof size !== 'number' || size <= 0 || size > MAX_FILE_SIZE)) {
+    return { valid: false, error: `File size must be between 1 byte and ${MAX_FILE_SIZE / (1024 * 1024)}MB` };
+  }
+  
+  return { valid: true };
+}
+
 /**
  * Register object storage routes for file uploads.
  *
@@ -8,10 +63,11 @@ import { ObjectStorageService, ObjectNotFoundError } from "./objectStorage";
  * 1. POST /api/uploads/request-url - Get a presigned URL for uploading
  * 2. The client then uploads directly to the presigned URL
  *
- * IMPORTANT: These are example routes. Customize based on your use case:
- * - Add authentication middleware for protected uploads
- * - Add file metadata storage (save to database after upload)
- * - Add ACL policies for access control
+ * Security measures implemented:
+ * - File type validation (images and PDFs only)
+ * - File size limits (10MB max)
+ * - File name sanitization (path traversal prevention)
+ * - Content type / extension matching
  */
 export function registerObjectStorageRoutes(app: Express): void {
   const objectStorageService = new ObjectStorageService();
@@ -39,9 +95,11 @@ export function registerObjectStorageRoutes(app: Express): void {
     try {
       const { name, size, contentType } = req.body;
 
-      if (!name) {
+      // Security: Validate file before generating presigned URL
+      const validation = validateFileUpload(name, size, contentType);
+      if (!validation.valid) {
         return res.status(400).json({
-          error: "Missing required field: name",
+          error: validation.error,
         });
       }
 
