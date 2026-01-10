@@ -16,13 +16,40 @@ export const products = pgTable("products", {
   price: numeric("price", { precision: 10, scale: 2 }).notNull(),
   currency: text("currency").notNull().default("GBP"),
   category: text("category").notNull(),
-  imageUrl: text("image_url").notNull(),
+  imageUrl: text("image_url").notNull(), // Legacy field - kept for backward compatibility
   stock: integer("stock").notNull().default(0),
   isAvailable: boolean("is_available").default(true),
   createdAt: timestamp("created_at").defaultNow(),
 });
 
 export const insertProductSchema = createInsertSchema(products).omit({ id: true, createdAt: true });
+
+// === PRODUCT IMAGES ===
+// Supports multiple images per product with roles (thumbnail, hero, gallery)
+export const productImages = pgTable("product_images", {
+  id: serial("id").primaryKey(),
+  productId: integer("product_id").notNull().references(() => products.id, { onDelete: 'cascade' }),
+  role: text("role").notNull().default("gallery"), // 'thumbnail' | 'hero' | 'gallery'
+  objectPath: text("object_path").notNull(), // Path in object storage
+  cdnUrl: text("cdn_url").notNull(), // Public URL for serving
+  originalFilename: text("original_filename"),
+  mimeType: text("mime_type").notNull(),
+  fileSize: integer("file_size"), // bytes
+  width: integer("width"),
+  height: integer("height"),
+  sortOrder: integer("sort_order").notNull().default(0),
+  isLegacy: boolean("is_legacy").default(false), // True for migrated external URLs
+  createdAt: timestamp("created_at").defaultNow(),
+});
+
+export const insertProductImageSchema = createInsertSchema(productImages).omit({ id: true, createdAt: true });
+
+export const productImagesRelations = relations(productImages, ({ one }) => ({
+  product: one(products, {
+    fields: [productImages.productId],
+    references: [products.id],
+  }),
+}));
 
 // === SHIPPING RATES ===
 export const shippingRates = pgTable("shipping_rates", {
@@ -81,6 +108,7 @@ export const insertOrderItemSchema = createInsertSchema(orderItems).omit({ id: t
 // === RELATIONS ===
 export const productsRelations = relations(products, ({ many }) => ({
   orderItems: many(orderItems),
+  images: many(productImages),
 }));
 
 export const ordersRelations = relations(orders, ({ one, many }) => ({
@@ -119,6 +147,14 @@ export type InsertExchangeRate = z.infer<typeof insertExchangeRateSchema>;
 
 export type Product = typeof products.$inferSelect;
 export type InsertProduct = z.infer<typeof insertProductSchema>;
+
+export type ProductImage = typeof productImages.$inferSelect;
+export type InsertProductImage = z.infer<typeof insertProductImageSchema>;
+
+// Product with images for API responses
+export type ProductWithImages = Product & {
+  images: ProductImage[];
+};
 
 export type ShippingRate = typeof shippingRates.$inferSelect;
 export type InsertShippingRate = z.infer<typeof insertShippingRateSchema>;
