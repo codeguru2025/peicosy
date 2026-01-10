@@ -209,6 +209,139 @@ export async function registerRoutes(
     }
   });
 
+  // --- Product Images ---
+  // Get images for a product
+  app.get("/api/products/:productId/images", async (req, res) => {
+    try {
+      const images = await storage.getProductImages(Number(req.params.productId));
+      res.json(images);
+    } catch (err) {
+      console.error("Error fetching product images:", err);
+      res.status(500).json({ message: "Failed to fetch images" });
+    }
+  });
+
+  // Get product with all images
+  app.get("/api/products/:productId/with-images", async (req, res) => {
+    try {
+      const product = await storage.getProductWithImages(Number(req.params.productId));
+      if (!product) return res.status(404).json({ message: "Product not found" });
+      res.json(product);
+    } catch (err) {
+      console.error("Error fetching product with images:", err);
+      res.status(500).json({ message: "Failed to fetch product" });
+    }
+  });
+
+  // Admin: Add image to product
+  app.post("/api/products/:productId/images", isAuthenticated, isAdmin, async (req, res) => {
+    try {
+      const productId = Number(req.params.productId);
+      const product = await storage.getProduct(productId);
+      if (!product) return res.status(404).json({ message: "Product not found" });
+
+      const { objectPath, cdnUrl, role, originalFilename, mimeType, fileSize, width, height } = req.body;
+      
+      if (!objectPath || !cdnUrl || !mimeType) {
+        return res.status(400).json({ message: "Missing required fields: objectPath, cdnUrl, mimeType" });
+      }
+
+      const image = await storage.addProductImage({
+        productId,
+        objectPath,
+        cdnUrl,
+        role: role || 'gallery',
+        originalFilename,
+        mimeType,
+        fileSize,
+        width,
+        height,
+        sortOrder: 0,
+        isLegacy: false,
+      });
+
+      res.status(201).json(image);
+    } catch (err) {
+      console.error("Error adding product image:", err);
+      res.status(500).json({ message: "Failed to add image" });
+    }
+  });
+
+  // Admin: Update image metadata
+  app.patch("/api/product-images/:id", isAuthenticated, isAdmin, async (req, res) => {
+    try {
+      const { role, sortOrder } = req.body;
+      const updated = await storage.updateProductImage(Number(req.params.id), { role, sortOrder });
+      if (!updated) return res.status(404).json({ message: "Image not found" });
+      res.json(updated);
+    } catch (err) {
+      console.error("Error updating product image:", err);
+      res.status(500).json({ message: "Failed to update image" });
+    }
+  });
+
+  // Admin: Delete image
+  app.delete("/api/product-images/:id", isAuthenticated, isAdmin, async (req, res) => {
+    try {
+      await storage.deleteProductImage(Number(req.params.id));
+      res.status(204).send();
+    } catch (err) {
+      console.error("Error deleting product image:", err);
+      res.status(500).json({ message: "Failed to delete image" });
+    }
+  });
+
+  // Admin: Reorder images for a product
+  app.post("/api/products/:productId/images/reorder", isAuthenticated, isAdmin, async (req, res) => {
+    try {
+      const productId = Number(req.params.productId);
+      const { imageIds } = req.body;
+      
+      if (!Array.isArray(imageIds)) {
+        return res.status(400).json({ message: "imageIds must be an array" });
+      }
+      
+      await storage.reorderProductImages(productId, imageIds);
+      res.json({ success: true });
+    } catch (err) {
+      console.error("Error reordering images:", err);
+      res.status(500).json({ message: "Failed to reorder images" });
+    }
+  });
+
+  // Admin: Migrate legacy imageUrl to product_images table
+  app.post("/api/products/:productId/migrate-image", isAuthenticated, isAdmin, async (req, res) => {
+    try {
+      const productId = Number(req.params.productId);
+      const image = await storage.migrateProductImageUrl(productId);
+      if (!image) return res.status(404).json({ message: "No image to migrate" });
+      res.json(image);
+    } catch (err) {
+      console.error("Error migrating product image:", err);
+      res.status(500).json({ message: "Failed to migrate image" });
+    }
+  });
+
+  // Admin: Bulk migrate all product images
+  app.post("/api/admin/migrate-all-images", isAuthenticated, isAdmin, async (req, res) => {
+    try {
+      const products = await storage.getProducts();
+      const migrated = [];
+      
+      for (const product of products) {
+        if (product.imageUrl) {
+          const image = await storage.migrateProductImageUrl(product.id);
+          if (image) migrated.push({ productId: product.id, imageId: image.id });
+        }
+      }
+      
+      res.json({ migrated, count: migrated.length });
+    } catch (err) {
+      console.error("Error migrating all images:", err);
+      res.status(500).json({ message: "Failed to migrate images" });
+    }
+  });
+
   // --- Orders ---
   app.get(api.orders.list.path, isAuthenticated, async (req, res) => {
     const user = req.user as any;

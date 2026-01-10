@@ -7,6 +7,7 @@ import {
   shippingRates, 
   customsRules,
   exchangeRates,
+  productImages,
   type Product, 
   type InsertProduct,
   type Order,
@@ -17,9 +18,12 @@ import {
   type CustomsRule,
   type ExchangeRate,
   type OrderWithItems,
-  type User
+  type User,
+  type ProductImage,
+  type InsertProductImage,
+  type ProductWithImages
 } from "@shared/schema";
-import { eq, desc, sql } from "drizzle-orm";
+import { eq, desc, sql, asc } from "drizzle-orm";
 import { authStorage } from "./replit_integrations/auth";
 
 export type CreateOrderItem = Omit<InsertOrderItem, 'orderId'>;
@@ -71,6 +75,15 @@ export interface IStorage {
   getUserByUsername(username: string): Promise<User | undefined>;
   getUserByEmail(email: string): Promise<User | undefined>;
   createUser(user: { username: string; password: string; email?: string | null; firstName?: string | null; lastName?: string | null; isAdmin?: boolean }): Promise<User>;
+
+  // Product Images
+  getProductImages(productId: number): Promise<ProductImage[]>;
+  getProductWithImages(productId: number): Promise<ProductWithImages | undefined>;
+  addProductImage(image: InsertProductImage): Promise<ProductImage>;
+  updateProductImage(id: number, updates: Partial<InsertProductImage>): Promise<ProductImage | undefined>;
+  deleteProductImage(id: number): Promise<void>;
+  reorderProductImages(productId: number, imageIds: number[]): Promise<void>;
+  migrateProductImageUrl(productId: number): Promise<ProductImage | undefined>;
 }
 
 export class DatabaseStorage implements IStorage {
@@ -424,6 +437,96 @@ export class DatabaseStorage implements IStorage {
       default:
         return [];
     }
+  }
+
+  // Product Images
+  async getProductImages(productId: number): Promise<ProductImage[]> {
+    return await db.select().from(productImages)
+      .where(eq(productImages.productId, productId))
+      .orderBy(asc(productImages.sortOrder));
+  }
+
+  async getProductWithImages(productId: number): Promise<ProductWithImages | undefined> {
+    const product = await this.getProduct(productId);
+    if (!product) return undefined;
+    
+    const images = await this.getProductImages(productId);
+    return { ...product, images };
+  }
+
+  async addProductImage(image: InsertProductImage): Promise<ProductImage> {
+    // If this is a thumbnail, remove existing thumbnail
+    if (image.role === 'thumbnail') {
+      await db.update(productImages)
+        .set({ role: 'gallery' })
+        .where(sql`${productImages.productId} = ${image.productId} AND ${productImages.role} = 'thumbnail'`);
+    }
+    
+    // If this is a hero, remove existing hero
+    if (image.role === 'hero') {
+      await db.update(productImages)
+        .set({ role: 'gallery' })
+        .where(sql`${productImages.productId} = ${image.productId} AND ${productImages.role} = 'hero'`);
+    }
+    
+    const [newImage] = await db.insert(productImages).values(image).returning();
+    return newImage;
+  }
+
+  async updateProductImage(id: number, updates: Partial<InsertProductImage>): Promise<ProductImage | undefined> {
+    // If changing role to thumbnail/hero, demote existing one first
+    if (updates.role === 'thumbnail' || updates.role === 'hero') {
+      const [image] = await db.select().from(productImages).where(eq(productImages.id, id));
+      if (image) {
+        await db.update(productImages)
+          .set({ role: 'gallery' })
+          .where(sql`${productImages.productId} = ${image.productId} AND ${productImages.role} = ${updates.role} AND ${productImages.id} != ${id}`);
+      }
+    }
+    
+    const [updated] = await db
+      .update(productImages)
+      .set(updates)
+      .where(eq(productImages.id, id))
+      .returning();
+    return updated;
+  }
+
+  async deleteProductImage(id: number): Promise<void> {
+    await db.delete(productImages).where(eq(productImages.id, id));
+  }
+
+  async reorderProductImages(productId: number, imageIds: number[]): Promise<void> {
+    await db.transaction(async (tx) => {
+      for (let i = 0; i < imageIds.length; i++) {
+        await tx.update(productImages)
+          .set({ sortOrder: i })
+          .where(eq(productImages.id, imageIds[i]));
+      }
+    });
+  }
+
+  async migrateProductImageUrl(productId: number): Promise<ProductImage | undefined> {
+    const product = await this.getProduct(productId);
+    if (!product || !product.imageUrl) return undefined;
+    
+    // Check if already migrated
+    const existing = await db.select().from(productImages)
+      .where(sql`${productImages.productId} = ${productId} AND ${productImages.isLegacy} = true`);
+    if (existing.length > 0) return existing[0];
+    
+    // Create legacy image entry from existing URL
+    const [legacyImage] = await db.insert(productImages).values({
+      productId,
+      role: 'thumbnail',
+      objectPath: product.imageUrl, // External URL stored as path
+      cdnUrl: product.imageUrl,
+      mimeType: 'image/jpeg', // Assume JPEG for external URLs
+      isLegacy: true,
+      sortOrder: 0,
+    }).returning();
+    
+    return legacyImage;
   }
 }
 
