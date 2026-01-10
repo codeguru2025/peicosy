@@ -26,8 +26,8 @@ export async function registerRoutes(
   await setupAuth(app);
   registerAuthRoutes(app);
 
-  // 2. Setup Object Storage
-  registerObjectStorageRoutes(app);
+  // 2. Setup Object Storage (with authentication for uploads)
+  registerObjectStorageRoutes(app, isAuthenticated);
 
   // 3. API Routes
 
@@ -180,7 +180,7 @@ export async function registerRoutes(
   });
 
   // Admin only: Create Product
-  app.post(api.products.create.path, isAuthenticated, async (req, res) => {
+  app.post(api.products.create.path, isAuthenticated, isAdmin, async (req, res) => {
     try {
       // TODO: check admin role
       const input = api.products.create.input.parse(req.body);
@@ -195,7 +195,7 @@ export async function registerRoutes(
   });
 
   // Admin only: Update Product
-  app.put(api.products.update.path, isAuthenticated, async (req, res) => {
+  app.put(api.products.update.path, isAuthenticated, isAdmin, async (req, res) => {
     try {
       const input = api.products.update.input.parse(req.body);
       const updated = await storage.updateProduct(Number(req.params.id), input);
@@ -460,7 +460,7 @@ export async function registerRoutes(
     }
   });
 
-  app.put(api.exchangeRate.update.path, isAuthenticated, async (req, res) => {
+  app.put(api.exchangeRate.update.path, isAuthenticated, isAdmin, async (req, res) => {
     try {
       const input = api.exchangeRate.update.input.parse(req.body);
       const updated = await storage.updateExchangeRate('GBP', 'ZAR', input.rate);
@@ -479,7 +479,7 @@ export async function registerRoutes(
   });
 
   // --- Product Delete ---
-  app.delete(api.products.delete.path, isAuthenticated, async (req, res) => {
+  app.delete(api.products.delete.path, isAuthenticated, isAdmin, async (req, res) => {
     try {
       await storage.deleteProduct(Number(req.params.id));
       res.status(204).send();

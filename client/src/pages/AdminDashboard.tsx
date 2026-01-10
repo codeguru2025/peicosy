@@ -111,54 +111,21 @@ function OverviewTab({ stats, isLoading }: { stats: any, isLoading: boolean }) {
         </div>
       )}
 
-      <div className="grid grid-cols-1 lg:grid-cols-2 gap-8">
-        <Card className="border-border shadow-lg">
-          <CardHeader>
-            <CardTitle className="font-serif font-light text-2xl text-secondary">Revenue Overview</CardTitle>
-          </CardHeader>
-          <CardContent className="h-80">
-            <ResponsiveContainer width="100%" height="100%">
-              <BarChart data={[
-                { name: 'Mon', total: 1200 },
-                { name: 'Tue', total: 900 },
-                { name: 'Wed', total: 1600 },
-                { name: 'Thu', total: 1400 },
-                { name: 'Fri', total: 2100 },
-                { name: 'Sat', total: 1800 },
-                { name: 'Sun', total: 1000 },
-              ]}>
-                <XAxis dataKey="name" fontSize={12} tickLine={false} axisLine={false} stroke="hsl(var(--muted-foreground))" />
-                <YAxis fontSize={12} tickLine={false} axisLine={false} tickFormatter={(value) => `£${value}`} stroke="hsl(var(--muted-foreground))" />
-                <Tooltip 
-                  contentStyle={{ 
-                    backgroundColor: 'hsl(var(--background))', 
-                    border: '1px solid hsl(var(--border))',
-                    borderRadius: '0.75rem'
-                  }} 
-                />
-                <Bar dataKey="total" fill="hsl(var(--primary))" radius={[4, 4, 0, 0]} />
-              </BarChart>
-            </ResponsiveContainer>
-          </CardContent>
-        </Card>
-
-        <Card className="border-border shadow-lg">
-          <CardHeader>
-            <CardTitle className="font-serif font-light text-2xl text-secondary">Recent Activity</CardTitle>
-          </CardHeader>
-          <CardContent>
-            <div className="space-y-4">
-              {[1, 2, 3, 4, 5].map((_, i) => (
-                <div key={i} className="flex items-center gap-4 text-sm p-4 rounded-xl bg-muted/50 hover:bg-muted transition-colors duration-300">
-                  <div className="w-2 h-2 rounded-full bg-primary" />
-                  <span className="font-medium text-secondary">New order received</span>
-                  <span className="text-muted-foreground ml-auto">2 mins ago</span>
-                </div>
-              ))}
-            </div>
-          </CardContent>
-        </Card>
-      </div>
+      <Card className="border-border shadow-lg">
+        <CardContent className="p-8 text-center">
+          <BarChart3 className="w-12 h-12 mx-auto mb-4 text-primary" />
+          <h3 className="font-serif text-xl font-light text-secondary mb-2">Detailed Analytics</h3>
+          <p className="text-muted-foreground mb-4">View comprehensive reports, revenue trends, and export data</p>
+          <Button 
+            variant="outline" 
+            className="rounded-full px-6 text-[10px] uppercase tracking-[0.3em] font-bold"
+            onClick={() => document.querySelector('[data-testid="tab-reports"]')?.dispatchEvent(new MouseEvent('click', { bubbles: true }))}
+            data-testid="button-view-reports"
+          >
+            View Reports
+          </Button>
+        </CardContent>
+      </Card>
     </>
   );
 }
@@ -178,7 +145,7 @@ function ProductsTab() {
       price: data.price,
       currency: "GBP",
       category: data.category,
-      imageUrl: data.imageUrl || "https://images.unsplash.com/photo-1584917865442-de89df76afd3?w=800&auto=format&fit=crop",
+      imageUrl: data.imageUrl,
       stock: parseInt(data.stock) || 0,
     }, {
       onSuccess: () => {

@@ -1,0 +1,156 @@
+Below is a MEGA repeatable prompt you can copy-paste into ChatGPT, Cursor, Copilot, or give directly to a dev team.
+It is written to force best-practice implementation, not shortcuts.
+
+⸻
+
+🔥 MEGA REPEAT PROMPT: Image Upload + CDN Optimization for E-commerce App
+
+ROLE & CONTEXT
+You are a senior full-stack engineer and performance optimization expert working on an online store application.
+The current system only supports external image URLs for product images, which is unreliable and not optimized for speed or SEO.
+We want to refactor and extend the application to support admin image uploads, with images stored in cloud storage and served via a CDN for maximum performance, reliability, and scalability.
+
+⸻
+
+🎯 OBJECTIVE
+
+Design and implement a production-grade image handling system where:
+	•	Admins upload product images directly from the dashboard
+	•	Images are stored in cloud storage
+	•	Images are automatically optimized and converted
+	•	Images are served via a CDN using URLs
+	•	The frontend renders images in the fastest possible way
+
+This must follow modern e-commerce best practices.
+
+⸻
+
+🏗 FUNCTIONAL REQUIREMENTS
+
+1. Admin Image Upload
+	•	Add or modify admin UI to allow:
+	•	Drag-and-drop image upload
+	•	Multiple images per product
+	•	Preview before saving
+	•	Enforce:
+	•	Max file size (e.g. 5MB)
+	•	Accepted formats: JPG, PNG, WebP
+	•	Validate uploads on both frontend and backend
+
+⸻
+
+2. Image Storage
+	•	Store uploaded images in cloud object storage (e.g. AWS S3, GCS, or Cloudinary)
+	•	Use a structured path system:
+
+/products/{productId}/{imageType}/{filename}
+
+
+	•	Never store images directly on the application server
+
+⸻
+
+3. CDN Delivery
+	•	Configure a CDN layer (CloudFront / Cloud CDN / Cloudinary CDN)
+	•	All images must be served via CDN URLs
+	•	Enable:
+	•	Caching
+	•	HTTP/2 or HTTP/3
+	•	Long cache headers for immutable assets
+
+⸻
+
+4. Image Optimization (Critical)
+On upload or on-the-fly:
+	•	Auto-resize to multiple breakpoints (thumbnail, card, detail, zoom)
+	•	Convert to:
+	•	WebP (default)
+	•	AVIF (if supported)
+	•	Compress images without visible quality loss
+	•	Strip metadata (EXIF)
+
+⸻
+
+5. Database Changes
+	•	Update the database schema so:
+	•	Products reference image metadata, not raw URLs
+	•	Store:
+	•	CDN URL
+	•	Image type (thumbnail, gallery, hero)
+	•	Width & height
+	•	Format
+	•	Maintain backward compatibility for existing URL-based images (optional migration strategy)
+
+⸻
+
+6. Frontend Rendering (Performance First)
+	•	Use:
+	•	loading="lazy" for non-critical images
+	•	Preload hero images
+	•	srcset and sizes for responsive loading
+	•	Ensure images render correctly across:
+	•	Mobile
+	•	Tablet
+	•	Desktop
+	•	Prevent layout shift (CLS) by setting width & height
+
+⸻
+
+7. Security & Reliability
+	•	Protect upload endpoints with authentication & authorization
+	•	Scan uploads for malicious files
+	•	Use signed URLs or upload tokens where applicable
+	•	Prevent hotlink abuse
+
+⸻
+
+8. Migration Plan
+	•	Provide a strategy to:
+	•	Gradually move from external URLs to CDN-hosted images
+	•	Handle broken or slow third-party links
+	•	Optional script to re-upload existing images to the CDN
+
+⸻
+
+📈 NON-FUNCTIONAL REQUIREMENTS
+	•	Optimize for:
+	•	Fastest possible Time to First Byte (TTFB)
+	•	Low Largest Contentful Paint (LCP)
+	•	Ensure solution is:
+	•	Scalable
+	•	Cost-efficient
+	•	SEO-friendly
+	•	Code must be:
+	•	Clean
+	•	Documented
+	•	Production-ready
+
+⸻
+
+📦 DELIVERABLES
+	1.	Backend architecture overview
+	2.	Updated database schema
+	3.	API endpoints for image upload & retrieval
+	4.	CDN configuration notes
+	5.	Frontend image rendering implementation
+	6.	Migration strategy from URL-only system
+
+⸻
+
+🚀 FINAL INSTRUCTION
+
+Do NOT propose:
+	•	Hotlinking third-party images
+	•	Serving images from the app server
+	•	Unoptimized full-size images
+
+Follow industry best practices used by high-performance e-commerce platforms.
+
+⸻
+
+If you want, I can now:
+	•	Rewrite this specifically for Next.js / React / Laravel / Django
+	•	Turn it into a Jira ticket or PR description
+	•	Simplify it for non-technical stakeholders
+
+Just tell me 👌

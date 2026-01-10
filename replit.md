@@ -8,6 +8,12 @@ The platform includes product browsing, dynamic landed cost calculation, proof o
 
 ## Recent Changes (January 2026)
 
+- **Security Hardening** (January 2026):
+  - File upload validation (allowed types: JPEG, PNG, GIF, WebP, PDF)
+  - File size limits (10MB max)
+  - Path traversal prevention in file names
+  - Authentication required for file uploads
+  - Admin credentials configurable via ADMIN_USERNAME and ADMIN_PASSWORD env vars
 - **Admin Reports & Analytics**: New Reports tab in admin dashboard with:
   - Key business metrics (total revenue, orders, average order value, customer count)
   - Revenue trend chart (12 months)
@@ -57,7 +63,7 @@ Preferred communication style: Simple, everyday language.
 - **Password Security**: bcrypt with 12 salt rounds
 - **Session Storage**: PostgreSQL-backed sessions via connect-pg-simple
 - **Session Management**: Express sessions with Passport.js
-- **Default Admin**: username "peicosy", password "admin123" (change for production)
+- **Admin Credentials**: Configurable via ADMIN_USERNAME and ADMIN_PASSWORD environment variables (defaults to "peicosy"/"admin123" if not set - change for production)
 
 ### PWA Features
 - **Manifest**: client/public/manifest.json with app metadata and icons

@@ -1,4 +1,4 @@
-import type { Express } from "express";
+import type { Express, RequestHandler } from "express";
 import { ObjectStorageService, ObjectNotFoundError } from "./objectStorage";
 
 // Security: Allowed file types for uploads (proof of payment images/documents)
@@ -64,12 +64,13 @@ function validateFileUpload(name: string, size: number | undefined, contentType:
  * 2. The client then uploads directly to the presigned URL
  *
  * Security measures implemented:
+ * - Authentication required for uploads
  * - File type validation (images and PDFs only)
  * - File size limits (10MB max)
  * - File name sanitization (path traversal prevention)
  * - Content type / extension matching
  */
-export function registerObjectStorageRoutes(app: Express): void {
+export function registerObjectStorageRoutes(app: Express, isAuthenticated?: RequestHandler): void {
   const objectStorageService = new ObjectStorageService();
 
   /**
@@ -90,8 +91,10 @@ export function registerObjectStorageRoutes(app: Express): void {
    *
    * IMPORTANT: The client should NOT send the file to this endpoint.
    * Send JSON metadata only, then upload the file directly to uploadURL.
+   * Authentication is required to upload files.
    */
-  app.post("/api/uploads/request-url", async (req, res) => {
+  const uploadMiddleware = isAuthenticated ? [isAuthenticated] : [];
+  app.post("/api/uploads/request-url", ...uploadMiddleware, async (req, res) => {
     try {
       const { name, size, contentType } = req.body;
 
