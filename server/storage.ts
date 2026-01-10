@@ -234,11 +234,14 @@ export class DatabaseStorage implements IStorage {
   }
 
   async getDashboardStats(): Promise<{ totalRevenue: number, activeOrders: number, pendingVerifications: number }> {
-    // This is a simplified implementation
     const allOrders = await db.select().from(orders);
     
-    const totalRevenue = allOrders.reduce((sum, order) => sum + Number(order.totalAmount), 0);
-    const activeOrders = allOrders.filter(o => o.status !== 'completed' && o.status !== 'cancelled').length;
+    // Only count revenue from orders that are actually paid (not failed, cancelled, or pending payment)
+    const paidStatuses = ['paid', 'processing', 'shipped', 'completed', 'pending_verification'];
+    const paidOrders = allOrders.filter(o => paidStatuses.includes(o.status));
+    
+    const totalRevenue = paidOrders.reduce((sum, order) => sum + Number(order.totalAmount), 0);
+    const activeOrders = allOrders.filter(o => o.status !== 'completed' && o.status !== 'cancelled' && o.status !== 'payment_failed').length;
     const pendingVerifications = allOrders.filter(o => o.status === 'pending_verification').length;
 
     return { totalRevenue, activeOrders, pendingVerifications };
@@ -310,10 +313,15 @@ export class DatabaseStorage implements IStorage {
     const allProducts = await db.select().from(products);
     const allUsers = await db.select().from(users).where(eq(users.isAdmin, false));
 
-    // Basic metrics
-    const totalRevenue = allOrders.reduce((sum, o) => sum + Number(o.totalAmount), 0);
+    // Only count revenue from orders that are actually paid (not failed, cancelled, or pending payment)
+    const paidStatuses = ['paid', 'processing', 'shipped', 'completed', 'pending_verification'];
+    const paidOrders = allOrders.filter(o => paidStatuses.includes(o.status));
+
+    // Basic metrics - use paidOrders for revenue calculations
+    const totalRevenue = paidOrders.reduce((sum, o) => sum + Number(o.totalAmount), 0);
     const totalOrders = allOrders.length;
-    const averageOrderValue = totalOrders > 0 ? totalRevenue / totalOrders : 0;
+    const paidOrderCount = paidOrders.length;
+    const averageOrderValue = paidOrderCount > 0 ? totalRevenue / paidOrderCount : 0;
 
     // Orders by status
     const ordersByStatus: Record<string, number> = {};
@@ -321,22 +329,25 @@ export class DatabaseStorage implements IStorage {
       ordersByStatus[o.status] = (ordersByStatus[o.status] || 0) + 1;
     });
 
-    // Revenue by month (last 12 months)
+    // Revenue by month (last 12 months) - only count paid orders
     const revenueByMonth: { month: string; revenue: number }[] = [];
     const now = new Date();
     for (let i = 11; i >= 0; i--) {
       const date = new Date(now.getFullYear(), now.getMonth() - i, 1);
       const monthKey = date.toISOString().slice(0, 7); // YYYY-MM
       const monthName = date.toLocaleDateString('en-US', { month: 'short', year: '2-digit' });
-      const monthRevenue = allOrders
+      const monthRevenue = paidOrders
         .filter(o => o.createdAt && o.createdAt.toISOString().slice(0, 7) === monthKey)
         .reduce((sum, o) => sum + Number(o.totalAmount), 0);
       revenueByMonth.push({ month: monthName, revenue: monthRevenue });
     }
 
-    // Top products by sales
+    // Top products by sales - only count items from paid orders
+    const paidOrderIds = new Set(paidOrders.map(o => o.id));
+    const paidItems = allItems.filter(item => paidOrderIds.has(item.orderId));
+    
     const productSales: Record<number, { totalSold: number; revenue: number }> = {};
-    allItems.forEach(item => {
+    paidItems.forEach(item => {
       if (!productSales[item.productId]) {
         productSales[item.productId] = { totalSold: 0, revenue: 0 };
       }
@@ -357,9 +368,9 @@ export class DatabaseStorage implements IStorage {
       .sort((a, b) => b.revenue - a.revenue)
       .slice(0, 10);
 
-    // Top categories
+    // Top categories - only count items from paid orders
     const categorySales: Record<string, { count: number; revenue: number }> = {};
-    allItems.forEach(item => {
+    paidItems.forEach(item => {
       const product = allProducts.find(p => p.id === item.productId);
       const category = product?.category || 'Other';
       if (!categorySales[category]) {
