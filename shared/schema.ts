@@ -196,3 +196,66 @@ export type CreateOrderRequest = {
 
 export type Inquiry = typeof inquiries.$inferSelect;
 export type InsertInquiry = z.infer<typeof insertInquirySchema>;
+
+// === API VALIDATION SCHEMAS ===
+
+// Authentication validation
+export const loginSchema = z.object({
+  username: z.string().min(1, "Username is required"),
+  password: z.string().min(1, "Password is required"),
+});
+
+export const registerSchema = z.object({
+  username: z.string().min(3, "Username must be at least 3 characters"),
+  password: z.string().min(6, "Password must be at least 6 characters"),
+  email: z.string().email("Please enter a valid email"),
+  firstName: z.string().min(1, "First name is required"),
+  lastName: z.string().min(1, "Last name is required"),
+});
+
+// Shipping address validation
+export const shippingAddressSchema = z.object({
+  street: z.string().min(1, "Street address is required"),
+  city: z.string().min(1, "City is required"),
+  zip: z.string().min(1, "Postal/ZIP code is required"),
+  country: z.enum(["South Africa", "Zimbabwe"]),
+});
+
+// Order creation validation
+export const createOrderSchema = z.object({
+  items: z.array(z.object({
+    productId: z.number().positive("Invalid product"),
+    quantity: z.number().int().positive("Quantity must be at least 1"),
+  })).min(1, "Order must have at least one item"),
+  shippingMethod: z.enum(["air", "sea"]),
+  shippingAddress: shippingAddressSchema,
+});
+
+// Shipping calculation validation
+export const calculateShippingSchema = z.object({
+  items: z.array(z.object({
+    productId: z.number().positive(),
+    quantity: z.number().int().positive(),
+  })).min(1),
+  shippingMethod: z.enum(["air", "sea"]),
+  destinationCountry: z.string().optional(),
+});
+
+// Paynow payment validation
+export const paynowInitiateSchema = z.object({
+  orderId: z.number().positive("Invalid order ID"),
+});
+
+export const paynowMobileSchema = z.object({
+  orderId: z.number().positive("Invalid order ID"),
+  phone: z.string().regex(/^0[7][0-9]{8}$/, "Please enter a valid Zimbabwe phone number (e.g., 0771234567)"),
+  method: z.enum(["ecocash", "onemoney"]),
+});
+
+// Type exports for validation schemas
+export type LoginRequest = z.infer<typeof loginSchema>;
+export type RegisterRequest = z.infer<typeof registerSchema>;
+export type CreateOrderRequest2 = z.infer<typeof createOrderSchema>;
+export type CalculateShippingRequest = z.infer<typeof calculateShippingSchema>;
+export type PaynowInitiateRequest = z.infer<typeof paynowInitiateSchema>;
+export type PaynowMobileRequest = z.infer<typeof paynowMobileSchema>;

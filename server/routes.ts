@@ -8,6 +8,26 @@ import { registerObjectStorageRoutes } from "./replit_integrations/object_storag
 import { generatePayFastForm, isPayFastConfigured, validatePayFastITN } from "./payfast";
 import { isPaynowConfigured, initiateWebPayment, initiateMobilePayment, checkPaymentStatus, validatePaynowHash } from "./paynow";
 import bcrypt from "bcrypt";
+import { 
+  loginSchema, 
+  registerSchema, 
+  createOrderSchema, 
+  calculateShippingSchema,
+  paynowInitiateSchema,
+  paynowMobileSchema 
+} from "@shared/schema";
+import { fromZodError } from "zod-validation-error";
+
+// Structured logging helper for payment events
+function logPaymentEvent(event: string, data: Record<string, any>) {
+  const timestamp = new Date().toISOString();
+  console.log(JSON.stringify({
+    type: "PAYMENT_EVENT",
+    event,
+    timestamp,
+    ...data,
+  }));
+}
 
 const SALT_ROUNDS = 12;
 
@@ -773,7 +793,14 @@ export async function registerRoutes(
   // Initiate Paynow web checkout
   app.post("/api/payment/paynow/initiate", isAuthenticated, async (req, res) => {
     try {
-      const { orderId } = req.body;
+      // Validate request body with Zod
+      const validation = paynowInitiateSchema.safeParse(req.body);
+      if (!validation.success) {
+        const error = fromZodError(validation.error);
+        return res.status(400).json({ message: error.message });
+      }
+      
+      const { orderId } = validation.data;
       const user = req.user as any;
       
       if (!isPaynowConfigured()) {
@@ -781,6 +808,11 @@ export async function registerRoutes(
           message: "Paynow is not currently available. Please use another payment method." 
         });
       }
+      
+      logPaymentEvent("PAYNOW_WEB_INITIATED", {
+        orderId,
+        userId: user.id || user.claims?.sub,
+      });
       
       const order = await storage.getOrder(orderId);
       if (!order) {
@@ -837,7 +869,14 @@ export async function registerRoutes(
   // Initiate Paynow mobile payment (Ecocash/OneMoney)
   app.post("/api/payment/paynow/mobile", isAuthenticated, async (req, res) => {
     try {
-      const { orderId, phone, method } = req.body;
+      // Validate request body with Zod
+      const validation = paynowMobileSchema.safeParse(req.body);
+      if (!validation.success) {
+        const error = fromZodError(validation.error);
+        return res.status(400).json({ message: error.message });
+      }
+      
+      const { orderId, phone, method } = validation.data;
       const user = req.user as any;
       
       if (!isPaynowConfigured()) {
@@ -846,17 +885,11 @@ export async function registerRoutes(
         });
       }
       
-      if (!phone || !method) {
-        return res.status(400).json({ 
-          message: "Please provide your phone number and payment method." 
-        });
-      }
-      
-      if (!['ecocash', 'onemoney'].includes(method)) {
-        return res.status(400).json({ 
-          message: "Please select either Ecocash or OneMoney." 
-        });
-      }
+      logPaymentEvent("PAYNOW_MOBILE_INITIATED", {
+        orderId,
+        method,
+        userId: user.id || user.claims?.sub,
+      });
       
       const order = await storage.getOrder(orderId);
       if (!order) {
@@ -964,11 +997,19 @@ export async function registerRoutes(
   // Paynow callback (server-to-server notification)
   app.post("/api/payments/paynow/callback", async (req, res) => {
     try {
-      console.log("Paynow callback received:", req.body);
+      logPaymentEvent("PAYNOW_CALLBACK_RECEIVED", {
+        reference: req.body.reference,
+        paynowReference: req.body.paynowreference,
+        status: req.body.status,
+        amount: req.body.amount,
+      });
       
       // SECURITY: Validate Paynow hash signature first
       if (!validatePaynowHash(req.body)) {
-        console.warn("Paynow callback: invalid hash signature - rejecting callback");
+        logPaymentEvent("PAYNOW_CALLBACK_REJECTED", {
+          reason: "INVALID_HASH",
+          reference: req.body.reference,
+        });
         return res.status(401).send("Invalid signature");
       }
       
@@ -980,45 +1021,82 @@ export async function registerRoutes(
       const orderId = match ? parseInt(match[1]) : null;
       
       if (!orderId) {
-        console.warn("Paynow callback: invalid reference format", reference);
+        logPaymentEvent("PAYNOW_CALLBACK_REJECTED", {
+          reason: "INVALID_REFERENCE_FORMAT",
+          reference,
+        });
         return res.status(400).send("Invalid reference");
       }
 
       // Verify order exists
       const order = await storage.getOrder(orderId);
       if (!order) {
-        console.warn("Paynow callback: order not found", orderId);
+        logPaymentEvent("PAYNOW_CALLBACK_REJECTED", {
+          reason: "ORDER_NOT_FOUND",
+          orderId,
+          reference,
+        });
         return res.status(404).send("Order not found");
       }
 
       // Verify we have a stored poll URL for this order (prevents unsolicited callbacks)
       const storedPollUrl = await storage.getOrderPaynowPollUrl(orderId);
       if (!storedPollUrl) {
-        console.warn("Paynow callback: no poll URL stored for order", orderId);
+        logPaymentEvent("PAYNOW_CALLBACK_REJECTED", {
+          reason: "NO_STORED_POLL_URL",
+          orderId,
+          reference,
+        });
         return res.status(400).send("No pending Paynow payment for this order");
       }
 
       // CRITICAL: Re-poll Paynow using our stored poll URL to verify the payment status
       // This is a defense-in-depth measure in addition to hash validation
       const verifiedStatus = await checkPaymentStatus(storedPollUrl);
-      console.log(`Paynow callback verification for order ${orderId}:`, verifiedStatus);
+      
+      logPaymentEvent("PAYNOW_CALLBACK_VERIFIED", {
+        orderId,
+        reference,
+        paynowReference: paynowreference,
+        callbackStatus: status,
+        verifiedStatus: verifiedStatus.status,
+        verifiedPaid: verifiedStatus.paid,
+        amount: verifiedStatus.amount,
+      });
 
       // Only update order if verified status from Paynow confirms payment
       if (verifiedStatus.paid) {
         if (order.status === 'pending_payment') {
           await storage.updateOrderStatus(orderId, 'confirmed');
-          console.log(`Order ${orderId} confirmed via verified Paynow callback`);
+          logPaymentEvent("PAYNOW_PAYMENT_CONFIRMED", {
+            orderId,
+            reference,
+            paynowReference: paynowreference,
+            amount: verifiedStatus.amount,
+            previousStatus: order.status,
+            newStatus: 'confirmed',
+          });
         }
       } else if (verifiedStatus.status === 'Cancelled') {
         await storage.updateOrderStatus(orderId, 'cancelled');
-        console.log(`Order ${orderId} cancelled via verified Paynow callback`);
+        logPaymentEvent("PAYNOW_PAYMENT_CANCELLED", {
+          orderId,
+          reference,
+          paynowReference: paynowreference,
+        });
       } else {
-        console.log(`Order ${orderId} callback received but status not yet paid: ${verifiedStatus.status}`);
+        logPaymentEvent("PAYNOW_CALLBACK_PENDING", {
+          orderId,
+          reference,
+          status: verifiedStatus.status,
+        });
       }
       
       res.status(200).send("OK");
     } catch (err) {
-      console.error("Paynow callback error:", err);
+      logPaymentEvent("PAYNOW_CALLBACK_ERROR", {
+        error: err instanceof Error ? err.message : "Unknown error",
+      });
       res.status(500).send("Error processing callback");
     }
   });
