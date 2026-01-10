@@ -78,7 +78,10 @@ export function ImageUploader({
       throw new Error('The image couldn\'t be uploaded. Please try again.');
     }
 
-    const cdnUrl = `/objects${objectPath.startsWith('/') ? objectPath : '/' + objectPath}`;
+    // objectPath from server already includes /objects/ prefix, use it directly
+    const cdnUrl = objectPath.startsWith('/objects/') 
+      ? objectPath 
+      : `/objects${objectPath.startsWith('/') ? objectPath : '/' + objectPath}`;
     
     const img = new window.Image();
     const dimensions = await new Promise<{ width: number; height: number }>((resolve) => {
