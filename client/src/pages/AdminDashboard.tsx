@@ -11,11 +11,14 @@ import { Label } from "@/components/ui/label";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogTrigger } from "@/components/ui/dialog";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
+import { ScrollArea } from "@/components/ui/scroll-area";
 import { BarChart, Bar, XAxis, YAxis, Tooltip, ResponsiveContainer, PieChart as RechartsPie, Pie, Cell, LineChart, Line, Legend } from "recharts";
-import { useQuery } from "@tanstack/react-query";
-import { DollarSign, Package, AlertCircle, Plus, Pencil, Trash2, Eye, Check, Settings, Download, FileSpreadsheet, TrendingUp, Users, ShoppingBag, BarChart3, PieChart } from "lucide-react";
+import { useQuery, useMutation } from "@tanstack/react-query";
+import { DollarSign, Package, AlertCircle, Plus, Pencil, Trash2, Eye, Check, Settings, Download, FileSpreadsheet, TrendingUp, Users, ShoppingBag, BarChart3, PieChart, ImageIcon } from "lucide-react";
 import { useForm } from "react-hook-form";
 import { useToast } from "@/hooks/use-toast";
+import { ImageUploader, type UploadedImage } from "@/components/ImageUploader";
+import { apiRequest, queryClient } from "@/lib/queryClient";
 
 export default function AdminDashboard() {
   const { data: stats, isLoading } = useAdminDashboard();
@@ -135,9 +138,34 @@ function ProductsTab() {
   const { mutate: createProduct, isPending: isCreating } = useCreateProduct();
   const { mutate: deleteProduct } = useDeleteProduct();
   const [isAddOpen, setIsAddOpen] = useState(false);
+  const [productImages, setProductImages] = useState<UploadedImage[]>([]);
+  const [isUploadingImages, setIsUploadingImages] = useState(false);
   const { register, handleSubmit, reset } = useForm();
+  const { toast } = useToast();
 
-  const onSubmit = (data: any) => {
+  const addImageToProduct = useMutation({
+    mutationFn: async ({ productId, image }: { productId: number; image: UploadedImage }) => {
+      return apiRequest(`/api/products/${productId}/images`, {
+        method: 'POST',
+        body: JSON.stringify({
+          objectPath: image.objectPath,
+          cdnUrl: image.cdnUrl,
+          role: image.role,
+          originalFilename: image.originalFilename,
+          mimeType: image.mimeType,
+          fileSize: image.fileSize,
+          width: image.width,
+          height: image.height,
+        }),
+      });
+    },
+  });
+
+  const onSubmit = async (data: any) => {
+    const imageUrl = productImages.length > 0 
+      ? productImages.find(img => img.role === 'thumbnail')?.cdnUrl || productImages[0].cdnUrl 
+      : data.imageUrl || 'https://placehold.co/400x400?text=No+Image';
+
     createProduct({
       brand: data.brand,
       name: data.name,
@@ -145,67 +173,112 @@ function ProductsTab() {
       price: data.price,
       currency: "GBP",
       category: data.category,
-      imageUrl: data.imageUrl,
+      imageUrl: imageUrl,
       stock: parseInt(data.stock) || 0,
     }, {
-      onSuccess: () => {
+      onSuccess: async (newProduct: any) => {
+        if (productImages.length > 0 && newProduct?.id) {
+          setIsUploadingImages(true);
+          try {
+            for (const image of productImages) {
+              await addImageToProduct.mutateAsync({ productId: newProduct.id, image });
+            }
+            queryClient.invalidateQueries({ queryKey: ['/api/products'] });
+            toast({ title: "Success", description: "Product created with images" });
+          } catch (err) {
+            toast({ title: "Warning", description: "Product created but some images failed to save", variant: "destructive" });
+          }
+          setIsUploadingImages(false);
+        }
         setIsAddOpen(false);
+        setProductImages([]);
         reset();
       }
     });
+  };
+
+  const handleDialogClose = (open: boolean) => {
+    if (!open) {
+      setProductImages([]);
+      reset();
+    }
+    setIsAddOpen(open);
   };
 
   return (
     <div className="space-y-6">
       <div className="flex justify-between items-center">
         <h2 className="font-serif text-2xl font-light text-secondary">Product Inventory</h2>
-        <Dialog open={isAddOpen} onOpenChange={setIsAddOpen}>
+        <Dialog open={isAddOpen} onOpenChange={handleDialogClose}>
           <DialogTrigger asChild>
             <Button className="gap-2 rounded-full px-6 text-[10px] uppercase tracking-[0.3em] font-bold bg-primary hover:bg-primary/90 text-white" data-testid="button-add-product">
               <Plus className="w-4 h-4" /> Add Product
             </Button>
           </DialogTrigger>
-          <DialogContent className="max-w-lg">
+          <DialogContent className="max-w-2xl max-h-[90vh]">
             <DialogHeader>
               <DialogTitle className="font-serif text-2xl font-light text-secondary">Add New Product</DialogTitle>
             </DialogHeader>
-            <form onSubmit={handleSubmit(onSubmit)} className="space-y-4 mt-4">
-              <div className="grid grid-cols-2 gap-4">
-                <div className="space-y-2">
-                  <Label className="text-[10px] uppercase tracking-[0.3em] font-medium text-muted-foreground">Brand</Label>
-                  <Input {...register("brand")} required className="rounded-xl" data-testid="input-brand" />
+            <ScrollArea className="max-h-[70vh] pr-4">
+              <form onSubmit={handleSubmit(onSubmit)} className="space-y-4 mt-4">
+                <div className="grid grid-cols-2 gap-4">
+                  <div className="space-y-2">
+                    <Label className="text-[10px] uppercase tracking-[0.3em] font-medium text-muted-foreground">Brand</Label>
+                    <Input {...register("brand")} required className="rounded-xl" data-testid="input-brand" />
+                  </div>
+                  <div className="space-y-2">
+                    <Label className="text-[10px] uppercase tracking-[0.3em] font-medium text-muted-foreground">Name</Label>
+                    <Input {...register("name")} required className="rounded-xl" data-testid="input-name" />
+                  </div>
                 </div>
                 <div className="space-y-2">
-                  <Label className="text-[10px] uppercase tracking-[0.3em] font-medium text-muted-foreground">Name</Label>
-                  <Input {...register("name")} required className="rounded-xl" data-testid="input-name" />
+                  <Label className="text-[10px] uppercase tracking-[0.3em] font-medium text-muted-foreground">Description</Label>
+                  <Input {...register("description")} required className="rounded-xl" data-testid="input-description" />
                 </div>
-              </div>
-              <div className="space-y-2">
-                <Label className="text-[10px] uppercase tracking-[0.3em] font-medium text-muted-foreground">Description</Label>
-                <Input {...register("description")} required className="rounded-xl" data-testid="input-description" />
-              </div>
-              <div className="grid grid-cols-3 gap-4">
+                <div className="grid grid-cols-3 gap-4">
+                  <div className="space-y-2">
+                    <Label className="text-[10px] uppercase tracking-[0.3em] font-medium text-muted-foreground">Price (£)</Label>
+                    <Input {...register("price")} type="number" step="0.01" required className="rounded-xl" data-testid="input-price" />
+                  </div>
+                  <div className="space-y-2">
+                    <Label className="text-[10px] uppercase tracking-[0.3em] font-medium text-muted-foreground">Category</Label>
+                    <Input {...register("category")} required className="rounded-xl" data-testid="input-category" />
+                  </div>
+                  <div className="space-y-2">
+                    <Label className="text-[10px] uppercase tracking-[0.3em] font-medium text-muted-foreground">Stock</Label>
+                    <Input {...register("stock")} type="number" required className="rounded-xl" data-testid="input-stock" />
+                  </div>
+                </div>
+                
                 <div className="space-y-2">
-                  <Label className="text-[10px] uppercase tracking-[0.3em] font-medium text-muted-foreground">Price (£)</Label>
-                  <Input {...register("price")} type="number" step="0.01" required className="rounded-xl" data-testid="input-price" />
+                  <Label className="text-[10px] uppercase tracking-[0.3em] font-medium text-muted-foreground flex items-center gap-2">
+                    <ImageIcon className="w-4 h-4" />
+                    Product Images
+                  </Label>
+                  <ImageUploader
+                    images={productImages}
+                    onImagesChange={setProductImages}
+                    maxImages={10}
+                  />
                 </div>
-                <div className="space-y-2">
-                  <Label className="text-[10px] uppercase tracking-[0.3em] font-medium text-muted-foreground">Category</Label>
-                  <Input {...register("category")} required className="rounded-xl" data-testid="input-category" />
-                </div>
-                <div className="space-y-2">
-                  <Label className="text-[10px] uppercase tracking-[0.3em] font-medium text-muted-foreground">Stock</Label>
-                  <Input {...register("stock")} type="number" required className="rounded-xl" data-testid="input-stock" />
-                </div>
-              </div>
-              <div className="space-y-2">
-                <Label className="text-[10px] uppercase tracking-[0.3em] font-medium text-muted-foreground">Image URL</Label>
-                <Input {...register("imageUrl")} className="rounded-xl" placeholder="https://..." data-testid="input-imageurl" />
-              </div>
-              <Button type="submit" disabled={isCreating} className="w-full rounded-full bg-primary hover:bg-primary/90 text-white text-[10px] uppercase tracking-[0.3em] font-bold h-12" data-testid="button-submit-product">
-                {isCreating ? "Adding..." : "Add Product"}
-              </Button>
-            </form>
+
+                {productImages.length === 0 && (
+                  <div className="space-y-2">
+                    <Label className="text-[10px] uppercase tracking-[0.3em] font-medium text-muted-foreground">Or use Image URL</Label>
+                    <Input {...register("imageUrl")} className="rounded-xl" placeholder="https://..." data-testid="input-imageurl" />
+                  </div>
+                )}
+
+                <Button 
+                  type="submit" 
+                  disabled={isCreating || isUploadingImages} 
+                  className="w-full rounded-full bg-primary hover:bg-primary/90 text-white text-[10px] uppercase tracking-[0.3em] font-bold h-12" 
+                  data-testid="button-submit-product"
+                >
+                  {isCreating || isUploadingImages ? "Adding..." : "Add Product"}
+                </Button>
+              </form>
+            </ScrollArea>
           </DialogContent>
         </Dialog>
       </div>
@@ -221,7 +294,12 @@ function ProductsTab() {
               <CardContent className="p-6">
                 <div className="flex items-center gap-6">
                   <div className="w-16 h-16 rounded-xl bg-muted overflow-hidden flex-shrink-0">
-                    <img src={product.imageUrl} alt={product.name} className="w-full h-full object-cover" />
+                    <img 
+                      src={product.imageUrl} 
+                      alt={product.name} 
+                      className="w-full h-full object-cover"
+                      loading="lazy"
+                    />
                   </div>
                   <div className="flex-1 min-w-0">
                     <p className="text-[9px] text-primary uppercase tracking-[0.4em] font-bold">{product.brand}</p>
