@@ -9,6 +9,7 @@ import { Link } from "wouter";
 import { Button } from "@/components/ui/button";
 import { useCart } from "@/hooks/use-cart";
 import { useExchangeRate, formatZAR } from "@/hooks/use-shipping";
+import { OptimizedImage } from "@/components/OptimizedImage";
 
 export default function Shop() {
   const [search, setSearch] = useState("");
@@ -99,10 +100,11 @@ function ProductCard({ product, exchangeRate }: { product: Product; exchangeRate
   return (
     <div className="group bg-white rounded-[2rem] overflow-hidden transition-all duration-700 flex flex-col shadow-lg hover:shadow-2xl hover:shadow-primary/10" data-testid={`card-product-${product.id}`}>
       <div className="aspect-[3/4] relative overflow-hidden">
-        <img 
-          src={product.imageUrl} 
+        <OptimizedImage
+          src={product.imageUrl}
           alt={product.name}
-          className="object-cover w-full h-full grayscale group-hover:grayscale-0 transition-all duration-1000 group-hover:scale-110"
+          aspectRatio="portrait"
+          className="w-full h-full grayscale group-hover:grayscale-0 transition-all duration-1000 group-hover:scale-110"
         />
         <div className="absolute inset-0 bg-secondary/20 opacity-0 group-hover:opacity-100 transition-opacity duration-700"></div>
         <div className="absolute bottom-8 left-8 right-8 translate-y-12 opacity-0 group-hover:translate-y-0 group-hover:opacity-100 transition-all duration-700">
