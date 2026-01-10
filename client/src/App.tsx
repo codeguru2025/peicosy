@@ -19,6 +19,7 @@ import PaymentSuccess from "@/pages/PaymentSuccess";
 import PaymentCancel from "@/pages/PaymentCancel";
 import Privacy from "@/pages/Privacy";
 import Terms from "@/pages/Terms";
+import Contact from "@/pages/Contact";
 
 function Router() {
   return (
@@ -35,6 +36,7 @@ function Router() {
       <Route path="/payment/cancel" component={PaymentCancel} />
       <Route path="/privacy" component={Privacy} />
       <Route path="/terms" component={Terms} />
+      <Route path="/contact" component={Contact} />
       <Route component={NotFound} />
     </Switch>
   );

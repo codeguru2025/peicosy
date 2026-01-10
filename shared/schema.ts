@@ -130,6 +130,20 @@ export const orderItemsRelations = relations(orderItems, ({ one }) => ({
   }),
 }));
 
+// === INQUIRIES ===
+export const inquiries = pgTable("inquiries", {
+  id: serial("id").primaryKey(),
+  name: text("name").notNull(),
+  email: text("email").notNull(),
+  phone: text("phone"),
+  subject: text("subject").notNull(),
+  message: text("message").notNull(),
+  status: text("status").notNull().default("new"), // 'new' | 'read' | 'replied' | 'closed'
+  createdAt: timestamp("created_at").defaultNow(),
+});
+
+export const insertInquirySchema = createInsertSchema(inquiries).omit({ id: true, createdAt: true, status: true });
+
 // === EXCHANGE RATES ===
 export const exchangeRates = pgTable("exchange_rates", {
   id: serial("id").primaryKey(),
@@ -178,3 +192,6 @@ export type CreateOrderRequest = {
   shippingMethod: 'air' | 'sea';
   shippingAddress: any;
 };
+
+export type Inquiry = typeof inquiries.$inferSelect;
+export type InsertInquiry = z.infer<typeof insertInquirySchema>;

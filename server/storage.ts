@@ -8,6 +8,7 @@ import {
   customsRules,
   exchangeRates,
   productImages,
+  inquiries,
   type Product, 
   type InsertProduct,
   type Order,
@@ -21,7 +22,9 @@ import {
   type User,
   type ProductImage,
   type InsertProductImage,
-  type ProductWithImages
+  type ProductWithImages,
+  type Inquiry,
+  type InsertInquiry
 } from "@shared/schema";
 import { eq, desc, sql, asc } from "drizzle-orm";
 import { authStorage } from "./replit_integrations/auth";
@@ -84,6 +87,12 @@ export interface IStorage {
   deleteProductImage(id: number): Promise<void>;
   reorderProductImages(productId: number, imageIds: number[]): Promise<void>;
   migrateProductImageUrl(productId: number): Promise<ProductImage | undefined>;
+
+  // Inquiries
+  getInquiries(): Promise<Inquiry[]>;
+  getInquiry(id: number): Promise<Inquiry | undefined>;
+  createInquiry(inquiry: InsertInquiry): Promise<Inquiry>;
+  updateInquiryStatus(id: number, status: string): Promise<Inquiry | undefined>;
 }
 
 export class DatabaseStorage implements IStorage {
@@ -527,6 +536,30 @@ export class DatabaseStorage implements IStorage {
     }).returning();
     
     return legacyImage;
+  }
+
+  // Inquiries
+  async getInquiries(): Promise<Inquiry[]> {
+    return await db.select().from(inquiries).orderBy(desc(inquiries.createdAt));
+  }
+
+  async getInquiry(id: number): Promise<Inquiry | undefined> {
+    const [inquiry] = await db.select().from(inquiries).where(eq(inquiries.id, id));
+    return inquiry;
+  }
+
+  async createInquiry(inquiry: InsertInquiry): Promise<Inquiry> {
+    const [newInquiry] = await db.insert(inquiries).values(inquiry).returning();
+    return newInquiry;
+  }
+
+  async updateInquiryStatus(id: number, status: string): Promise<Inquiry | undefined> {
+    const [updated] = await db
+      .update(inquiries)
+      .set({ status })
+      .where(eq(inquiries.id, id))
+      .returning();
+    return updated;
   }
 }
 

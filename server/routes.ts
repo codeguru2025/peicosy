@@ -521,6 +521,59 @@ export async function registerRoutes(
     }
   });
 
+  // --- Inquiries ---
+  // Public: Submit an inquiry
+  app.post("/api/inquiries", async (req, res) => {
+    try {
+      const { name, email, phone, subject, message } = req.body;
+      
+      if (!name || !email || !subject || !message) {
+        return res.status(400).json({ message: "Name, email, subject, and message are required" });
+      }
+      
+      // Basic email validation
+      if (!/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(email)) {
+        return res.status(400).json({ message: "Invalid email address" });
+      }
+      
+      const inquiry = await storage.createInquiry({ name, email, phone, subject, message });
+      res.status(201).json({ message: "Inquiry submitted successfully", id: inquiry.id });
+    } catch (err) {
+      console.error("Error creating inquiry:", err);
+      res.status(500).json({ message: "Failed to submit inquiry" });
+    }
+  });
+
+  // Admin: Get all inquiries
+  app.get("/api/admin/inquiries", isAuthenticated, isAdmin, async (req, res) => {
+    try {
+      const inquiries = await storage.getInquiries();
+      res.json(inquiries);
+    } catch (err) {
+      console.error("Error fetching inquiries:", err);
+      res.status(500).json({ message: "Failed to fetch inquiries" });
+    }
+  });
+
+  // Admin: Update inquiry status
+  app.patch("/api/admin/inquiries/:id", isAuthenticated, isAdmin, async (req, res) => {
+    try {
+      const id = Number(req.params.id);
+      const { status } = req.body;
+      
+      if (!['new', 'read', 'replied', 'closed'].includes(status)) {
+        return res.status(400).json({ message: "Invalid status" });
+      }
+      
+      const updated = await storage.updateInquiryStatus(id, status);
+      if (!updated) return res.status(404).json({ message: "Inquiry not found" });
+      res.json(updated);
+    } catch (err) {
+      console.error("Error updating inquiry:", err);
+      res.status(500).json({ message: "Failed to update inquiry" });
+    }
+  });
+
   // --- Shipping & Landed Cost Calculator ---
   app.get(api.shipping.rates.path, async (req, res) => {
     const rates = await storage.getShippingRates();
