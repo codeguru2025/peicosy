@@ -22,8 +22,9 @@ export interface PaynowMobilePaymentData extends PaynowPaymentData {
 }
 
 export function getPaynowConfig(): PaynowConfig | null {
-  const integrationId = process.env.PAYNOW_INTEGRATION_ID;
-  const integrationKey = process.env.PAYNOW_INTEGRATION_KEY;
+  // Trim whitespace from credentials - common issue when copying from dashboard
+  const integrationId = process.env.PAYNOW_INTEGRATION_ID?.trim();
+  const integrationKey = process.env.PAYNOW_INTEGRATION_KEY?.trim();
   
   if (!integrationId || !integrationKey) {
     return null;
