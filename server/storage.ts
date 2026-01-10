@@ -102,18 +102,26 @@ export class DatabaseStorage implements IStorage {
   // Products
   async getProducts(category?: string, search?: string): Promise<Product[]> {
     let query = db.select().from(products);
+    
+    const conditions = [];
     if (category) {
-      // Case-insensitive category matching
-      query = query.where(sql`lower(${products.category}) = lower(${category})`) as any;
+      conditions.push(sql`lower(${products.category}) = lower(${category})`);
     }
     if (search) {
-      // Search in name, brand, and description
-      query = query.where(
-        sql`lower(${products.name}) LIKE lower(${'%' + search + '%'}) 
+      conditions.push(
+        sql`(lower(${products.name}) LIKE lower(${'%' + search + '%'}) 
             OR lower(${products.brand}) LIKE lower(${'%' + search + '%'})
-            OR lower(${products.description}) LIKE lower(${'%' + search + '%'})`
-      ) as any;
+            OR lower(${products.description}) LIKE lower(${'%' + search + '%'}))`
+      );
     }
+    
+    if (conditions.length > 0) {
+      const combinedCondition = conditions.length === 1 
+        ? conditions[0] 
+        : sql`${conditions[0]} AND ${conditions[1]}`;
+      query = query.where(combinedCondition) as any;
+    }
+    
     return await query.orderBy(desc(products.createdAt));
   }
 

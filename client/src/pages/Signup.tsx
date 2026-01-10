@@ -133,7 +133,7 @@ export default function Signup() {
         </div>
 
         <div className="relative z-10 text-[9px] uppercase tracking-[0.5em] text-white/40">
-          Crafted by Chibikhulu
+          Peicosy Private Client
         </div>
       </div>
 

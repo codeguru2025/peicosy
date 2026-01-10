@@ -56,7 +56,7 @@ export function Footer() {
           <p className="text-[10px] uppercase tracking-[0.3em] text-white/40 font-light">© {new Date().getFullYear()} Peicosy Private Client. All Rights Reserved.</p>
           <div className="text-center md:text-right">
             <p className="font-serif italic text-primary text-xl mb-2 font-light tracking-wide">Not for Everyone, Just for You</p>
-            <p className="text-[9px] uppercase tracking-[0.5em] text-white/40">Created by Chibikhulu</p>
+            <p className="text-[9px] uppercase tracking-[0.5em] text-white/40">Peicosy Private Client</p>
           </div>
         </div>
       </div>

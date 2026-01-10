@@ -63,7 +63,7 @@ export function SplashScreen({ onComplete, minDuration = 1500 }: SplashScreenPro
       </div>
       
       <div className="absolute bottom-8 text-[9px] uppercase tracking-[0.5em] text-white/30">
-        Crafted by Chibikhulu
+        Exclusive Luxury Access
       </div>
     </div>
   );
