@@ -133,6 +133,8 @@ function OverviewTab({ stats, isLoading }: { stats: any, isLoading: boolean }) {
   );
 }
 
+const PRODUCT_CATEGORIES = ['Fashion', 'Tech', 'Home', 'Beauty'] as const;
+
 function ProductsTab() {
   const { data: products, isLoading } = useProducts({});
   const { mutate: createProduct, isPending: isCreating } = useCreateProduct();
@@ -140,7 +142,8 @@ function ProductsTab() {
   const [isAddOpen, setIsAddOpen] = useState(false);
   const [productImages, setProductImages] = useState<UploadedImage[]>([]);
   const [isUploadingImages, setIsUploadingImages] = useState(false);
-  const { register, handleSubmit, reset } = useForm();
+  const [selectedCategory, setSelectedCategory] = useState<string>("");
+  const { register, handleSubmit, reset, setValue } = useForm();
   const { toast } = useToast();
 
   const addImageToProduct = useMutation({
@@ -200,6 +203,7 @@ function ProductsTab() {
   const handleDialogClose = (open: boolean) => {
     if (!open) {
       setProductImages([]);
+      setSelectedCategory("");
       reset();
     }
     setIsAddOpen(open);
@@ -242,7 +246,22 @@ function ProductsTab() {
                   </div>
                   <div className="space-y-2">
                     <Label className="text-[10px] uppercase tracking-[0.3em] font-medium text-muted-foreground">Category</Label>
-                    <Input {...register("category")} required className="rounded-xl" data-testid="input-category" />
+                    <Select 
+                      value={selectedCategory} 
+                      onValueChange={(value) => {
+                        setSelectedCategory(value);
+                        setValue("category", value);
+                      }}
+                    >
+                      <SelectTrigger className="rounded-xl" data-testid="select-category">
+                        <SelectValue placeholder="Select category" />
+                      </SelectTrigger>
+                      <SelectContent>
+                        {PRODUCT_CATEGORIES.map(cat => (
+                          <SelectItem key={cat} value={cat}>{cat}</SelectItem>
+                        ))}
+                      </SelectContent>
+                    </Select>
                   </div>
                   <div className="space-y-2">
                     <Label className="text-[10px] uppercase tracking-[0.3em] font-medium text-muted-foreground">Stock</Label>

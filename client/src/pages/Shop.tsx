@@ -11,9 +11,15 @@ import { useCart } from "@/hooks/use-cart";
 import { useExchangeRate, formatZAR } from "@/hooks/use-shipping";
 import { OptimizedImage } from "@/components/OptimizedImage";
 
+const CATEGORIES = ['All', 'Fashion', 'Tech', 'Home', 'Beauty'] as const;
+
 export default function Shop() {
   const [search, setSearch] = useState("");
-  const { data: products, isLoading } = useProducts({ search });
+  const [selectedCategory, setSelectedCategory] = useState<string>("All");
+  const { data: products, isLoading } = useProducts({ 
+    search, 
+    category: selectedCategory === "All" ? undefined : selectedCategory 
+  });
   const { data: exchangeRateData } = useExchangeRate();
   const exchangeRate = exchangeRateData?.rate ?? 23.50;
 
@@ -51,12 +57,17 @@ export default function Shop() {
             />
           </div>
           <div className="flex gap-4 overflow-x-auto pb-2 md:pb-0">
-             {['All', 'Fashion', 'Tech', 'Home', 'Beauty'].map(cat => (
+             {CATEGORIES.map(cat => (
                <Button 
                  key={cat} 
                  variant="outline" 
                  size="sm" 
-                 className="rounded-full border-border text-[10px] uppercase tracking-[0.3em] px-8 py-5 text-secondary hover:bg-primary hover:text-white hover:border-primary transition-all duration-500"
+                 className={`rounded-full text-[10px] uppercase tracking-[0.3em] px-8 py-5 transition-all duration-500 ${
+                   selectedCategory === cat 
+                     ? "bg-primary text-white border-primary" 
+                     : "border-border text-secondary hover:bg-primary hover:text-white hover:border-primary"
+                 }`}
+                 onClick={() => setSelectedCategory(cat)}
                  data-testid={`button-category-${cat.toLowerCase()}`}
                >
                  {cat}
