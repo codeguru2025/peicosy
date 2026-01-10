@@ -14,11 +14,11 @@ import { Navigation } from "@/components/Navigation";
 import { Footer } from "@/components/Footer";
 
 const inquirySchema = z.object({
-  name: z.string().min(2, "Name must be at least 2 characters"),
-  email: z.string().email("Please enter a valid email address"),
+  name: z.string().min(2, "Please enter your full name."),
+  email: z.string().email("Please enter a valid email so we can reach you."),
   phone: z.string().optional(),
-  subject: z.string().min(1, "Please select a subject"),
-  message: z.string().min(10, "Message must be at least 10 characters"),
+  subject: z.string().min(1, "Please select what your inquiry is about."),
+  message: z.string().min(10, "Please provide more details about your inquiry."),
 });
 
 type InquiryForm = z.infer<typeof inquirySchema>;
@@ -60,8 +60,8 @@ export default function Contact() {
       });
     } catch (err: any) {
       toast({
-        title: "Submission Failed",
-        description: err.message || "Please try again later.",
+        title: "Unable to Send",
+        description: "We couldn't send your inquiry right now. Please try again or contact us directly.",
         variant: "destructive",
       });
     } finally {

@@ -43,11 +43,11 @@ export function ImageUploader({
 
   const uploadFile = async (file: File): Promise<UploadedImage | null> => {
     if (!ALLOWED_TYPES.includes(file.type)) {
-      throw new Error(`File type ${file.type} not allowed. Use JPEG, PNG, GIF, or WebP.`);
+      throw new Error(`This file type isn't supported. Please use JPEG, PNG, GIF, or WebP images.`);
     }
 
     if (file.size > MAX_FILE_SIZE) {
-      throw new Error(`File size exceeds ${MAX_FILE_SIZE / (1024 * 1024)}MB limit.`);
+      throw new Error(`This image is too large. Please use images under ${MAX_FILE_SIZE / (1024 * 1024)}MB.`);
     }
 
     const response = await fetch('/api/uploads/request-url', {
@@ -63,7 +63,7 @@ export function ImageUploader({
 
     if (!response.ok) {
       const error = await response.json();
-      throw new Error(error.error || 'Failed to get upload URL');
+      throw new Error(error.error || 'Unable to prepare upload. Please try again.');
     }
 
     const { uploadURL, objectPath } = await response.json();
@@ -75,7 +75,7 @@ export function ImageUploader({
     });
 
     if (!uploadResponse.ok) {
-      throw new Error('Failed to upload file');
+      throw new Error('The image couldn\'t be uploaded. Please try again.');
     }
 
     const cdnUrl = `/objects${objectPath.startsWith('/') ? objectPath : '/' + objectPath}`;
@@ -105,7 +105,7 @@ export function ImageUploader({
     const remainingSlots = maxImages - images.length;
     
     if (fileArray.length > remainingSlots) {
-      setUploadError(`Can only upload ${remainingSlots} more image(s).`);
+      setUploadError(`You can add ${remainingSlots} more image${remainingSlots !== 1 ? 's' : ''}.`);
       return;
     }
 
@@ -124,7 +124,7 @@ export function ImageUploader({
           newImages.push(uploaded);
         }
       } catch (error) {
-        setUploadError(error instanceof Error ? error.message : 'Upload failed');
+        setUploadError(error instanceof Error ? error.message : 'Something went wrong. Please try again.');
         break;
       }
     }

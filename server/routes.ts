@@ -37,28 +37,28 @@ export async function registerRoutes(
       const { username, password, email, firstName, lastName } = req.body;
       
       if (!username || !password) {
-        return res.status(400).json({ message: "Username and password are required" });
+        return res.status(400).json({ message: "Please enter a username and password." });
       }
       
       if (username.length < 3) {
-        return res.status(400).json({ message: "Username must be at least 3 characters" });
+        return res.status(400).json({ message: "Your username needs to be at least 3 characters." });
       }
       
       if (password.length < 6) {
-        return res.status(400).json({ message: "Password must be at least 6 characters" });
+        return res.status(400).json({ message: "Please choose a password with at least 6 characters." });
       }
       
       // Check if username already exists
       const existingUser = await storage.getUserByUsername(username);
       if (existingUser) {
-        return res.status(409).json({ message: "Username already taken" });
+        return res.status(409).json({ message: "This username is already taken. Please choose another." });
       }
       
       // Check if email already exists (if provided)
       if (email) {
         const existingEmail = await storage.getUserByEmail(email);
         if (existingEmail) {
-          return res.status(409).json({ message: "Email already registered" });
+          return res.status(409).json({ message: "This email is already registered. Please sign in instead." });
         }
       }
       
@@ -91,7 +91,7 @@ export async function registerRoutes(
       req.login(sessionUser, (err) => {
         if (err) {
           console.error("Session login error:", err);
-          return res.status(500).json({ message: "Failed to create session" });
+          return res.status(500).json({ message: "We couldn't complete your registration. Please try again." });
         }
         
         res.status(201).json({
@@ -104,7 +104,7 @@ export async function registerRoutes(
       });
     } catch (err) {
       console.error("Registration error:", err);
-      res.status(500).json({ message: "Internal Server Error" });
+      res.status(500).json({ message: "Something went wrong. Please try again later." });
     }
   });
 
@@ -114,19 +114,19 @@ export async function registerRoutes(
       const { username, password } = req.body;
       
       if (!username || !password) {
-        return res.status(400).json({ message: "Username and password are required" });
+        return res.status(400).json({ message: "Please enter your username and password." });
       }
       
       const user = await storage.getUserByUsername(username);
       
       if (!user || !user.password) {
-        return res.status(401).json({ message: "Invalid username or password" });
+        return res.status(401).json({ message: "The username or password you entered doesn't match our records." });
       }
       
       const passwordValid = await verifyPassword(password, user.password);
       
       if (!passwordValid) {
-        return res.status(401).json({ message: "Invalid username or password" });
+        return res.status(401).json({ message: "The username or password you entered doesn't match our records." });
       }
       
       // Create session user object compatible with Passport and isAuthenticated
@@ -147,7 +147,7 @@ export async function registerRoutes(
       req.login(sessionUser, (err) => {
         if (err) {
           console.error("Session login error:", err);
-          return res.status(500).json({ message: "Failed to create session" });
+          return res.status(500).json({ message: "We couldn't sign you in. Please try again." });
         }
         
         res.json({
@@ -528,7 +528,7 @@ export async function registerRoutes(
       const { name, email, phone, subject, message } = req.body;
       
       if (!name || !email || !subject || !message) {
-        return res.status(400).json({ message: "Name, email, subject, and message are required" });
+        return res.status(400).json({ message: "Please fill in all required fields." });
       }
       
       // Basic email validation
@@ -540,7 +540,7 @@ export async function registerRoutes(
       res.status(201).json({ message: "Inquiry submitted successfully", id: inquiry.id });
     } catch (err) {
       console.error("Error creating inquiry:", err);
-      res.status(500).json({ message: "Failed to submit inquiry" });
+      res.status(500).json({ message: "We couldn't send your inquiry. Please try again." });
     }
   });
 

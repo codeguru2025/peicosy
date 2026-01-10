@@ -93,7 +93,7 @@ export default function Orders() {
       });
 
     } catch (error) {
-      toast({ title: "Upload Failed", description: "Please try again.", variant: "destructive" });
+      toast({ title: "Upload Unsuccessful", description: "We couldn't upload your payment proof. Please try again.", variant: "destructive" });
     } finally {
       setIsUploading(false);
     }

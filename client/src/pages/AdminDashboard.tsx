@@ -187,9 +187,9 @@ function ProductsTab() {
               await addImageToProduct.mutateAsync({ productId: newProduct.id, image });
             }
             queryClient.invalidateQueries({ queryKey: ['/api/products'] });
-            toast({ title: "Success", description: "Product created with images" });
+            toast({ title: "Product Added", description: "Your product has been added to the inventory." });
           } catch (err) {
-            toast({ title: "Warning", description: "Product created but some images failed to save", variant: "destructive" });
+            toast({ title: "Product Saved", description: "The product was created but some images couldn't be uploaded. You can add them later.", variant: "destructive" });
           }
           setIsUploadingImages(false);
         }
@@ -452,8 +452,8 @@ function SettingsTab() {
   const handleUpdateRate = () => {
     if (!rate.trim()) {
       toast({
-        title: "Invalid Rate",
-        description: "Please enter a value for the exchange rate.",
+        title: "Missing Rate",
+        description: "Please enter an exchange rate value.",
         variant: "destructive",
       });
       return;
@@ -461,8 +461,8 @@ function SettingsTab() {
     const newRate = parseFloat(rate);
     if (isNaN(newRate) || newRate <= 0) {
       toast({
-        title: "Invalid Rate",
-        description: "Please enter a valid positive number for the exchange rate.",
+        title: "Invalid Number",
+        description: "Please enter a positive number for the exchange rate.",
         variant: "destructive",
       });
       return;
@@ -476,8 +476,8 @@ function SettingsTab() {
       },
       onError: () => {
         toast({
-          title: "Error",
-          description: "Failed to update exchange rate. Please try again.",
+          title: "Update Failed",
+          description: "Couldn't update the exchange rate. Please try again.",
           variant: "destructive",
         });
       },
@@ -583,13 +583,13 @@ function ImageMigrationCard() {
       setMigrationResult(result);
       
       toast({
-        title: "Migration Complete",
-        description: `Migrated ${result.count} product image(s) to the new system.`,
+        title: "Images Migrated",
+        description: `${result.count} product image(s) have been updated to the new system.`,
       });
     } catch (err) {
       toast({
-        title: "Migration Failed",
-        description: "Unable to migrate images. Please try again.",
+        title: "Migration Incomplete",
+        description: "Some images couldn't be migrated. Please try again.",
         variant: "destructive",
       });
     } finally {
@@ -671,13 +671,13 @@ function ReportsTab() {
       document.body.removeChild(a);
       
       toast({
-        title: "Export Complete",
-        description: `${entity} data exported as ${format.toUpperCase()}`,
+        title: "Download Ready",
+        description: `Your ${entity} data has been exported.`,
       });
     } catch (err) {
       toast({
-        title: "Export Failed",
-        description: "Unable to export data. Please try again.",
+        title: "Export Unavailable",
+        description: "We couldn't prepare your download. Please try again.",
         variant: "destructive",
       });
     } finally {

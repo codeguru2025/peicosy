@@ -32,8 +32,8 @@ export default function Signup() {
     
     if (!username.trim() || !password.trim()) {
       toast({
-        title: "Error",
-        description: "Please enter username and password",
+        title: "Missing Details",
+        description: "Please enter a username and password to create your account.",
         variant: "destructive",
       });
       return;
@@ -41,8 +41,8 @@ export default function Signup() {
     
     if (username.length < 3) {
       toast({
-        title: "Error",
-        description: "Username must be at least 3 characters",
+        title: "Username Too Short",
+        description: "Your username needs to be at least 3 characters.",
         variant: "destructive",
       });
       return;
@@ -50,8 +50,8 @@ export default function Signup() {
     
     if (password.length < 6) {
       toast({
-        title: "Error",
-        description: "Password must be at least 6 characters",
+        title: "Password Too Short",
+        description: "For your security, please choose a password with at least 6 characters.",
         variant: "destructive",
       });
       return;
@@ -59,8 +59,8 @@ export default function Signup() {
     
     if (password !== confirmPassword) {
       toast({
-        title: "Error",
-        description: "Passwords do not match",
+        title: "Passwords Don't Match",
+        description: "Please make sure both password fields match.",
         variant: "destructive",
       });
       return;
@@ -91,9 +91,12 @@ export default function Signup() {
       
       setLocation("/");
     } catch (err: any) {
+      const message = err.message?.includes("already exists") 
+        ? "This username is already taken. Please choose another."
+        : "We couldn't create your account right now. Please try again.";
       toast({
-        title: "Registration Failed",
-        description: err.message || "Could not create account",
+        title: "Unable to Create Account",
+        description: message,
         variant: "destructive",
       });
     } finally {

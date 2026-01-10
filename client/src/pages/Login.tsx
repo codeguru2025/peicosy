@@ -28,8 +28,8 @@ export default function Login() {
     
     if (!username.trim() || !password.trim()) {
       toast({
-        title: "Error",
-        description: "Please enter both username and password",
+        title: "Missing Details",
+        description: "Please enter your username and password to continue.",
         variant: "destructive",
       });
       return;
@@ -59,8 +59,8 @@ export default function Login() {
       }
     } catch (err: any) {
       toast({
-        title: "Login Failed",
-        description: err.message || "Invalid username or password",
+        title: "Unable to Sign In",
+        description: "The username or password you entered doesn't match our records. Please try again.",
         variant: "destructive",
       });
     } finally {
