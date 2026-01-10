@@ -88,6 +88,7 @@ export const orders = pgTable("orders", {
   customsDuty: numeric("customs_duty", { precision: 10, scale: 2 }).notNull(),
   shippingAddress: jsonb("shipping_address").notNull(),
   proofOfPaymentUrl: text("proof_of_payment_url"),
+  paynowPollUrl: text("paynow_poll_url"),
   createdAt: timestamp("created_at").defaultNow(),
   updatedAt: timestamp("updated_at").defaultNow(),
 });

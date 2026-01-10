@@ -6,6 +6,7 @@ import { z } from "zod";
 import { registerAuthRoutes, setupAuth, isAuthenticated, isAdmin } from "./replit_integrations/auth";
 import { registerObjectStorageRoutes } from "./replit_integrations/object_storage";
 import { generatePayFastForm, isPayFastConfigured, validatePayFastITN } from "./payfast";
+import { isPaynowConfigured, initiateWebPayment, initiateMobilePayment, checkPaymentStatus, validatePaynowHash } from "./paynow";
 import bcrypt from "bcrypt";
 
 const SALT_ROUNDS = 12;
@@ -674,12 +675,13 @@ export async function registerRoutes(
     }
   });
 
-  // --- PayFast Payment ---
+  // --- Payment Methods ---
   
-  // Check if PayFast is configured
+  // Check which payment methods are configured
   app.get("/api/payment/status", (req, res) => {
     res.json({ 
       payfast: isPayFastConfigured(),
+      paynow: isPaynowConfigured(),
       manual: true // Always allow manual bank transfer
     });
   });
@@ -763,6 +765,261 @@ export async function registerRoutes(
     } catch (err) {
       console.error("PayFast ITN error:", err);
       res.status(500).send("Error processing notification");
+    }
+  });
+
+  // --- Paynow Payment (Zimbabwe) ---
+
+  // Initiate Paynow web checkout
+  app.post("/api/payment/paynow/initiate", isAuthenticated, async (req, res) => {
+    try {
+      const { orderId } = req.body;
+      const user = req.user as any;
+      
+      if (!isPaynowConfigured()) {
+        return res.status(503).json({ 
+          message: "Paynow is not currently available. Please use another payment method." 
+        });
+      }
+      
+      const order = await storage.getOrder(orderId);
+      if (!order) {
+        return res.status(404).json({ message: "Order not found" });
+      }
+
+      // Authorization: verify order belongs to current user
+      if (order.userId !== user.claims?.sub && order.userId !== user.id) {
+        return res.status(403).json({ message: "You don't have access to this order." });
+      }
+
+      // Get the order with items for itemized breakdown
+      const orderWithItems = await storage.getOrderWithItems(orderId);
+      
+      // Get exchange rate for USD amount (Paynow uses USD)
+      const exchangeRateData = await storage.getExchangeRate('GBP', 'USD');
+      const exchangeRate = exchangeRateData ? Number(exchangeRateData.rate) : 1.27;
+      const amountUSD = Number(order.totalAmount) * exchangeRate;
+      
+      const items = orderWithItems?.items?.map(item => ({
+        name: item.product?.name || `Item ${item.productId}`,
+        amount: Number(item.priceAtPurchase) * item.quantity * exchangeRate,
+      })) || [{ name: `Peicosy Order #${order.id}`, amount: amountUSD }];
+      
+      const result = await initiateWebPayment({
+        orderId: order.id,
+        amount: amountUSD,
+        email: user.claims?.email || "customer@peicosy.com",
+        reference: `PEICOSY-${order.id}-${Date.now()}`,
+        items,
+      });
+      
+      if (result.success) {
+        // Store the poll URL for status checking
+        await storage.updateOrderPaynowPollUrl(order.id, result.pollUrl || '');
+        
+        res.json({
+          success: true,
+          redirectUrl: result.redirectUrl,
+          pollUrl: result.pollUrl,
+        });
+      } else {
+        res.status(400).json({
+          success: false,
+          message: result.error || "Unable to initiate payment. Please try again.",
+        });
+      }
+    } catch (err: any) {
+      console.error("Paynow initiate error:", err);
+      res.status(500).json({ message: "Something went wrong. Please try again." });
+    }
+  });
+
+  // Initiate Paynow mobile payment (Ecocash/OneMoney)
+  app.post("/api/payment/paynow/mobile", isAuthenticated, async (req, res) => {
+    try {
+      const { orderId, phone, method } = req.body;
+      const user = req.user as any;
+      
+      if (!isPaynowConfigured()) {
+        return res.status(503).json({ 
+          message: "Paynow is not currently available. Please use another payment method." 
+        });
+      }
+      
+      if (!phone || !method) {
+        return res.status(400).json({ 
+          message: "Please provide your phone number and payment method." 
+        });
+      }
+      
+      if (!['ecocash', 'onemoney'].includes(method)) {
+        return res.status(400).json({ 
+          message: "Please select either Ecocash or OneMoney." 
+        });
+      }
+      
+      const order = await storage.getOrder(orderId);
+      if (!order) {
+        return res.status(404).json({ message: "Order not found" });
+      }
+
+      // Authorization: verify order belongs to current user
+      if (order.userId !== user.claims?.sub && order.userId !== user.id) {
+        return res.status(403).json({ message: "You don't have access to this order." });
+      }
+
+      const orderWithItems = await storage.getOrderWithItems(orderId);
+      
+      // Get exchange rate for USD amount
+      const exchangeRateData = await storage.getExchangeRate('GBP', 'USD');
+      const exchangeRate = exchangeRateData ? Number(exchangeRateData.rate) : 1.27;
+      const amountUSD = Number(order.totalAmount) * exchangeRate;
+      
+      const items = orderWithItems?.items?.map(item => ({
+        name: item.product?.name || `Item ${item.productId}`,
+        amount: Number(item.priceAtPurchase) * item.quantity * exchangeRate,
+      })) || [{ name: `Peicosy Order #${order.id}`, amount: amountUSD }];
+      
+      const result = await initiateMobilePayment({
+        orderId: order.id,
+        amount: amountUSD,
+        email: user.claims?.email || "customer@peicosy.com",
+        reference: `PEICOSY-${order.id}-${Date.now()}`,
+        items,
+        phone,
+        method,
+      });
+      
+      if (result.success) {
+        await storage.updateOrderPaynowPollUrl(order.id, result.pollUrl || '');
+        
+        res.json({
+          success: true,
+          pollUrl: result.pollUrl,
+          instructions: result.instructions || `Please check your ${method === 'ecocash' ? 'Ecocash' : 'OneMoney'} phone for a payment prompt.`,
+        });
+      } else {
+        res.status(400).json({
+          success: false,
+          message: result.error || "Unable to initiate payment. Please try again.",
+        });
+      }
+    } catch (err: any) {
+      console.error("Paynow mobile error:", err);
+      res.status(500).json({ message: "Something went wrong. Please try again." });
+    }
+  });
+
+  // Check Paynow payment status
+  app.get("/api/payment/paynow/status/:orderId", isAuthenticated, async (req, res) => {
+    try {
+      const orderId = Number(req.params.orderId);
+      const user = req.user as any;
+      const order = await storage.getOrder(orderId);
+      
+      if (!order) {
+        return res.status(404).json({ message: "Order not found" });
+      }
+
+      // Authorization: verify order belongs to current user
+      if (order.userId !== user.claims?.sub && order.userId !== user.id) {
+        return res.status(403).json({ message: "You don't have access to this order." });
+      }
+      
+      const pollUrl = await storage.getOrderPaynowPollUrl(orderId);
+      
+      if (!pollUrl) {
+        return res.json({ 
+          status: "no_payment",
+          message: "No Paynow payment found for this order.",
+        });
+      }
+      
+      const status = await checkPaymentStatus(pollUrl);
+      
+      if (status.paid) {
+        // Update order status if payment is confirmed
+        if (order.status === 'pending_payment') {
+          await storage.updateOrderStatus(orderId, 'confirmed');
+        }
+        
+        res.json({
+          status: "paid",
+          message: "Payment received successfully!",
+          paid: true,
+        });
+      } else {
+        res.json({
+          status: status.status,
+          message: "Payment is pending.",
+          paid: false,
+        });
+      }
+    } catch (err: any) {
+      console.error("Paynow status check error:", err);
+      res.status(500).json({ message: "Unable to check payment status." });
+    }
+  });
+
+  // Paynow callback (server-to-server notification)
+  app.post("/api/payments/paynow/callback", async (req, res) => {
+    try {
+      console.log("Paynow callback received:", req.body);
+      
+      // SECURITY: Validate Paynow hash signature first
+      if (!validatePaynowHash(req.body)) {
+        console.warn("Paynow callback: invalid hash signature - rejecting callback");
+        return res.status(401).send("Invalid signature");
+      }
+      
+      // Paynow sends status updates to this URL
+      const { reference, paynowreference, status, amount, pollurl } = req.body;
+      
+      // Extract order ID from reference (format: PEICOSY-{orderId}-{timestamp})
+      const match = reference?.match(/PEICOSY-(\d+)-/);
+      const orderId = match ? parseInt(match[1]) : null;
+      
+      if (!orderId) {
+        console.warn("Paynow callback: invalid reference format", reference);
+        return res.status(400).send("Invalid reference");
+      }
+
+      // Verify order exists
+      const order = await storage.getOrder(orderId);
+      if (!order) {
+        console.warn("Paynow callback: order not found", orderId);
+        return res.status(404).send("Order not found");
+      }
+
+      // Verify we have a stored poll URL for this order (prevents unsolicited callbacks)
+      const storedPollUrl = await storage.getOrderPaynowPollUrl(orderId);
+      if (!storedPollUrl) {
+        console.warn("Paynow callback: no poll URL stored for order", orderId);
+        return res.status(400).send("No pending Paynow payment for this order");
+      }
+
+      // CRITICAL: Re-poll Paynow using our stored poll URL to verify the payment status
+      // This is a defense-in-depth measure in addition to hash validation
+      const verifiedStatus = await checkPaymentStatus(storedPollUrl);
+      console.log(`Paynow callback verification for order ${orderId}:`, verifiedStatus);
+
+      // Only update order if verified status from Paynow confirms payment
+      if (verifiedStatus.paid) {
+        if (order.status === 'pending_payment') {
+          await storage.updateOrderStatus(orderId, 'confirmed');
+          console.log(`Order ${orderId} confirmed via verified Paynow callback`);
+        }
+      } else if (verifiedStatus.status === 'Cancelled') {
+        await storage.updateOrderStatus(orderId, 'cancelled');
+        console.log(`Order ${orderId} cancelled via verified Paynow callback`);
+      } else {
+        console.log(`Order ${orderId} callback received but status not yet paid: ${verifiedStatus.status}`);
+      }
+      
+      res.status(200).send("OK");
+    } catch (err) {
+      console.error("Paynow callback error:", err);
+      res.status(500).send("Error processing callback");
     }
   });
 

@@ -43,8 +43,11 @@ export interface IStorage {
   getOrders(userId: string): Promise<OrderWithItems[]>; // User's orders
   getAllOrders(): Promise<OrderWithItems[]>; // Admin
   getOrder(id: number): Promise<OrderWithItems | undefined>;
+  getOrderWithItems(id: number): Promise<OrderWithItems | undefined>;
   createOrder(order: InsertOrder, items: CreateOrderItem[]): Promise<Order>;
   updateOrderStatus(id: number, status: string, proofUrl?: string): Promise<Order | undefined>;
+  updateOrderPaynowPollUrl(id: number, pollUrl: string): Promise<void>;
+  getOrderPaynowPollUrl(id: number): Promise<string | undefined>;
 
   // Shipping & Customs
   getShippingRates(): Promise<ShippingRate[]>;
@@ -140,21 +143,27 @@ export class DatabaseStorage implements IStorage {
   // Orders
   async getOrders(userId: string): Promise<OrderWithItems[]> {
     const userOrders = await db.select().from(orders).where(eq(orders.userId, userId)).orderBy(desc(orders.createdAt));
-    return Promise.all(userOrders.map(o => this.getOrderWithItems(o)));
+    return Promise.all(userOrders.map(o => this.hydrateOrderWithItems(o)));
   }
 
   async getAllOrders(): Promise<OrderWithItems[]> {
     const allOrders = await db.select().from(orders).orderBy(desc(orders.createdAt));
-    return Promise.all(allOrders.map(o => this.getOrderWithItems(o)));
+    return Promise.all(allOrders.map(o => this.hydrateOrderWithItems(o)));
   }
 
   async getOrder(id: number): Promise<OrderWithItems | undefined> {
     const [order] = await db.select().from(orders).where(eq(orders.id, id));
     if (!order) return undefined;
-    return this.getOrderWithItems(order);
+    return this.hydrateOrderWithItems(order);
   }
 
-  private async getOrderWithItems(order: Order): Promise<OrderWithItems> {
+  async getOrderWithItems(id: number): Promise<OrderWithItems | undefined> {
+    const [order] = await db.select().from(orders).where(eq(orders.id, id));
+    if (!order) return undefined;
+    return this.hydrateOrderWithItems(order);
+  }
+
+  private async hydrateOrderWithItems(order: Order): Promise<OrderWithItems> {
     const items = await db
       .select({
         id: orderItems.id,
@@ -199,6 +208,21 @@ export class DatabaseStorage implements IStorage {
       .where(eq(orders.id, id))
       .returning();
     return updated;
+  }
+
+  async updateOrderPaynowPollUrl(id: number, pollUrl: string): Promise<void> {
+    await db
+      .update(orders)
+      .set({ paynowPollUrl: pollUrl })
+      .where(eq(orders.id, id));
+  }
+
+  async getOrderPaynowPollUrl(id: number): Promise<string | undefined> {
+    const [order] = await db
+      .select({ paynowPollUrl: orders.paynowPollUrl })
+      .from(orders)
+      .where(eq(orders.id, id));
+    return order?.paynowPollUrl || undefined;
   }
 
   async getDashboardStats(): Promise<{ totalRevenue: number, activeOrders: number, pendingVerifications: number }> {
