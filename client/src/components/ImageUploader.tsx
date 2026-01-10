@@ -211,7 +211,7 @@ export function ImageUploader({
     <div className={cn("space-y-4", className)}>
       <div
         className={cn(
-          "border-2 border-dashed rounded-xl p-8 text-center transition-colors cursor-pointer",
+          "border-2 border-dashed rounded-xl p-4 sm:p-8 text-center transition-colors cursor-pointer",
           isDragging ? "border-primary bg-primary/5" : "border-muted-foreground/25 hover:border-primary/50",
           isUploading && "pointer-events-none opacity-50"
         )}
@@ -233,16 +233,16 @@ export function ImageUploader({
         
         {isUploading ? (
           <div className="flex flex-col items-center gap-2">
-            <Loader2 className="h-10 w-10 animate-spin text-primary" />
-            <p className="text-sm text-muted-foreground">Uploading...</p>
+            <Loader2 className="h-8 w-8 sm:h-10 sm:w-10 animate-spin text-primary" />
+            <p className="text-xs sm:text-sm text-muted-foreground">Uploading...</p>
           </div>
         ) : (
-          <div className="flex flex-col items-center gap-2">
-            <Upload className="h-10 w-10 text-muted-foreground" />
+          <div className="flex flex-col items-center gap-1 sm:gap-2">
+            <Upload className="h-8 w-8 sm:h-10 sm:w-10 text-muted-foreground" />
             <div>
-              <p className="font-medium">Drop images here or click to browse</p>
-              <p className="text-sm text-muted-foreground">
-                JPEG, PNG, GIF, WebP (max {MAX_FILE_SIZE / (1024 * 1024)}MB each)
+              <p className="text-sm sm:text-base font-medium">Tap to add images</p>
+              <p className="text-xs sm:text-sm text-muted-foreground">
+                JPEG, PNG, GIF, WebP (max {MAX_FILE_SIZE / (1024 * 1024)}MB)
               </p>
             </div>
           </div>
@@ -254,67 +254,65 @@ export function ImageUploader({
       )}
 
       {images.length > 0 && (
-        <div className="grid grid-cols-2 sm:grid-cols-3 md:grid-cols-4 gap-4">
+        <div className="grid grid-cols-2 xs:grid-cols-2 sm:grid-cols-3 lg:grid-cols-4 gap-2 sm:gap-4">
           {images.map((image, index) => (
             <div 
               key={image.objectPath + index} 
-              className="relative group rounded-lg overflow-hidden border bg-card"
+              className="relative group rounded-lg overflow-hidden border bg-card aspect-square"
               data-testid={`image-preview-${index}`}
             >
-              <div className="aspect-square">
-                <img
-                  src={image.cdnUrl}
-                  alt={image.originalFilename || `Product image ${index + 1}`}
-                  className="w-full h-full object-cover"
-                  loading="lazy"
-                />
-              </div>
+              <img
+                src={image.cdnUrl}
+                alt={image.originalFilename || `Product image ${index + 1}`}
+                className="w-full h-full object-cover"
+                loading="lazy"
+              />
               
-              <div className="absolute top-2 left-2 flex gap-1">
+              <div className="absolute top-1 left-1 sm:top-2 sm:left-2 flex gap-1 flex-wrap">
                 {image.role === 'thumbnail' && (
-                  <Badge variant="default" className="text-xs bg-primary">
-                    <Star className="w-3 h-3 mr-1" />
+                  <Badge variant="default" className="text-[10px] sm:text-xs bg-primary px-1.5 py-0.5 sm:px-2 sm:py-1">
+                    <Star className="w-2.5 h-2.5 sm:w-3 sm:h-3 mr-0.5 sm:mr-1" />
                     Main
                   </Badge>
                 )}
                 {image.role === 'hero' && (
-                  <Badge variant="secondary" className="text-xs">
-                    <LayoutTemplate className="w-3 h-3 mr-1" />
+                  <Badge variant="secondary" className="text-[10px] sm:text-xs px-1.5 py-0.5 sm:px-2 sm:py-1">
+                    <LayoutTemplate className="w-2.5 h-2.5 sm:w-3 sm:h-3 mr-0.5 sm:mr-1" />
                     Hero
                   </Badge>
                 )}
                 {image.isLegacy && (
-                  <Badge variant="outline" className="text-xs bg-background/80">
+                  <Badge variant="outline" className="text-[10px] sm:text-xs bg-background/80 px-1.5 py-0.5 sm:px-2 sm:py-1">
                     Legacy
                   </Badge>
                 )}
               </div>
 
-              <div className="absolute inset-0 bg-black/60 opacity-0 group-hover:opacity-100 transition-opacity flex flex-col items-center justify-center gap-2 p-2">
+              <div className="absolute inset-0 bg-black/60 opacity-0 group-hover:opacity-100 sm:group-hover:opacity-100 group-focus-within:opacity-100 active:opacity-100 transition-opacity flex flex-col items-center justify-center gap-1 sm:gap-2 p-1 sm:p-2">
                 <div className="flex gap-1">
                   <Button
                     type="button"
                     size="icon"
                     variant="secondary"
-                    className="h-8 w-8"
+                    className="h-7 w-7 sm:h-8 sm:w-8"
                     onClick={(e) => { e.stopPropagation(); setImageRole(index, 'thumbnail'); }}
                     disabled={image.role === 'thumbnail'}
                     title="Set as thumbnail"
                     data-testid={`button-set-thumbnail-${index}`}
                   >
-                    <Star className="h-4 w-4" />
+                    <Star className="h-3 w-3 sm:h-4 sm:w-4" />
                   </Button>
                   <Button
                     type="button"
                     size="icon"
                     variant="secondary"
-                    className="h-8 w-8"
+                    className="h-7 w-7 sm:h-8 sm:w-8"
                     onClick={(e) => { e.stopPropagation(); setImageRole(index, 'hero'); }}
                     disabled={image.role === 'hero'}
                     title="Set as hero"
                     data-testid={`button-set-hero-${index}`}
                   >
-                    <LayoutTemplate className="h-4 w-4" />
+                    <LayoutTemplate className="h-3 w-3 sm:h-4 sm:w-4" />
                   </Button>
                 </div>
                 <div className="flex gap-1">
@@ -323,24 +321,24 @@ export function ImageUploader({
                       type="button"
                       size="icon"
                       variant="secondary"
-                      className="h-8 w-8"
+                      className="h-7 w-7 sm:h-8 sm:w-8"
                       onClick={(e) => { e.stopPropagation(); moveImage(index, index - 1); }}
                       title="Move left"
                       data-testid={`button-move-left-${index}`}
                     >
-                      <GripVertical className="h-4 w-4 rotate-90" />
+                      <GripVertical className="h-3 w-3 sm:h-4 sm:w-4 rotate-90" />
                     </Button>
                   )}
                   <Button
                     type="button"
                     size="icon"
                     variant="destructive"
-                    className="h-8 w-8"
+                    className="h-7 w-7 sm:h-8 sm:w-8"
                     onClick={(e) => { e.stopPropagation(); removeImage(index); }}
                     title="Remove image"
                     data-testid={`button-remove-image-${index}`}
                   >
-                    <X className="h-4 w-4" />
+                    <X className="h-3 w-3 sm:h-4 sm:w-4" />
                   </Button>
                 </div>
               </div>
