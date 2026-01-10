@@ -148,18 +148,15 @@ function ProductsTab() {
 
   const addImageToProduct = useMutation({
     mutationFn: async ({ productId, image }: { productId: number; image: UploadedImage }) => {
-      return apiRequest(`/api/products/${productId}/images`, {
-        method: 'POST',
-        body: JSON.stringify({
-          objectPath: image.objectPath,
-          cdnUrl: image.cdnUrl,
-          role: image.role,
-          originalFilename: image.originalFilename,
-          mimeType: image.mimeType,
-          fileSize: image.fileSize,
-          width: image.width,
-          height: image.height,
-        }),
+      return apiRequest('POST', `/api/products/${productId}/images`, {
+        objectPath: image.objectPath,
+        cdnUrl: image.cdnUrl,
+        role: image.role,
+        originalFilename: image.originalFilename,
+        mimeType: image.mimeType,
+        fileSize: image.fileSize,
+        width: image.width,
+        height: image.height,
       });
     },
   });
