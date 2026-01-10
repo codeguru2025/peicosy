@@ -1,0 +1,163 @@
+PEICOSY – DATA PRIVACY POLICY
+
+Last updated: [Insert Date]
+
+1. Introduction
+
+PEICOSY (“we”, “our”, “us”) is committed to protecting user privacy and handling personal data responsibly. This Privacy Policy explains how we collect, use, store, and protect information when users access or use the PEICOSY application, website, or related services (“the Platform”).
+
+By using PEICOSY, you consent to the practices described in this policy.
+
+2. Information We Collect
+
+We may collect the following categories of information:
+
+a) Information You Provide Directly
+
+Full name
+
+Email address
+
+Phone number
+
+User account details
+
+Profile information
+
+Communication or support requests
+
+b) Transactional & Usage Data
+
+App usage activity
+
+Payment confirmations (processed via third-party payment providers)
+
+Device identifiers and log data
+
+We do not intentionally collect sensitive personal data unless explicitly required for a specific service.
+
+3. How We Use Information
+
+We use collected data to:
+
+Create and manage user accounts
+
+Provide and improve PEICOSY services
+
+Process transactions and confirmations
+
+Communicate important updates or service notices
+
+Improve platform performance and security
+
+Comply with legal or regulatory requirements
+
+We do not sell or trade personal data.
+
+4. Third-Party Services
+
+PEICOSY may integrate with third-party services including payment processors, analytics tools, hosting providers, or communication platforms.
+
+These providers process data strictly to deliver their services and are governed by their own privacy policies.
+
+5. Data Storage & Security
+
+We implement reasonable administrative, technical, and organizational safeguards to protect user data. While we strive to protect information, no system can guarantee absolute security.
+
+Users acknowledge and accept this inherent risk.
+
+6. User Rights
+
+Subject to applicable laws, users may request to:
+
+Access their personal data
+
+Correct inaccurate information
+
+Delete their account or data
+
+Opt out of non-essential communications
+
+Requests can be made through official PEICOSY support channels.
+
+7. Policy Updates
+
+This Privacy Policy may be updated periodically. Continued use of PEICOSY after updates constitutes acceptance of the revised policy.
+
+PEICOSY – TERMS OF SERVICE
+
+Last updated: [Insert Date]
+
+1. Acceptance of Terms
+
+By accessing or using PEICOSY, you agree to these Terms of Service. If you do not agree, you must not use the Platform.
+
+2. Platform Purpose
+
+PEICOSY provides digital services, tools, and features designed to facilitate user interaction, transactions, and platform-specific activities.
+
+PEICOSY does not guarantee outcomes, earnings, or specific results from platform usage.
+
+3. User Eligibility
+
+By using PEICOSY, you confirm that:
+
+You are legally capable of entering into binding agreements
+
+Information provided is accurate and up to date
+
+You will comply with all applicable laws
+
+4. User Responsibilities
+
+Users agree to:
+
+Use the platform lawfully and ethically
+
+Protect account login credentials
+
+Not misuse, manipulate, or exploit platform features
+
+Not engage in fraud, impersonation, or harmful conduct
+
+PEICOSY reserves the right to suspend or terminate accounts that violate these terms.
+
+5. Payments & Transactions
+
+All payments are processed through approved third-party payment providers. PEICOSY does not store full payment credentials.
+
+Transaction failures, delays, or third-party errors are outside PEICOSY’s direct control.
+
+6. Intellectual Property
+
+All PEICOSY branding, software, content, design, and functionality are the exclusive intellectual property of PEICOSY.
+
+Users may not copy, reproduce, reverse-engineer, or commercially exploit any part of the Platform without written authorization.
+
+7. Limitation of Liability
+
+To the maximum extent permitted by law, PEICOSY shall not be liable for:
+
+Indirect or consequential losses
+
+Loss of data, profits, or business opportunities
+
+User decisions or actions taken using the Platform
+
+Third-party service failures
+
+Use of PEICOSY is at the user’s own risk.
+
+8. Termination
+
+PEICOSY may suspend or terminate access at any time where there is:
+
+Breach of these terms
+
+Illegal or harmful activity
+
+Platform security risk
+
+9. Governing Law
+
+These Terms shall be governed and interpreted in accordance with the laws of the applicable operating jurisdiction.
