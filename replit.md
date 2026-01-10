@@ -8,6 +8,14 @@ The platform includes product browsing, dynamic landed cost calculation, proof o
 
 ## Recent Changes (January 2026)
 
+- **Paynow Zimbabwe Payment Integration** (January 2026):
+  - Full Paynow payment gateway integration for Zimbabwe market
+  - Web checkout (Visa, Mastercard) and mobile money (Ecocash, OneMoney) support
+  - GBP to USD currency conversion using database-driven exchange rates
+  - Secure callback handling with SHA512 hash validation and poll URL verification
+  - Payment status polling endpoint for real-time updates
+  - API endpoints: POST /api/payment/paynow/initiate, POST /api/payment/paynow/mobile, GET /api/payment/paynow/status/:orderId
+  - Required secrets: PAYNOW_INTEGRATION_ID, PAYNOW_INTEGRATION_KEY
 - **Multi-Image Product System** (January 2026):
   - New `product_images` table supporting multiple images per product
   - Image roles: thumbnail, hero, gallery with automatic role management
