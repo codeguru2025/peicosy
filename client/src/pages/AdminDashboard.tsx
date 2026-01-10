@@ -537,7 +537,91 @@ function SettingsTab() {
           </div>
         </CardContent>
       </Card>
+      
+      <ImageMigrationCard />
     </div>
+  );
+}
+
+function ImageMigrationCard() {
+  const [isMigrating, setIsMigrating] = useState(false);
+  const [migrationResult, setMigrationResult] = useState<{ count: number } | null>(null);
+  const { toast } = useToast();
+
+  const handleMigrateAll = async () => {
+    setIsMigrating(true);
+    setMigrationResult(null);
+    
+    try {
+      const response = await fetch('/api/admin/migrate-all-images', {
+        method: 'POST',
+        credentials: 'include',
+      });
+      
+      if (!response.ok) throw new Error('Migration failed');
+      
+      const result = await response.json();
+      setMigrationResult(result);
+      
+      toast({
+        title: "Migration Complete",
+        description: `Migrated ${result.count} product image(s) to the new system.`,
+      });
+    } catch (err) {
+      toast({
+        title: "Migration Failed",
+        description: "Unable to migrate images. Please try again.",
+        variant: "destructive",
+      });
+    } finally {
+      setIsMigrating(false);
+    }
+  };
+
+  return (
+    <Card className="border-border shadow-lg">
+      <CardHeader>
+        <CardTitle className="font-serif font-light text-2xl text-secondary flex items-center gap-3">
+          <ImageIcon className="w-6 h-6 text-primary" />
+          Product Image Migration
+        </CardTitle>
+      </CardHeader>
+      <CardContent className="space-y-6">
+        <div className="bg-muted/30 border border-border rounded-2xl p-6">
+          <p className="text-sm text-muted-foreground mb-4">
+            This tool migrates existing product images from external URLs to the new multi-image system.
+            Legacy images will be preserved and marked for easy identification.
+          </p>
+          
+          <Button
+            onClick={handleMigrateAll}
+            disabled={isMigrating}
+            className="bg-primary hover:bg-primary/90"
+            data-testid="button-migrate-images"
+          >
+            {isMigrating ? "Migrating..." : "Migrate All Product Images"}
+          </Button>
+          
+          {migrationResult && (
+            <div className="mt-4 p-4 bg-green-50 border border-green-200 rounded-xl">
+              <p className="text-sm text-green-700">
+                Successfully migrated {migrationResult.count} image(s) to the new system.
+              </p>
+            </div>
+          )}
+        </div>
+        
+        <div className="bg-amber-50 border border-amber-200 rounded-2xl p-6">
+          <h3 className="text-sm font-bold text-amber-800 mb-2">About this migration</h3>
+          <ul className="text-sm text-amber-700 space-y-1 list-disc list-inside">
+            <li>Existing product image URLs are converted to the new image system</li>
+            <li>Migrated images are marked as "Legacy" for reference</li>
+            <li>New products should use the drag-and-drop uploader</li>
+            <li>This migration is safe to run multiple times</li>
+          </ul>
+        </div>
+      </CardContent>
+    </Card>
   );
 }
 

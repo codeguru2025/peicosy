@@ -8,6 +8,14 @@ The platform includes product browsing, dynamic landed cost calculation, proof o
 
 ## Recent Changes (January 2026)
 
+- **Multi-Image Product System** (January 2026):
+  - New `product_images` table supporting multiple images per product
+  - Image roles: thumbnail, hero, gallery with automatic role management
+  - Drag-and-drop image uploader in admin dashboard
+  - Replit Object Storage integration for cloud-hosted images
+  - OptimizedImage component with lazy loading and intersection observer
+  - Migration tool for converting legacy imageUrl fields to new system
+  - API endpoints: GET/POST /api/products/:id/images, PATCH/DELETE /api/product-images/:id
 - **Security Hardening** (January 2026):
   - File upload validation (allowed types: JPEG, PNG, GIF, WebP, PDF)
   - File size limits (10MB max)
