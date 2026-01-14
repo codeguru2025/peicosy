@@ -44,7 +44,7 @@ export default function Home() {
                   Enter Boutique
                 </Button>
               </Link>
-              <Link href="/about">
+              <Link href="/legacy">
                 <Button size="lg" variant="outline" className="w-full sm:w-auto text-white border-white/50 hover:bg-white/10 hover:border-white rounded-full px-8 md:px-14 h-12 md:h-16 text-[10px] md:text-xs uppercase tracking-[0.2em] md:tracking-[0.3em] font-bold backdrop-blur-sm transition-all duration-500" data-testid="button-our-legacy">
                   Our Legacy
                 </Button>
