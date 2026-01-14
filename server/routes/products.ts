@@ -3,18 +3,28 @@ import { z } from "zod";
 import { storage } from "../storage";
 import { api } from "@shared/routes";
 import { isAuthenticated, isAdmin } from "../replit_integrations/auth";
+import { productCache, cacheKeys, invalidateProductCaches } from "../cache";
 
 export function registerProductRoutes(app: Express) {
   app.get(api.products.list.path, async (req, res) => {
-    const products = await storage.getProducts(
-      req.query.category as string, 
-      req.query.search as string
+    const category = req.query.category as string;
+    const search = req.query.search as string;
+    
+    const products = await productCache.get(
+      cacheKeys.products,
+      { category, search },
+      () => storage.getProducts(category, search)
     );
     res.json(products);
   });
 
   app.get(api.products.get.path, async (req, res) => {
-    const product = await storage.getProduct(Number(req.params.id));
+    const id = Number(req.params.id);
+    const product = await productCache.get(
+      cacheKeys.product,
+      { id },
+      () => storage.getProduct(id)
+    );
     if (!product) return res.status(404).json({ message: "Product not found" });
     res.json(product);
   });
@@ -23,6 +33,7 @@ export function registerProductRoutes(app: Express) {
     try {
       const input = api.products.create.input.parse(req.body);
       const product = await storage.createProduct(input);
+      invalidateProductCaches();
       res.status(201).json(product);
     } catch (err) {
       if (err instanceof z.ZodError) {
@@ -37,6 +48,7 @@ export function registerProductRoutes(app: Express) {
       const input = api.products.update.input.parse(req.body);
       const updated = await storage.updateProduct(Number(req.params.id), input);
       if (!updated) return res.status(404).json({ message: "Product not found" });
+      invalidateProductCaches();
       res.json(updated);
     } catch (err) {
       if (err instanceof z.ZodError) {
@@ -48,6 +60,7 @@ export function registerProductRoutes(app: Express) {
 
   app.delete(api.products.delete.path, isAuthenticated, isAdmin, async (req, res) => {
     await storage.deleteProduct(Number(req.params.id));
+    invalidateProductCaches();
     res.status(204).send();
   });
 
@@ -63,7 +76,12 @@ export function registerProductRoutes(app: Express) {
 
   app.get("/api/products/:productId/with-images", async (req, res) => {
     try {
-      const product = await storage.getProductWithImages(Number(req.params.productId));
+      const productId = Number(req.params.productId);
+      const product = await productCache.get(
+        cacheKeys.productWithImages,
+        { productId },
+        () => storage.getProductWithImages(productId)
+      );
       if (!product) return res.status(404).json({ message: "Product not found" });
       res.json(product);
     } catch (err) {
@@ -98,6 +116,7 @@ export function registerProductRoutes(app: Express) {
         isLegacy: false,
       });
 
+      invalidateProductCaches();
       res.status(201).json(image);
     } catch (err) {
       console.error("Error adding product image:", err);
@@ -110,6 +129,7 @@ export function registerProductRoutes(app: Express) {
       const { role, sortOrder } = req.body;
       const updated = await storage.updateProductImage(Number(req.params.id), { role, sortOrder });
       if (!updated) return res.status(404).json({ message: "Image not found" });
+      invalidateProductCaches();
       res.json(updated);
     } catch (err) {
       console.error("Error updating product image:", err);
@@ -120,6 +140,7 @@ export function registerProductRoutes(app: Express) {
   app.delete("/api/product-images/:id", isAuthenticated, isAdmin, async (req, res) => {
     try {
       await storage.deleteProductImage(Number(req.params.id));
+      invalidateProductCaches();
       res.status(204).send();
     } catch (err) {
       console.error("Error deleting product image:", err);
@@ -137,6 +158,7 @@ export function registerProductRoutes(app: Express) {
       }
       
       await storage.reorderProductImages(productId, imageIds);
+      invalidateProductCaches();
       res.json({ success: true });
     } catch (err) {
       console.error("Error reordering images:", err);
@@ -149,10 +171,15 @@ export function registerProductRoutes(app: Express) {
       const productId = Number(req.params.productId);
       const image = await storage.migrateProductImageUrl(productId);
       if (!image) return res.status(404).json({ message: "No image to migrate" });
+      invalidateProductCaches();
       res.json(image);
     } catch (err) {
       console.error("Error migrating product image:", err);
       res.status(500).json({ message: "Failed to migrate image" });
     }
+  });
+
+  app.get("/api/cache/products/stats", (req, res) => {
+    res.json(productCache.getStats());
   });
 }
