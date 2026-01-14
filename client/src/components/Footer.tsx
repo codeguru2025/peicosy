@@ -38,7 +38,7 @@ export function Footer() {
             <ul className="space-y-4 text-sm font-light tracking-wider text-white/70">
               <li><Link href="/shop" className="hover:text-primary transition-colors duration-300">The Collection</Link></li>
               <li><Link href="/orders" className="hover:text-primary transition-colors duration-300">Portfolio</Link></li>
-              <li><Link href="/about" className="hover:text-primary transition-colors duration-300">Heritage</Link></li>
+              <li><Link href="/legacy" className="hover:text-primary transition-colors duration-300">Our Legacy</Link></li>
             </ul>
           </div>
 

@@ -20,6 +20,7 @@ import PaymentCancel from "@/pages/PaymentCancel";
 import Privacy from "@/pages/Privacy";
 import Terms from "@/pages/Terms";
 import Contact from "@/pages/Contact";
+import Legacy from "@/pages/Legacy";
 
 function Router() {
   return (
@@ -37,6 +38,7 @@ function Router() {
       <Route path="/privacy" component={Privacy} />
       <Route path="/terms" component={Terms} />
       <Route path="/contact" component={Contact} />
+      <Route path="/legacy" component={Legacy} />
       <Route component={NotFound} />
     </Switch>
   );
