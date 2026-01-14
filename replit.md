@@ -104,6 +104,33 @@ Preferred communication style: Simple, everyday language.
 - **Splash Screen**: client/src/components/SplashScreen.tsx with animated logo
 - **Theme Color**: #ec4899 (signature pink)
 
+### Modular Route Architecture (January 2026)
+Routes have been decomposed into domain-focused modules for maintainability:
+```
+server/routes/
+├── index.ts          # Barrel export for all route modules
+├── auth.ts           # Authentication routes (register, login)
+├── products.ts       # Product CRUD with caching
+├── orders.ts         # Order management
+├── admin.ts          # Admin dashboard, analytics, export
+├── shipping.ts       # Shipping rates and exchange rates
+├── payments.ts       # PayFast and Paynow payment gateways
+└── utils.ts          # Shared utilities (password hashing, logging, auth helpers)
+```
+
+### Product Caching Layer
+- In-memory Map-based cache with 5-minute TTL
+- Caches: product list, single product, productWithImages queries
+- Automatic invalidation on product/image mutations
+- Cache stats endpoint: GET /api/cache/products/stats
+- Hit/miss tracking with hit rate calculation
+
+### Structured Logging
+- JSON-formatted logs with level, category, message, and timestamp
+- PII sanitization: phone, email, and password fields masked
+- Log levels: debug (dev only), info, warn, error
+- Centralized error handling with `handleRouteError()`
+
 ### File Structure
 ```
 ├── client/src/          # React frontend
@@ -112,7 +139,9 @@ Preferred communication style: Simple, everyday language.
 │   ├── pages/           # Route pages (Home, Shop, Checkout, Orders, AdminDashboard)
 │   └── lib/             # Utilities (queryClient, auth-utils)
 ├── server/              # Express backend
-│   ├── routes.ts        # API route definitions
+│   ├── routes.ts        # Main route registration (delegates to modules)
+│   ├── routes/          # Modular route handlers
+│   ├── cache.ts         # Product caching layer
 │   ├── storage.ts       # Database operations
 │   ├── db.ts            # Database connection
 │   └── replit_integrations/  # Auth and object storage
