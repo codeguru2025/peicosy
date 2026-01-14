@@ -95,20 +95,22 @@ export class ObjectStorageService {
   }
 
   // Downloads an object to the response.
-  async downloadObject(file: File, res: Response, cacheTtlSec: number = 3600) {
+  // Default cache TTL is 1 year for immutable product images
+  async downloadObject(file: File, res: Response, cacheTtlSec: number = 31536000) {
     try {
       // Get file metadata
       const [metadata] = await file.getMetadata();
       // Get the ACL policy for the object.
       const aclPolicy = await getObjectAclPolicy(file);
       const isPublic = aclPolicy?.visibility === "public";
-      // Set appropriate headers
+      // Set appropriate headers with long cache and immutable for static assets
       res.set({
         "Content-Type": metadata.contentType || "application/octet-stream",
         "Content-Length": metadata.size,
         "Cache-Control": `${
           isPublic ? "public" : "private"
-        }, max-age=${cacheTtlSec}`,
+        }, max-age=${cacheTtlSec}, immutable`,
+        "Vary": "Accept-Encoding",
       });
 
       // Stream the file to the response
@@ -204,6 +206,44 @@ export class ObjectStorageService {
     // Extract the entity ID from the path
     const entityId = rawObjectPath.slice(objectEntityDir.length);
     return `/objects/${entityId}`;
+  }
+
+  // Get public CDN URL for an object (for faster delivery)
+  getPublicCdnUrl(objectPath: string): string {
+    // If it's already a full URL, return it
+    if (objectPath.startsWith("https://")) {
+      return objectPath;
+    }
+    
+    // If it's a relative /objects/ path, construct CDN URL
+    if (objectPath.startsWith("/objects/")) {
+      const entityId = objectPath.slice("/objects/".length);
+      let entityDir = this.getPrivateObjectDir();
+      if (!entityDir.startsWith("/")) {
+        entityDir = `/${entityDir}`;
+      }
+      if (!entityDir.endsWith("/")) {
+        entityDir = `${entityDir}/`;
+      }
+      const fullPath = `${entityDir}${entityId}`;
+      // Return storage.googleapis.com URL for direct CDN access
+      return `https://storage.googleapis.com${fullPath}`;
+    }
+    
+    return objectPath;
+  }
+
+  // Generate a signed public URL for read access (with expiration)
+  async getSignedReadUrl(objectPath: string, ttlSec: number = 3600): Promise<string> {
+    const objectFile = await this.getObjectEntityFile(objectPath);
+    const [metadata] = await objectFile.getMetadata();
+    
+    return signObjectURL({
+      bucketName: objectFile.bucket.name,
+      objectName: metadata.name || objectFile.name,
+      method: "GET",
+      ttlSec,
+    });
   }
 
   // Tries to set the ACL policy for the object entity and return the normalized path.
