@@ -75,12 +75,35 @@ export const customsRules = pgTable("customs_rules", {
 
 export const insertCustomsRuleSchema = createInsertSchema(customsRules).omit({ id: true });
 
+// === ORDER STATUS ENUM ===
+export const OrderStatus = {
+  PENDING_PAYMENT: 'pending_payment',
+  PENDING_VERIFICATION: 'pending_verification',
+  CONFIRMED: 'confirmed',
+  SHIPPED: 'shipped',
+  ARRIVED: 'arrived',
+  READY_COLLECTION: 'ready_collection',
+  COMPLETED: 'completed',
+  CANCELLED: 'cancelled',
+} as const;
+
+export type OrderStatusType = typeof OrderStatus[keyof typeof OrderStatus];
+
+// === INQUIRY STATUS ENUM ===
+export const InquiryStatus = {
+  NEW: 'new',
+  READ: 'read',
+  REPLIED: 'replied',
+  CLOSED: 'closed',
+} as const;
+
+export type InquiryStatusType = typeof InquiryStatus[keyof typeof InquiryStatus];
+
 // === ORDERS ===
 export const orders = pgTable("orders", {
   id: serial("id").primaryKey(),
   userId: varchar("user_id").notNull().references(() => users.id),
-  status: text("status").notNull().default("pending_payment"), 
-  // pending_payment, pending_verification, confirmed, shipped, arrived, ready_collection, completed
+  status: text("status").notNull().default(OrderStatus.PENDING_PAYMENT),
   totalAmount: numeric("total_amount", { precision: 10, scale: 2 }).notNull(),
   currency: text("currency").notNull().default("GBP"),
   shippingMethod: text("shipping_method").notNull(),
@@ -210,7 +233,11 @@ export const loginSchema = z.object({
 
 export const registerSchema = z.object({
   username: z.string().min(3, "Username must be at least 3 characters"),
-  password: z.string().min(6, "Password must be at least 6 characters"),
+  password: z.string()
+    .min(8, "Password must be at least 8 characters")
+    .regex(/[A-Z]/, "Password must contain at least one uppercase letter")
+    .regex(/[a-z]/, "Password must contain at least one lowercase letter")
+    .regex(/[0-9]/, "Password must contain at least one number"),
   email: z.string().email("Please enter a valid email"),
   firstName: z.string().min(1, "First name is required"),
   lastName: z.string().min(1, "Last name is required"),

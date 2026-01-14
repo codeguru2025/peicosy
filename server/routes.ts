@@ -15,7 +15,8 @@ import {
   createOrderSchema, 
   calculateShippingSchema,
   paynowInitiateSchema,
-  paynowMobileSchema 
+  paynowMobileSchema,
+  OrderStatus 
 } from "@shared/schema";
 import { fromZodError } from "zod-validation-error";
 import { authStorage } from "./replit_integrations/auth/storage";
@@ -104,6 +105,26 @@ export async function registerRoutes(
 
   // 3. API Routes
 
+  // --- Health Check ---
+  app.get("/api/health", async (req, res) => {
+    try {
+      const { pool } = await import("./db");
+      await pool.query("SELECT 1");
+      res.json({ 
+        status: "healthy", 
+        timestamp: new Date().toISOString(),
+        uptime: process.uptime(),
+        memory: process.memoryUsage(),
+      });
+    } catch (err) {
+      res.status(503).json({ 
+        status: "unhealthy", 
+        error: "Database connection failed",
+        timestamp: new Date().toISOString(),
+      });
+    }
+  });
+
   // --- User Registration ---
   app.post("/api/auth/register", authLimiter, async (req, res) => {
     try {
@@ -117,8 +138,20 @@ export async function registerRoutes(
         return res.status(400).json({ message: "Your username needs to be at least 3 characters." });
       }
       
-      if (password.length < 6) {
-        return res.status(400).json({ message: "Please choose a password with at least 6 characters." });
+      if (password.length < 8) {
+        return res.status(400).json({ message: "Please choose a password with at least 8 characters." });
+      }
+      
+      if (!/[A-Z]/.test(password)) {
+        return res.status(400).json({ message: "Password must contain at least one uppercase letter." });
+      }
+      
+      if (!/[a-z]/.test(password)) {
+        return res.status(400).json({ message: "Password must contain at least one lowercase letter." });
+      }
+      
+      if (!/[0-9]/.test(password)) {
+        return res.status(400).json({ message: "Password must contain at least one number." });
       }
       
       // Check if username already exists
@@ -500,7 +533,7 @@ export async function registerRoutes(
         totalAmount: String(totalAmount),
         shippingCost: String(shippingCost),
         customsDuty: String(customsDuty),
-        status: 'pending_payment',
+        status: OrderStatus.PENDING_PAYMENT,
         currency: 'GBP',
         expectedAmountUsd: String(expectedAmountUsd),
         expectedAmountZar: String(expectedAmountZar),
@@ -871,7 +904,7 @@ export async function registerRoutes(
         return res.status(404).send("Order not found");
       }
       
-      if (order.status === 'confirmed' || order.status === 'completed') {
+      if (order.status === OrderStatus.CONFIRMED || order.status === OrderStatus.COMPLETED) {
         logPaymentEvent("PAYFAST_ITN_DUPLICATE", {
           orderId: result.orderId,
           currentStatus: order.status,
@@ -895,13 +928,13 @@ export async function registerRoutes(
       }
       
       if (result.paymentStatus === "COMPLETE") {
-        await storage.updateOrderStatus(result.orderId, "confirmed");
+        await storage.updateOrderStatus(result.orderId, OrderStatus.CONFIRMED);
         logPaymentEvent("PAYFAST_PAYMENT_CONFIRMED", {
           orderId: result.orderId,
           amount: result.amount,
         });
       } else if (result.paymentStatus === "CANCELLED") {
-        await storage.updateOrderStatus(result.orderId, "cancelled");
+        await storage.updateOrderStatus(result.orderId, OrderStatus.CANCELLED);
         logPaymentEvent("PAYFAST_PAYMENT_CANCELLED", {
           orderId: result.orderId,
         });
@@ -1100,8 +1133,8 @@ export async function registerRoutes(
       
       if (status.paid) {
         // Update order status if payment is confirmed
-        if (order.status === 'pending_payment') {
-          await storage.updateOrderStatus(orderId, 'confirmed');
+        if (order.status === OrderStatus.PENDING_PAYMENT) {
+          await storage.updateOrderStatus(orderId, OrderStatus.CONFIRMED);
         }
         
         res.json({
@@ -1179,7 +1212,7 @@ export async function registerRoutes(
       }
 
       // Check for duplicate processing
-      if (order.status === 'confirmed' || order.status === 'completed') {
+      if (order.status === OrderStatus.CONFIRMED || order.status === OrderStatus.COMPLETED) {
         logPaymentEvent("PAYNOW_CALLBACK_DUPLICATE", {
           orderId,
           currentStatus: order.status,
@@ -1221,19 +1254,19 @@ export async function registerRoutes(
 
       // Only update order if verified status from Paynow confirms payment
       if (verifiedStatus.paid) {
-        if (order.status === 'pending_payment') {
-          await storage.updateOrderStatus(orderId, 'confirmed');
+        if (order.status === OrderStatus.PENDING_PAYMENT) {
+          await storage.updateOrderStatus(orderId, OrderStatus.CONFIRMED);
           logPaymentEvent("PAYNOW_PAYMENT_CONFIRMED", {
             orderId,
             reference,
             paynowReference: paynowreference,
             amount: verifiedStatus.amount,
             previousStatus: order.status,
-            newStatus: 'confirmed',
+            newStatus: OrderStatus.CONFIRMED,
           });
         }
       } else if (verifiedStatus.status === 'Cancelled') {
-        await storage.updateOrderStatus(orderId, 'cancelled');
+        await storage.updateOrderStatus(orderId, OrderStatus.CANCELLED);
         logPaymentEvent("PAYNOW_PAYMENT_CANCELLED", {
           orderId,
           reference,
