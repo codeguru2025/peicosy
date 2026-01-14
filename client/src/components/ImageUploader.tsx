@@ -78,8 +78,8 @@ export function ImageUploader({
       throw new Error('The image couldn\'t be uploaded. Please try again.');
     }
 
-    // objectPath from server already includes /objects/ prefix, use it directly
-    const cdnUrl = objectPath.startsWith('/objects/') 
+    // Use object path through Express proxy with improved caching (1 year, immutable)
+    const imageUrl = objectPath.startsWith('/objects/') 
       ? objectPath 
       : `/objects${objectPath.startsWith('/') ? objectPath : '/' + objectPath}`;
     
@@ -92,7 +92,7 @@ export function ImageUploader({
 
     return {
       objectPath,
-      cdnUrl,
+      cdnUrl: imageUrl,
       role: 'gallery',
       originalFilename: file.name,
       mimeType: file.type,
