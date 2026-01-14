@@ -186,11 +186,19 @@ async function seedShippingData() {
       ]);
     }
     
-    const existingRate = await storage.getExchangeRate("GBP", "ZAR");
-    if (!existingRate) {
-      console.log("Seeding exchange rate...");
+    const existingZarRate = await storage.getExchangeRate("GBP", "ZAR");
+    if (!existingZarRate) {
+      console.log("Seeding GBP/ZAR exchange rate...");
       await db.insert(exchangeRates).values([
         { fromCurrency: "GBP", toCurrency: "ZAR", rate: "23.50" },
+      ]);
+    }
+    
+    const existingUsdRate = await storage.getExchangeRate("GBP", "USD");
+    if (!existingUsdRate) {
+      console.log("Seeding GBP/USD exchange rate...");
+      await db.insert(exchangeRates).values([
+        { fromCurrency: "GBP", toCurrency: "USD", rate: "1.27" },
       ]);
     }
   } catch (err) {

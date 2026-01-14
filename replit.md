@@ -191,34 +191,34 @@ server/routes/
 ### Before Going Live
 
 #### Security
-- [ ] Set `ADMIN_USERNAME` and `ADMIN_PASSWORD` environment variables (don't use defaults)
-- [ ] Verify all payment secrets are configured: `PAYNOW_INTEGRATION_ID`, `PAYNOW_INTEGRATION_KEY`
-- [ ] Ensure `SESSION_SECRET` is set to a strong random value
+- [x] Set `ADMIN_USERNAME` and `ADMIN_PASSWORD` environment variables (don't use defaults)
+- [x] Verify all payment secrets are configured: `PAYNOW_INTEGRATION_ID`, `PAYNOW_INTEGRATION_KEY`
+- [x] Ensure `SESSION_SECRET` is set to a strong random value
 - [ ] Review and test HTTPS redirect is working
 
 #### Payment Gateway
-- [ ] Verify Paynow integration is set to "Live" mode in Paynow dashboard
+- [x] Verify Paynow integration is set to "Live" mode in Paynow dashboard
 - [ ] Test payment flow with real credentials in production
 - [ ] Confirm callback URLs are accessible from Paynow servers
 - [ ] Set up payment credential rotation schedule (recommended: every 90 days)
 
 #### Database
-- [ ] Database indexes are created for performance:
+- [x] Database indexes are created for performance:
   - `idx_orders_user_status` on orders(user_id, status)
   - `idx_orders_created_at` on orders(created_at)
   - `idx_order_items_order_id` on order_items(order_id)
   - `idx_product_images_product_id` on product_images(product_id)
 - [ ] Database backups are configured
-- [ ] Review database connection pool settings
+- [x] Review database connection pool settings (max 20, idle timeout 30s, connection timeout 10s)
 
 #### Monitoring & Logging
-- [ ] Payment events are logged (structured JSON format)
-- [ ] Monitor for failed payment callbacks (PAYNOW_CALLBACK_REJECTED events)
+- [x] Payment events are logged (structured JSON format)
+- [x] Monitor for failed payment callbacks (PAYNOW_CALLBACK_REJECTED events)
 - [ ] Set up alerts for payment failures
 
 #### Exchange Rates
-- [ ] GBP/USD exchange rate is configured in database for Zimbabwe pricing
-- [ ] GBP/ZAR exchange rate is configured for South Africa pricing
+- [x] GBP/USD exchange rate is configured in database for Zimbabwe pricing (1.27)
+- [x] GBP/ZAR exchange rate is configured for South Africa pricing (23.50)
 - [ ] Schedule for updating exchange rates (recommended: daily)
 
 ### Post-Launch Monitoring
