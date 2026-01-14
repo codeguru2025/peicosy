@@ -2,6 +2,7 @@ import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
 import { api, buildUrl } from "@shared/routes";
 import { type InsertOrder, type CreateOrderRequest } from "@shared/schema";
 import { useToast } from "@/hooks/use-toast";
+import { apiRequest } from "@/lib/queryClient";
 
 export function useOrders() {
   return useQuery({
@@ -33,17 +34,7 @@ export function useCreateOrder() {
 
   return useMutation({
     mutationFn: async (data: CreateOrderRequest) => {
-      const res = await fetch(api.orders.create.path, {
-        method: api.orders.create.method,
-        headers: { "Content-Type": "application/json" },
-        body: JSON.stringify(data),
-        credentials: "include",
-      });
-
-      if (!res.ok) {
-        const error = await res.json().catch(() => ({}));
-        throw new Error(error.message || "Failed to create order");
-      }
+      const res = await apiRequest(api.orders.create.method, api.orders.create.path, data);
       return api.orders.create.responses[201].parse(await res.json());
     },
     onSuccess: () => {
@@ -63,17 +54,7 @@ export function useUpdateOrderStatus() {
   return useMutation({
     mutationFn: async ({ id, status, proofOfPaymentUrl }: { id: number, status: string, proofOfPaymentUrl?: string }) => {
       const url = buildUrl(api.orders.updateStatus.path, { id });
-      const res = await fetch(url, {
-        method: api.orders.updateStatus.method,
-        headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({ status, proofOfPaymentUrl }),
-        credentials: "include",
-      });
-
-      if (!res.ok) {
-        const error = await res.json().catch(() => ({}));
-        throw new Error(error.message || "Failed to update order status");
-      }
+      const res = await apiRequest(api.orders.updateStatus.method, url, { status, proofOfPaymentUrl });
       return api.orders.updateStatus.responses[200].parse(await res.json());
     },
     onSuccess: () => {
