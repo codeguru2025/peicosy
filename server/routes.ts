@@ -1,4 +1,4 @@
-import type { Express, Request } from "express";
+import type { Express, Request, Response, NextFunction } from "express";
 import type { Server } from "http";
 import { storage } from "./storage";
 import { api } from "@shared/routes";
@@ -9,6 +9,7 @@ import { generatePayFastForm, isPayFastConfigured, validatePayFastITN } from "./
 import { isPaynowConfigured, initiateWebPayment, initiateMobilePayment, checkPaymentStatus, validatePaynowHash } from "./paynow";
 import bcrypt from "bcrypt";
 import rateLimit from "express-rate-limit";
+import { csrfSync } from "csrf-sync";
 import { 
   loginSchema, 
   registerSchema, 
@@ -92,6 +93,35 @@ async function verifyPassword(password: string, hash: string): Promise<boolean> 
   return bcrypt.compare(password, hash);
 }
 
+// CSRF Protection setup
+const {
+  generateToken,
+  csrfSynchronisedProtection,
+} = csrfSync({
+  getTokenFromRequest: (req) => req.headers["x-csrf-token"] as string,
+});
+
+// Middleware to skip CSRF for specific routes (payment callbacks)
+const csrfProtection = (req: Request, res: Response, next: NextFunction) => {
+  // Skip CSRF for payment gateway callbacks (server-to-server)
+  const skipPaths = [
+    "/api/payment/payfast/notify",
+    "/api/payments/paynow/callback",
+  ];
+  
+  if (skipPaths.includes(req.path)) {
+    return next();
+  }
+  
+  // Skip CSRF for GET, HEAD, OPTIONS requests
+  if (["GET", "HEAD", "OPTIONS"].includes(req.method)) {
+    return next();
+  }
+  
+  // Apply CSRF protection to state-changing requests
+  return csrfSynchronisedProtection(req, res, next);
+};
+
 export async function registerRoutes(
   httpServer: Server,
   app: Express
@@ -103,7 +133,16 @@ export async function registerRoutes(
   // 2. Setup Object Storage (with authentication for uploads)
   registerObjectStorageRoutes(app, isAuthenticated);
 
-  // 3. API Routes
+  // 3. Apply CSRF protection middleware
+  app.use(csrfProtection);
+
+  // 4. CSRF Token endpoint - provides token for client-side requests
+  app.get("/api/csrf-token", (req, res) => {
+    const token = generateToken(req);
+    res.json({ csrfToken: token });
+  });
+
+  // 5. API Routes
 
   // --- Health Check ---
   app.get("/api/health", async (req, res) => {

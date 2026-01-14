@@ -7,17 +7,70 @@ async function throwIfResNotOk(res: Response) {
   }
 }
 
+let csrfToken: string | null = null;
+
+async function fetchCsrfToken(): Promise<string> {
+  const res = await fetch("/api/csrf-token", { credentials: "include" });
+  if (res.ok) {
+    const data = await res.json();
+    csrfToken = data.csrfToken;
+    return csrfToken || "";
+  }
+  return "";
+}
+
+async function getCsrfToken(): Promise<string> {
+  if (!csrfToken) {
+    return await fetchCsrfToken();
+  }
+  return csrfToken;
+}
+
+export function clearCsrfToken() {
+  csrfToken = null;
+}
+
 export async function apiRequest(
   method: string,
   url: string,
   data?: unknown | undefined,
 ): Promise<Response> {
-  const res = await fetch(url, {
+  const headers: Record<string, string> = {};
+  
+  if (data) {
+    headers["Content-Type"] = "application/json";
+  }
+  
+  // Include CSRF token for state-changing requests
+  const isStateChanging = ["POST", "PUT", "PATCH", "DELETE"].includes(method.toUpperCase());
+  if (isStateChanging) {
+    const token = await getCsrfToken();
+    if (token) {
+      headers["X-CSRF-Token"] = token;
+    }
+  }
+  
+  let res = await fetch(url, {
     method,
-    headers: data ? { "Content-Type": "application/json" } : {},
+    headers,
     body: data ? JSON.stringify(data) : undefined,
     credentials: "include",
   });
+
+  // If CSRF validation failed (403/419), refresh token and retry once
+  if (isStateChanging && (res.status === 403 || res.status === 419)) {
+    csrfToken = null;
+    const newToken = await fetchCsrfToken();
+    if (newToken) {
+      headers["X-CSRF-Token"] = newToken;
+      res = await fetch(url, {
+        method,
+        headers,
+        body: data ? JSON.stringify(data) : undefined,
+        credentials: "include",
+      });
+    }
+  }
 
   await throwIfResNotOk(res);
   return res;
