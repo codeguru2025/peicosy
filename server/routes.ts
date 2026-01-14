@@ -942,27 +942,8 @@ export async function registerRoutes(
         return res.status(400).send("Amount mismatch");
       }
       
-      // Record callback before processing (idempotency)
-      if (pfPaymentId) {
-        try {
-          await storage.recordProcessedCallback({
-            gateway: 'payfast',
-            transactionId: pfPaymentId,
-            orderId: result.orderId,
-            status: result.paymentStatus,
-            amount: String(result.amount),
-            rawPayload: req.body,
-          });
-        } catch (err: any) {
-          // Unique constraint violation means duplicate - already processed
-          if (err.code === '23505') {
-            logPaymentEvent("PAYFAST_ITN_DUPLICATE_CONSTRAINT", { pfPaymentId });
-            return res.status(200).send("Already processed");
-          }
-          throw err;
-        }
-      }
-      
+      // Process order update first, then record callback for idempotency
+      // This ensures failed updates can be retried (callback not yet recorded)
       if (result.paymentStatus === "COMPLETE") {
         await storage.updateOrderStatus(result.orderId, OrderStatus.CONFIRMED);
         logPaymentEvent("PAYFAST_PAYMENT_CONFIRMED", {
@@ -976,6 +957,26 @@ export async function registerRoutes(
           orderId: result.orderId,
           pfPaymentId,
         });
+      }
+      
+      // Record callback AFTER successful order update (idempotency)
+      // This ensures no lost payments - update happens first, then we record
+      if (pfPaymentId) {
+        try {
+          await storage.recordProcessedCallback({
+            gateway: 'payfast',
+            transactionId: pfPaymentId,
+            orderId: result.orderId,
+            status: result.paymentStatus,
+            amount: String(result.amount),
+            rawPayload: req.body,
+          });
+        } catch (err: any) {
+          // Unique constraint violation is acceptable here - means duplicate came after success
+          if (err.code !== '23505') {
+            console.error("Failed to record PayFast callback (non-critical):", err);
+          }
+        }
       }
       
       res.status(200).send("OK");
@@ -1304,28 +1305,8 @@ export async function registerRoutes(
         amount: verifiedStatus.amount,
       });
 
-      // Record callback before processing (idempotency)
-      if (paynowTxId) {
-        try {
-          await storage.recordProcessedCallback({
-            gateway: 'paynow',
-            transactionId: paynowTxId,
-            orderId,
-            status: verifiedStatus.status,
-            amount: verifiedStatus.amount ? String(verifiedStatus.amount) : null,
-            rawPayload: req.body,
-          });
-        } catch (err: any) {
-          // Unique constraint violation means duplicate - already processed
-          if (err.code === '23505') {
-            logPaymentEvent("PAYNOW_CALLBACK_DUPLICATE_CONSTRAINT", { paynowReference: paynowTxId });
-            return res.status(200).send("Already processed");
-          }
-          throw err;
-        }
-      }
-
-      // Only update order if verified status from Paynow confirms payment
+      // Process order update first, then record callback for idempotency
+      // This ensures failed updates can be retried (callback not yet recorded)
       if (verifiedStatus.paid) {
         if (order.status === OrderStatus.PENDING_PAYMENT) {
           await storage.updateOrderStatus(orderId, OrderStatus.CONFIRMED);
@@ -1351,6 +1332,26 @@ export async function registerRoutes(
           reference,
           status: verifiedStatus.status,
         });
+      }
+      
+      // Record callback AFTER successful order update (idempotency)
+      // This ensures no lost payments - update happens first, then we record
+      if (paynowTxId) {
+        try {
+          await storage.recordProcessedCallback({
+            gateway: 'paynow',
+            transactionId: paynowTxId,
+            orderId,
+            status: verifiedStatus.status,
+            amount: verifiedStatus.amount ? String(verifiedStatus.amount) : null,
+            rawPayload: req.body,
+          });
+        } catch (err: any) {
+          // Unique constraint violation is acceptable here - means duplicate came after success
+          if (err.code !== '23505') {
+            console.error("Failed to record Paynow callback (non-critical):", err);
+          }
+        }
       }
       
       res.status(200).send("OK");
