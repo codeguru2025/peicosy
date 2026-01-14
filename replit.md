@@ -38,7 +38,8 @@ The platform includes product browsing, dynamic landed cost calculation, proof o
   - Rate limiting: strictAuthLimiter (5 attempts/hour) on login, authLimiter (10/15min) on registration
   - Payment amount verification: Locked exchange rates at order creation (expectedAmountUsd, expectedAmountZar)
   - PayFast/Paynow callbacks verify amounts against locked-in values with 5% tolerance
-  - Duplicate payment protection: Idempotent callback handling for both gateways
+  - Duplicate payment protection: Idempotent callback handling with `processed_payment_callbacks` table
+  - Payment callbacks recorded AFTER successful order updates to prevent lost payments
   - Database connection pooling: max 20, idle timeout 30s, connection timeout 10s
   - N+1 query optimization: Batch loading for order lists reduces queries from O(n) to O(2)
   - PII sanitization: Payment logs mask phone/email data
