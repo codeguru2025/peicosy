@@ -43,6 +43,10 @@ The platform includes product browsing, dynamic landed cost calculation, proof o
   - Database connection pooling: max 20, idle timeout 30s, connection timeout 10s
   - N+1 query optimization: Batch loading for order lists reduces queries from O(n) to O(2)
   - PII sanitization: Payment logs mask phone/email data
+  - CSRF protection: csrf-sync middleware with token validation on state-changing requests
+  - Payment gateway callbacks (/api/payment/payfast/notify, /api/payments/paynow/callback) excluded from CSRF
+  - Client auto-refreshes CSRF token on 403/419 errors for seamless session rotation handling
+  - Session rotation: Session ID regenerated on login/registration to prevent session fixation attacks
 - **Admin Reports & Analytics**: New Reports tab in admin dashboard with:
   - Key business metrics (total revenue, orders, average order value, customer count)
   - Revenue trend chart (12 months)

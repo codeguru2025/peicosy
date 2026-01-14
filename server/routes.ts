@@ -232,19 +232,27 @@ export async function registerRoutes(
         },
       };
       
-      // Use Passport's login method for proper session handling
-      req.login(sessionUser, (err) => {
-        if (err) {
-          console.error("Session login error:", err);
+      // Regenerate session ID to prevent session fixation attacks
+      req.session.regenerate((regenerateErr) => {
+        if (regenerateErr) {
+          console.error("Session regeneration error:", regenerateErr);
           return res.status(500).json({ message: "We couldn't complete your registration. Please try again." });
         }
         
-        res.status(201).json({
-          id: user.id,
-          email: user.email,
-          firstName: user.firstName,
-          lastName: user.lastName,
-          username: user.username,
+        // Use Passport's login method for proper session handling
+        req.login(sessionUser, (err) => {
+          if (err) {
+            console.error("Session login error:", err);
+            return res.status(500).json({ message: "We couldn't complete your registration. Please try again." });
+          }
+          
+          res.status(201).json({
+            id: user.id,
+            email: user.email,
+            firstName: user.firstName,
+            lastName: user.lastName,
+            username: user.username,
+          });
         });
       });
     } catch (err) {
@@ -288,19 +296,27 @@ export async function registerRoutes(
         },
       };
       
-      // Use Passport's login method for proper session handling
-      req.login(sessionUser, (err) => {
-        if (err) {
-          console.error("Session login error:", err);
+      // Regenerate session ID to prevent session fixation attacks
+      req.session.regenerate((regenerateErr) => {
+        if (regenerateErr) {
+          console.error("Session regeneration error:", regenerateErr);
           return res.status(500).json({ message: "We couldn't sign you in. Please try again." });
         }
         
-        res.json({
-          id: user.id,
-          email: user.email,
-          firstName: user.firstName,
-          lastName: user.lastName,
-          isAdmin: user.isAdmin,
+        // Use Passport's login method for proper session handling
+        req.login(sessionUser, (err) => {
+          if (err) {
+            console.error("Session login error:", err);
+            return res.status(500).json({ message: "We couldn't sign you in. Please try again." });
+          }
+          
+          res.json({
+            id: user.id,
+            email: user.email,
+            firstName: user.firstName,
+            lastName: user.lastName,
+            isAdmin: user.isAdmin,
+          });
         });
       });
     } catch (err) {
