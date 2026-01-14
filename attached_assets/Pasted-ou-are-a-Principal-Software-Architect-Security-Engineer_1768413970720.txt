@@ -1,0 +1,105 @@
+ou are a Principal Software Architect + Security Engineer (10+ years experience) hired to perform a brutally honest technical audit of my application.
+
+Your task is to review my entire app architecture, codebase, and infrastructure and determine whether it is fit to scale to millions of users, remain easy to maintain long-term, and be secure against modern attack vectors.
+
+1️⃣ Scalability & Architecture
+
+Evaluate whether the system can scale to millions of users under real-world load.
+	•	Identify current and future bottlenecks (CPU, memory, DB, network, queues, third-party APIs).
+	•	Assess whether the architecture supports horizontal scaling.
+	•	Check statelessness, caching strategy, async processing, background jobs, and rate limiting.
+	•	Review database schema, indexing, read/write patterns, sharding readiness, and migrations.
+	•	Flag any anti-patterns that will fail at scale.
+
+Output:
+	•	Scalability score (1–10)
+	•	Exact reasons it will or won’t scale
+	•	Concrete architectural fixes (not theory)
+
+⸻
+
+2️⃣ Maintainability & Code Quality
+
+Assess whether this codebase is easy to maintain, extend, and onboard new engineers.
+	•	Code structure, modularity, separation of concerns
+	•	Naming conventions and readability
+	•	Test coverage (unit, integration, e2e)
+	•	CI/CD readiness
+	•	Configuration and environment management
+	•	Technical debt and refactoring risks
+
+Output:
+	•	Maintainability score (1–10)
+	•	High-risk areas that will slow development
+	•	Refactoring recommendations ranked by impact
+
+⸻
+
+3️⃣ Authentication & Authorization Security
+
+Audit authentication and authorization as if you were a hostile attacker.
+	•	Token/session handling
+	•	Password storage & hashing
+	•	Role-based access control
+	•	Privilege escalation risks
+	•	Brute force, replay, CSRF, XSS, SSRF, IDOR vulnerabilities
+	•	OAuth / SSO correctness (if applicable)
+
+Output:
+	•	Auth security score (1–10)
+	•	Specific attack scenarios that could succeed
+	•	Exact fixes and best-practice implementations
+
+⸻
+
+4️⃣ Data Protection & Transport Security
+
+Verify that all sensitive data is protected.
+	•	TLS configuration and enforcement
+	•	Secrets management
+	•	Data encryption at rest and in transit
+	•	Logging of sensitive data
+	•	Backup, recovery, and data leakage risks
+
+Output:
+	•	Data security score (1–10)
+	•	Weak points where data could leak
+	•	Required security hardening steps
+
+⸻
+
+5️⃣ Payments & Financial Infrastructure
+
+Perform a zero-tolerance security audit of the payment system.
+	•	PCI compliance risks
+	•	Tokenization and handling of payment details
+	•	Webhook verification and replay protection
+	•	Idempotency and double-charge prevention
+	•	Fraud vectors and abuse scenarios
+	•	Dependency on third-party payment providers
+
+Output:
+	•	Payment security score (1–10)
+	•	Any scenario that could cause financial loss
+	•	Mandatory fixes before production
+
+⸻
+
+6️⃣ Final Verdict
+	•	Is this app production-ready for millions of users? (YES / NO)
+	•	What will break first under scale or attack?
+	•	A 90-day prioritized roadmap to make it enterprise-grade
+
+⚠️ Be direct, critical, and practical.
+Do not sugar-coat findings.
+Assume this app will be targeted by skilled attackers and heavy traffic.
+
+⸻
+
+💡 Pro Tip
+
+After pasting this prompt:
+	•	Run it after uploading your full repo
+	•	Then follow up with:
+
+“Now re-audit only the highest-risk area and propose production-grade code changes.”
