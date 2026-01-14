@@ -117,20 +117,6 @@ export async function initiateMobilePayment(data: PaynowMobilePaymentData): Prom
   }
   
   try {
-    // Debug logging
-    console.log("Paynow mobile payment request:", {
-      integrationId: config.integrationId,
-      integrationIdLength: config.integrationId.length,
-      resultUrl: config.resultUrl,
-      returnUrl: config.returnUrl,
-      reference: data.reference,
-      email: data.email,
-      phone: data.phone,
-      method: data.method,
-      amount: data.amount,
-      itemCount: data.items.length,
-    });
-    
     const payment = paynow.createPayment(data.reference, data.email);
     
     for (const item of data.items) {
@@ -138,8 +124,6 @@ export async function initiateMobilePayment(data: PaynowMobilePaymentData): Prom
     }
     
     const response = await paynow.sendMobile(payment, data.phone, data.method);
-    
-    console.log("Paynow mobile payment response:", response);
     
     if (response.success) {
       return {

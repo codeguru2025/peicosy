@@ -1,4 +1,4 @@
-import type { Express } from "express";
+import type { Express, Request } from "express";
 import type { Server } from "http";
 import { storage } from "./storage";
 import { api } from "@shared/routes";
@@ -8,6 +8,7 @@ import { registerObjectStorageRoutes } from "./replit_integrations/object_storag
 import { generatePayFastForm, isPayFastConfigured, validatePayFastITN } from "./payfast";
 import { isPaynowConfigured, initiateWebPayment, initiateMobilePayment, checkPaymentStatus, validatePaynowHash } from "./paynow";
 import bcrypt from "bcrypt";
+import rateLimit from "express-rate-limit";
 import { 
   loginSchema, 
   registerSchema, 
@@ -17,15 +18,66 @@ import {
   paynowMobileSchema 
 } from "@shared/schema";
 import { fromZodError } from "zod-validation-error";
+import { authStorage } from "./replit_integrations/auth/storage";
 
-// Structured logging helper for payment events
+interface AuthenticatedUser {
+  id?: string;
+  claims?: {
+    sub: string;
+    email?: string;
+    first_name?: string;
+    last_name?: string;
+  };
+  expires_at?: number;
+}
+
+interface AuthenticatedRequest extends Request {
+  user?: AuthenticatedUser;
+}
+
+function getUserId(req: AuthenticatedRequest): string | undefined {
+  return req.user?.claims?.sub || req.user?.id;
+}
+
+async function canAccessOrder(req: AuthenticatedRequest, orderUserId: string): Promise<boolean> {
+  const userId = getUserId(req);
+  if (!userId) return false;
+  if (orderUserId === userId) return true;
+  const dbUser = await authStorage.getUser(userId);
+  return dbUser?.isAdmin === true;
+}
+
+const authLimiter = rateLimit({
+  windowMs: 15 * 60 * 1000,
+  max: 10,
+  message: { message: "Too many attempts. Please try again in 15 minutes." },
+  standardHeaders: true,
+  legacyHeaders: false,
+});
+
+const strictAuthLimiter = rateLimit({
+  windowMs: 60 * 60 * 1000,
+  max: 5,
+  message: { message: "Too many failed attempts. Please try again in an hour." },
+  standardHeaders: true,
+  legacyHeaders: false,
+});
+
 function logPaymentEvent(event: string, data: Record<string, any>) {
+  const sanitizedData = { ...data };
+  if (sanitizedData.phone) {
+    sanitizedData.phone = sanitizedData.phone.slice(0, 4) + "****" + sanitizedData.phone.slice(-2);
+  }
+  if (sanitizedData.email) {
+    const [local, domain] = sanitizedData.email.split("@");
+    sanitizedData.email = local.slice(0, 2) + "***@" + domain;
+  }
   const timestamp = new Date().toISOString();
   console.log(JSON.stringify({
     type: "PAYMENT_EVENT",
     event,
     timestamp,
-    ...data,
+    ...sanitizedData,
   }));
 }
 
@@ -53,7 +105,7 @@ export async function registerRoutes(
   // 3. API Routes
 
   // --- User Registration ---
-  app.post("/api/auth/register", async (req, res) => {
+  app.post("/api/auth/register", authLimiter, async (req, res) => {
     try {
       const { username, password, email, firstName, lastName } = req.body;
       
@@ -130,7 +182,7 @@ export async function registerRoutes(
   });
 
   // --- User Login (username/password) ---
-  app.post("/api/auth/login", async (req, res) => {
+  app.post("/api/auth/login", strictAuthLimiter, async (req, res) => {
     try {
       const { username, password } = req.body;
       
@@ -203,7 +255,6 @@ export async function registerRoutes(
   // Admin only: Create Product
   app.post(api.products.create.path, isAuthenticated, isAdmin, async (req, res) => {
     try {
-      // TODO: check admin role
       const input = api.products.create.input.parse(req.body);
       const product = await storage.createProduct(input);
       res.status(201).json(product);
@@ -374,7 +425,12 @@ export async function registerRoutes(
   app.get(api.orders.get.path, isAuthenticated, async (req, res) => {
     const order = await storage.getOrder(Number(req.params.id));
     if (!order) return res.status(404).json({ message: "Order not found" });
-    // TODO: Check if user owns order or is admin
+    
+    const hasAccess = await canAccessOrder(req as AuthenticatedRequest, order.userId);
+    if (!hasAccess) {
+      return res.status(403).json({ message: "You don't have permission to view this order." });
+    }
+    
     res.json(order);
   });
 
@@ -429,6 +485,14 @@ export async function registerRoutes(
       
       totalAmount = subtotal + shippingCost + customsDuty;
 
+      const zarRateData = await storage.getExchangeRate('GBP', 'ZAR');
+      const usdRateData = await storage.getExchangeRate('GBP', 'USD');
+      const zarRate = zarRateData ? Number(zarRateData.rate) : 23.50;
+      const usdRate = usdRateData ? Number(usdRateData.rate) : 1.27;
+      
+      const expectedAmountZar = totalAmount * zarRate;
+      const expectedAmountUsd = totalAmount * usdRate;
+
       const orderData = {
         userId: user.claims.sub,
         shippingMethod: input.shippingMethod,
@@ -437,7 +501,9 @@ export async function registerRoutes(
         shippingCost: String(shippingCost),
         customsDuty: String(customsDuty),
         status: 'pending_payment',
-        currency: 'GBP'
+        currency: 'GBP',
+        expectedAmountUsd: String(expectedAmountUsd),
+        expectedAmountZar: String(expectedAmountZar),
       };
 
       const order = await storage.createOrder(orderData, orderItems);
@@ -454,9 +520,18 @@ export async function registerRoutes(
 
   app.patch(api.orders.updateStatus.path, isAuthenticated, async (req, res) => {
     try {
+      const orderId = Number(req.params.id);
+      const order = await storage.getOrder(orderId);
+      if (!order) return res.status(404).json({ message: "Order not found" });
+      
+      const hasAccess = await canAccessOrder(req as AuthenticatedRequest, order.userId);
+      if (!hasAccess) {
+        return res.status(403).json({ message: "You don't have permission to update this order." });
+      }
+      
       const input = api.orders.updateStatus.input.parse(req.body);
       const updated = await storage.updateOrderStatus(
-        Number(req.params.id), 
+        orderId, 
         input.status, 
         input.proofOfPaymentUrl
       );
@@ -762,28 +837,81 @@ export async function registerRoutes(
         return res.status(503).send("PayFast not configured");
       }
       
-      console.log("PayFast ITN received:", req.body);
+      logPaymentEvent("PAYFAST_ITN_RECEIVED", {
+        orderId: req.body.m_payment_id,
+        status: req.body.payment_status,
+        amount: req.body.amount_gross,
+      });
       
       const result = validatePayFastITN(req.body);
       
       if (!result.valid) {
-        console.error("Invalid PayFast ITN signature");
+        logPaymentEvent("PAYFAST_ITN_REJECTED", {
+          reason: "INVALID_SIGNATURE",
+          orderId: req.body.m_payment_id,
+        });
         return res.status(400).send("Invalid signature");
       }
       
-      // Update order status based on payment status
-      if (result.paymentStatus === "COMPLETE") {
-        await storage.updateOrderStatus(result.orderId, "confirmed");
-        console.log(`Order ${result.orderId} confirmed via PayFast`);
-      } else if (result.paymentStatus === "CANCELLED") {
-        await storage.updateOrderStatus(result.orderId, "cancelled");
-        console.log(`Order ${result.orderId} cancelled`);
+      if (!result.amount || result.amount <= 0) {
+        logPaymentEvent("PAYFAST_ITN_REJECTED", {
+          reason: "MISSING_OR_INVALID_AMOUNT",
+          orderId: result.orderId,
+          rawAmount: req.body.amount_gross,
+        });
+        return res.status(400).send("Invalid payment amount");
       }
       
-      // PayFast expects a 200 OK response
+      const order = await storage.getOrder(result.orderId);
+      if (!order) {
+        logPaymentEvent("PAYFAST_ITN_REJECTED", {
+          reason: "ORDER_NOT_FOUND",
+          orderId: result.orderId,
+        });
+        return res.status(404).send("Order not found");
+      }
+      
+      if (order.status === 'confirmed' || order.status === 'completed') {
+        logPaymentEvent("PAYFAST_ITN_DUPLICATE", {
+          orderId: result.orderId,
+          currentStatus: order.status,
+        });
+        return res.status(200).send("Already processed");
+      }
+      
+      const expectedAmountZAR = order.expectedAmountZar 
+        ? Number(order.expectedAmountZar)
+        : Number(order.totalAmount) * 23.50;
+      const tolerance = 0.05;
+      
+      if (Math.abs(result.amount - expectedAmountZAR) > expectedAmountZAR * tolerance) {
+        logPaymentEvent("PAYFAST_AMOUNT_MISMATCH", {
+          orderId: result.orderId,
+          expectedAmount: expectedAmountZAR.toFixed(2),
+          receivedAmount: result.amount.toFixed(2),
+          difference: Math.abs(result.amount - expectedAmountZAR).toFixed(2),
+        });
+        return res.status(400).send("Amount mismatch");
+      }
+      
+      if (result.paymentStatus === "COMPLETE") {
+        await storage.updateOrderStatus(result.orderId, "confirmed");
+        logPaymentEvent("PAYFAST_PAYMENT_CONFIRMED", {
+          orderId: result.orderId,
+          amount: result.amount,
+        });
+      } else if (result.paymentStatus === "CANCELLED") {
+        await storage.updateOrderStatus(result.orderId, "cancelled");
+        logPaymentEvent("PAYFAST_PAYMENT_CANCELLED", {
+          orderId: result.orderId,
+        });
+      }
+      
       res.status(200).send("OK");
     } catch (err) {
-      console.error("PayFast ITN error:", err);
+      logPaymentEvent("PAYFAST_ITN_ERROR", {
+        error: err instanceof Error ? err.message : "Unknown error",
+      });
       res.status(500).send("Error processing notification");
     }
   });
@@ -1050,9 +1178,36 @@ export async function registerRoutes(
         return res.status(400).send("No pending Paynow payment for this order");
       }
 
+      // Check for duplicate processing
+      if (order.status === 'confirmed' || order.status === 'completed') {
+        logPaymentEvent("PAYNOW_CALLBACK_DUPLICATE", {
+          orderId,
+          currentStatus: order.status,
+          reference,
+        });
+        return res.status(200).send("Already processed");
+      }
+
       // CRITICAL: Re-poll Paynow using our stored poll URL to verify the payment status
-      // This is a defense-in-depth measure in addition to hash validation
       const verifiedStatus = await checkPaymentStatus(storedPollUrl);
+      
+      // Verify payment amount matches expected (use locked-in amount from order creation)
+      if (verifiedStatus.amount !== undefined) {
+        const expectedAmountUSD = order.expectedAmountUsd 
+          ? Number(order.expectedAmountUsd)
+          : Number(order.totalAmount) * 1.27;
+        const tolerance = 0.05;
+        
+        if (Math.abs(verifiedStatus.amount - expectedAmountUSD) > expectedAmountUSD * tolerance) {
+          logPaymentEvent("PAYNOW_AMOUNT_MISMATCH", {
+            orderId,
+            expectedAmount: expectedAmountUSD.toFixed(2),
+            receivedAmount: verifiedStatus.amount.toFixed(2),
+            difference: Math.abs(verifiedStatus.amount - expectedAmountUSD).toFixed(2),
+          });
+          return res.status(400).send("Amount mismatch");
+        }
+      }
       
       logPaymentEvent("PAYNOW_CALLBACK_VERIFIED", {
         orderId,

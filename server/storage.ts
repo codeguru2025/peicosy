@@ -151,12 +151,66 @@ export class DatabaseStorage implements IStorage {
   // Orders
   async getOrders(userId: string): Promise<OrderWithItems[]> {
     const userOrders = await db.select().from(orders).where(eq(orders.userId, userId)).orderBy(desc(orders.createdAt));
-    return Promise.all(userOrders.map(o => this.hydrateOrderWithItems(o)));
+    if (userOrders.length === 0) return [];
+    
+    const orderIds = userOrders.map(o => o.id);
+    const allItems = await db
+      .select({
+        id: orderItems.id,
+        orderId: orderItems.orderId,
+        productId: orderItems.productId,
+        quantity: orderItems.quantity,
+        priceAtPurchase: orderItems.priceAtPurchase,
+        product: products
+      })
+      .from(orderItems)
+      .leftJoin(products, eq(orderItems.productId, products.id))
+      .where(sql`${orderItems.orderId} IN (${sql.join(orderIds.map(id => sql`${id}`), sql`, `)})`);
+    
+    const itemsByOrderId = new Map<number, any[]>();
+    for (const item of allItems) {
+      if (!itemsByOrderId.has(item.orderId)) {
+        itemsByOrderId.set(item.orderId, []);
+      }
+      itemsByOrderId.get(item.orderId)!.push(item);
+    }
+    
+    return userOrders.map(order => ({
+      ...order,
+      items: itemsByOrderId.get(order.id) || []
+    })) as OrderWithItems[];
   }
 
   async getAllOrders(): Promise<OrderWithItems[]> {
     const allOrders = await db.select().from(orders).orderBy(desc(orders.createdAt));
-    return Promise.all(allOrders.map(o => this.hydrateOrderWithItems(o)));
+    if (allOrders.length === 0) return [];
+    
+    const orderIds = allOrders.map(o => o.id);
+    const allItems = await db
+      .select({
+        id: orderItems.id,
+        orderId: orderItems.orderId,
+        productId: orderItems.productId,
+        quantity: orderItems.quantity,
+        priceAtPurchase: orderItems.priceAtPurchase,
+        product: products
+      })
+      .from(orderItems)
+      .leftJoin(products, eq(orderItems.productId, products.id))
+      .where(sql`${orderItems.orderId} IN (${sql.join(orderIds.map(id => sql`${id}`), sql`, `)})`);
+    
+    const itemsByOrderId = new Map<number, any[]>();
+    for (const item of allItems) {
+      if (!itemsByOrderId.has(item.orderId)) {
+        itemsByOrderId.set(item.orderId, []);
+      }
+      itemsByOrderId.get(item.orderId)!.push(item);
+    }
+    
+    return allOrders.map(order => ({
+      ...order,
+      items: itemsByOrderId.get(order.id) || []
+    })) as OrderWithItems[];
   }
 
   async getOrder(id: number): Promise<OrderWithItems | undefined> {

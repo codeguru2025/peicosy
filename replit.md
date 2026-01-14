@@ -30,6 +30,14 @@ The platform includes product browsing, dynamic landed cost calculation, proof o
   - Path traversal prevention in file names
   - Authentication required for file uploads
   - Admin credentials configurable via ADMIN_USERNAME and ADMIN_PASSWORD env vars
+  - IDOR protection: Ownership checks on GET/PATCH /api/orders/:id endpoints
+  - Rate limiting: strictAuthLimiter (5 attempts/hour) on login, authLimiter (10/15min) on registration
+  - Payment amount verification: Locked exchange rates at order creation (expectedAmountUsd, expectedAmountZar)
+  - PayFast/Paynow callbacks verify amounts against locked-in values with 5% tolerance
+  - Duplicate payment protection: Idempotent callback handling for both gateways
+  - Database connection pooling: max 20, idle timeout 30s, connection timeout 10s
+  - N+1 query optimization: Batch loading for order lists reduces queries from O(n) to O(2)
+  - PII sanitization: Payment logs mask phone/email data
 - **Admin Reports & Analytics**: New Reports tab in admin dashboard with:
   - Key business metrics (total revenue, orders, average order value, customer count)
   - Revenue trend chart (12 months)

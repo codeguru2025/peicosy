@@ -89,6 +89,9 @@ export const orders = pgTable("orders", {
   shippingAddress: jsonb("shipping_address").notNull(),
   proofOfPaymentUrl: text("proof_of_payment_url"),
   paynowPollUrl: text("paynow_poll_url"),
+  paymentReference: text("payment_reference").unique(),
+  expectedAmountUsd: numeric("expected_amount_usd", { precision: 10, scale: 2 }),
+  expectedAmountZar: numeric("expected_amount_zar", { precision: 10, scale: 2 }),
   createdAt: timestamp("created_at").defaultNow(),
   updatedAt: timestamp("updated_at").defaultNow(),
 });
