@@ -870,11 +870,26 @@ export async function registerRoutes(
         return res.status(503).send("PayFast not configured");
       }
       
+      const pfPaymentId = req.body.pf_payment_id || req.body.m_payment_id;
+      
       logPaymentEvent("PAYFAST_ITN_RECEIVED", {
         orderId: req.body.m_payment_id,
+        pfPaymentId,
         status: req.body.payment_status,
         amount: req.body.amount_gross,
       });
+      
+      // Idempotency check - prevent duplicate processing
+      if (pfPaymentId) {
+        const alreadyProcessed = await storage.isCallbackProcessed('payfast', pfPaymentId);
+        if (alreadyProcessed) {
+          logPaymentEvent("PAYFAST_ITN_DUPLICATE_IDEMPOTENCY", {
+            pfPaymentId,
+            orderId: req.body.m_payment_id,
+          });
+          return res.status(200).send("Already processed");
+        }
+      }
       
       const result = validatePayFastITN(req.body);
       
@@ -927,16 +942,39 @@ export async function registerRoutes(
         return res.status(400).send("Amount mismatch");
       }
       
+      // Record callback before processing (idempotency)
+      if (pfPaymentId) {
+        try {
+          await storage.recordProcessedCallback({
+            gateway: 'payfast',
+            transactionId: pfPaymentId,
+            orderId: result.orderId,
+            status: result.paymentStatus,
+            amount: String(result.amount),
+            rawPayload: req.body,
+          });
+        } catch (err: any) {
+          // Unique constraint violation means duplicate - already processed
+          if (err.code === '23505') {
+            logPaymentEvent("PAYFAST_ITN_DUPLICATE_CONSTRAINT", { pfPaymentId });
+            return res.status(200).send("Already processed");
+          }
+          throw err;
+        }
+      }
+      
       if (result.paymentStatus === "COMPLETE") {
         await storage.updateOrderStatus(result.orderId, OrderStatus.CONFIRMED);
         logPaymentEvent("PAYFAST_PAYMENT_CONFIRMED", {
           orderId: result.orderId,
           amount: result.amount,
+          pfPaymentId,
         });
       } else if (result.paymentStatus === "CANCELLED") {
         await storage.updateOrderStatus(result.orderId, OrderStatus.CANCELLED);
         logPaymentEvent("PAYFAST_PAYMENT_CANCELLED", {
           orderId: result.orderId,
+          pfPaymentId,
         });
       }
       
@@ -1158,12 +1196,26 @@ export async function registerRoutes(
   // Paynow callback (server-to-server notification)
   app.post("/api/payments/paynow/callback", async (req, res) => {
     try {
+      const paynowTxId = req.body.paynowreference;
+      
       logPaymentEvent("PAYNOW_CALLBACK_RECEIVED", {
         reference: req.body.reference,
-        paynowReference: req.body.paynowreference,
+        paynowReference: paynowTxId,
         status: req.body.status,
         amount: req.body.amount,
       });
+      
+      // Idempotency check - prevent duplicate processing
+      if (paynowTxId) {
+        const alreadyProcessed = await storage.isCallbackProcessed('paynow', paynowTxId);
+        if (alreadyProcessed) {
+          logPaymentEvent("PAYNOW_CALLBACK_DUPLICATE_IDEMPOTENCY", {
+            paynowReference: paynowTxId,
+            reference: req.body.reference,
+          });
+          return res.status(200).send("Already processed");
+        }
+      }
       
       // SECURITY: Validate Paynow hash signature first
       if (!validatePaynowHash(req.body)) {
@@ -1251,6 +1303,27 @@ export async function registerRoutes(
         verifiedPaid: verifiedStatus.paid,
         amount: verifiedStatus.amount,
       });
+
+      // Record callback before processing (idempotency)
+      if (paynowTxId) {
+        try {
+          await storage.recordProcessedCallback({
+            gateway: 'paynow',
+            transactionId: paynowTxId,
+            orderId,
+            status: verifiedStatus.status,
+            amount: verifiedStatus.amount ? String(verifiedStatus.amount) : null,
+            rawPayload: req.body,
+          });
+        } catch (err: any) {
+          // Unique constraint violation means duplicate - already processed
+          if (err.code === '23505') {
+            logPaymentEvent("PAYNOW_CALLBACK_DUPLICATE_CONSTRAINT", { paynowReference: paynowTxId });
+            return res.status(200).send("Already processed");
+          }
+          throw err;
+        }
+      }
 
       // Only update order if verified status from Paynow confirms payment
       if (verifiedStatus.paid) {

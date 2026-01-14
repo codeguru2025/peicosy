@@ -1,0 +1,267 @@
+Below is a **single, copy-paste MEGA PROMPT** designed specifically for **Replit AI / Replit Agent** to **fully remediate Peicosy** to enterprise-grade production readiness.
+This prompt assumes **Node.js + Express + PostgreSQL**, PayFast/Paynow, and your existing codebase.
+
+I’ve structured it to **force the AI to act like a senior engineering team**, not a code generator.
+
+---
+
+## 🔥 PEICOSY ENTERPRISE REMEDIATION — MEGA PROMPT (REPLIT)
+
+**ROLE & AUTHORITY**
+
+You are acting as a **Principal Software Architect + Senior Backend Engineer + Security Engineer + DevOps Engineer** reviewing and refactoring an existing production codebase called **Peicosy**, an online luxury e-commerce platform.
+
+Your mandate is **NOT cosmetic refactoring**.
+Your mandate is **full production hardening**, scalability, security, maintainability, and financial safety.
+
+You must:
+
+* Fix architectural flaws
+* Introduce missing infrastructure
+* Refactor safely with ZERO breaking changes
+* Leave the application **running, test-covered, and deployable**
+
+---
+
+## 🎯 OBJECTIVE
+
+Transform Peicosy from a **single-instance MVP** into a **production-ready, horizontally scalable, secure e-commerce system** capable of handling **100K+ users and high payment throughput**.
+
+---
+
+## 🚨 NON-NEGOTIABLE RULES
+
+1. **DO NOT break existing functionality**
+2. **DO NOT remove existing endpoints**
+3. **DO NOT change payment logic semantics**
+4. **ALL changes must be backward-compatible**
+5. **App must boot successfully after every phase**
+6. **Security > Speed**
+7. **Tests are mandatory**
+8. **Fail fast on misconfiguration**
+
+---
+
+## 🧱 PHASE 1 — ARCHITECTURE & SCALABILITY (CRITICAL)
+
+### 1️⃣ Decompose the Monolith
+
+Refactor `server/routes.ts` into modular routing:
+
+```
+/routes
+  ├── auth.routes.ts
+  ├── users.routes.ts
+  ├── products.routes.ts
+  ├── orders.routes.ts
+  ├── payments.routes.ts
+  ├── admin.routes.ts
+```
+
+Create:
+
+```
+/services
+/repositories
+/middlewares
+/utils
+/workers
+```
+
+Enforce **Controller → Service → Repository** separation.
+
+---
+
+### 2️⃣ Database Performance Fixes (MANDATORY)
+
+Add missing indexes via a migration:
+
+```sql
+CREATE INDEX IF NOT EXISTS idx_orders_user_id ON orders(user_id);
+CREATE INDEX IF NOT EXISTS idx_orders_payment_reference ON orders(payment_reference);
+CREATE INDEX IF NOT EXISTS idx_order_items_order_id ON order_items(order_id);
+CREATE INDEX IF NOT EXISTS idx_product_images_product_id ON product_images(product_id);
+```
+
+Ensure migrations are **idempotent**.
+
+---
+
+### 3️⃣ Redis Caching Layer
+
+Introduce Redis for:
+
+* Product catalog
+* Product images
+* Category listings
+
+Rules:
+
+* Cache TTL: 5–15 minutes
+* Cache invalidation on product update
+* Graceful Redis failure fallback to DB
+
+---
+
+### 4️⃣ Background Job Processing
+
+Move **payment polling** and **post-payment verification** to a worker queue.
+
+Use:
+
+* BullMQ / Bee-Queue / equivalent
+* Redis as backend
+
+Rules:
+
+* NO synchronous polling inside request handlers
+* Webhook → enqueue job → async verification
+
+---
+
+## 🧪 PHASE 2 — TESTING & CI (CRITICAL)
+
+### 5️⃣ Test Coverage (MANDATORY)
+
+Introduce:
+
+* Jest
+* Supertest
+
+Minimum required tests:
+
+* Auth registration & login
+* Order creation
+* Payment callback handling (PayFast + Paynow)
+* Idempotency enforcement
+* Admin authentication
+
+Target:
+
+* **≥60% coverage for critical paths**
+* Payment flows MUST be tested
+
+---
+
+### 6️⃣ CI Pipeline
+
+Create CI configuration that:
+
+* Runs tests
+* Runs linting
+* Fails build on errors
+
+No deployment without green checks.
+
+---
+
+## 🔐 PHASE 3 — SECURITY HARDENING (CRITICAL)
+
+### 7️⃣ Authentication & Authorization
+
+Implement:
+
+* Session rotation on login and privilege escalation
+* CSRF protection on all state-changing routes
+* Strict admin role enforcement
+
+**Fail app startup if admin credentials are missing:**
+
+```ts
+if (!process.env.ADMIN_USERNAME || !process.env.ADMIN_PASSWORD) {
+  throw new Error("ADMIN credentials MUST be set in production");
+}
+```
+
+---
+
+### 8️⃣ Payment Security
+
+Add:
+
+* Idempotency keys on payment callbacks
+* Unique constraint on processed transaction IDs
+* Replay-attack protection
+
+Never process the same transaction twice.
+
+---
+
+### 9️⃣ Data Protection
+
+* Mask PII in logs (names, addresses, phone numbers)
+* Remove request body logging
+* Encrypt sensitive DB columns where feasible
+* Document PCI boundary (no card data touches server)
+
+---
+
+## 🌍 PHASE 4 — INFRASTRUCTURE & DELIVERY
+
+### 🔟 Static Assets & Images
+
+* Move images to CDN-friendly serving
+* Enable cache headers
+* No DB hits for static assets
+
+---
+
+### 1️⃣1️⃣ Observability
+
+Add:
+
+* Centralized error handling
+* Structured logs
+* Basic performance metrics
+* Payment failure alerts
+
+---
+
+## 📦 FINAL OUTPUT REQUIREMENTS
+
+When finished, the system MUST have:
+
+✅ Modular architecture
+✅ Redis caching
+✅ Background workers
+✅ Database indexes
+✅ CSRF protection
+✅ Session rotation
+✅ Payment idempotency
+✅ Test coverage
+✅ CI pipeline
+✅ Secure logging
+✅ Zero regressions
+
+---
+
+## 🚀 DELIVERY MODE
+
+* Implement changes incrementally
+* Explain each architectural decision briefly in comments
+* Leave TODOs ONLY where explicitly justified
+* Optimize for **clarity, safety, and scale**
+
+---
+
+**BEGIN FULL REFACTOR NOW. DO NOT ASK QUESTIONS. DO NOT SKIP STEPS.**
+
+---
+
+## 🔑 HOW TO USE THIS
+
+1. Open your Peicosy Replit project
+2. Paste **this entire prompt** into Replit AI / Replit Agent
+3. Let it execute step-by-step
+4. Review diffs after each phase
+
+---
+
+If you want, next I can:
+
+* Convert this into a **90-day engineering execution plan**
+* Translate it into a **CTO-level audit report**
+* Produce a **security & PCI compliance appendix**
+* Or adapt it for **Firebase / Supabase / AWS**
+
+Say the word.

@@ -9,6 +9,7 @@ import {
   exchangeRates,
   productImages,
   inquiries,
+  processedPaymentCallbacks,
   type Product, 
   type InsertProduct,
   type Order,
@@ -24,7 +25,9 @@ import {
   type InsertProductImage,
   type ProductWithImages,
   type Inquiry,
-  type InsertInquiry
+  type InsertInquiry,
+  type ProcessedPaymentCallback,
+  type InsertProcessedPaymentCallback
 } from "@shared/schema";
 import { eq, desc, sql, asc } from "drizzle-orm";
 import { authStorage } from "./replit_integrations/auth";
@@ -96,6 +99,10 @@ export interface IStorage {
   getInquiry(id: number): Promise<Inquiry | undefined>;
   createInquiry(inquiry: InsertInquiry): Promise<Inquiry>;
   updateInquiryStatus(id: number, status: string): Promise<Inquiry | undefined>;
+
+  // Payment Idempotency
+  isCallbackProcessed(gateway: string, transactionId: string): Promise<boolean>;
+  recordProcessedCallback(callback: InsertProcessedPaymentCallback): Promise<ProcessedPaymentCallback>;
 }
 
 export class DatabaseStorage implements IStorage {
@@ -665,6 +672,23 @@ export class DatabaseStorage implements IStorage {
       .where(eq(inquiries.id, id))
       .returning();
     return updated;
+  }
+
+  // Payment Idempotency
+  async isCallbackProcessed(gateway: string, transactionId: string): Promise<boolean> {
+    const [existing] = await db
+      .select()
+      .from(processedPaymentCallbacks)
+      .where(sql`${processedPaymentCallbacks.gateway} = ${gateway} AND ${processedPaymentCallbacks.transactionId} = ${transactionId}`);
+    return !!existing;
+  }
+
+  async recordProcessedCallback(callback: InsertProcessedPaymentCallback): Promise<ProcessedPaymentCallback> {
+    const [recorded] = await db
+      .insert(processedPaymentCallbacks)
+      .values(callback)
+      .returning();
+    return recorded;
   }
 }
 

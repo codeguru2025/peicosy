@@ -180,9 +180,24 @@ export const exchangeRates = pgTable("exchange_rates", {
   updatedAt: timestamp("updated_at").defaultNow(),
 });
 
+// === PROCESSED PAYMENT CALLBACKS (Idempotency) ===
+export const processedPaymentCallbacks = pgTable("processed_payment_callbacks", {
+  id: serial("id").primaryKey(),
+  gateway: text("gateway").notNull(), // 'payfast' | 'paynow'
+  transactionId: text("transaction_id").notNull(),
+  orderId: integer("order_id").notNull().references(() => orders.id),
+  status: text("status").notNull(),
+  amount: numeric("amount", { precision: 10, scale: 2 }),
+  processedAt: timestamp("processed_at").defaultNow(),
+  rawPayload: jsonb("raw_payload"),
+});
+
 export const insertExchangeRateSchema = createInsertSchema(exchangeRates).omit({ id: true, updatedAt: true });
+export const insertProcessedCallbackSchema = createInsertSchema(processedPaymentCallbacks).omit({ id: true, processedAt: true });
 
 // === TYPES ===
+export type ProcessedPaymentCallback = typeof processedPaymentCallbacks.$inferSelect;
+export type InsertProcessedPaymentCallback = z.infer<typeof insertProcessedCallbackSchema>;
 export type ExchangeRate = typeof exchangeRates.$inferSelect;
 export type InsertExchangeRate = z.infer<typeof insertExchangeRateSchema>;
 
