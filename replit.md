@@ -25,6 +25,10 @@ The platform includes product browsing, dynamic landed cost calculation, proof o
   - Migration tool for converting legacy imageUrl fields to new system
   - API endpoints: GET/POST /api/products/:id/images, PATCH/DELETE /api/product-images/:id
 - **Security Hardening** (January 2026):
+  - Helmet.js middleware with CSP, HSTS, X-Content-Type-Options, X-Frame-Options headers
+  - Strengthened password validation: 8+ chars, uppercase, lowercase, and number required
+  - OrderStatus/InquiryStatus enums to eliminate magic strings in payment flows
+  - Health check endpoint: GET /api/health with DB connectivity, uptime, and memory metrics
   - File upload validation (allowed types: JPEG, PNG, GIF, WebP, PDF)
   - File size limits (10MB max)
   - Path traversal prevention in file names
