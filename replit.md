@@ -26,6 +26,7 @@ The platform includes product browsing, dynamic landed cost calculation, proof o
   - API endpoints: GET/POST /api/products/:id/images, PATCH/DELETE /api/product-images/:id
 - **Security Hardening** (January 2026):
   - Helmet.js middleware with CSP, HSTS, X-Content-Type-Options, X-Frame-Options headers
+  - CSP: 'unsafe-eval' removed from scriptSrc, reducing XSS attack surface
   - Strengthened password validation: 8+ chars, uppercase, lowercase, and number required
   - OrderStatus/InquiryStatus enums to eliminate magic strings in payment flows
   - Health check endpoint: GET /api/health with DB connectivity, uptime, and memory metrics
@@ -47,6 +48,10 @@ The platform includes product browsing, dynamic landed cost calculation, proof o
   - Payment gateway callbacks (/api/payment/payfast/notify, /api/payments/paynow/callback) excluded from CSRF
   - Client auto-refreshes CSRF token on 403/419 errors for seamless session rotation handling
   - Session rotation: Session ID regenerated on login/registration to prevent session fixation attacks
+  - Graceful shutdown: SIGTERM/SIGINT handlers properly close HTTP server and database pool
+  - Stock validation: Row-level locking (FOR UPDATE) prevents overselling under concurrent orders
+  - Atomic stock decrement: Stock decremented within order transaction to prevent race conditions
+  - Production seeding guard: Database seeding disabled in production unless ENABLE_SEEDING=true
 - **Admin Reports & Analytics**: New Reports tab in admin dashboard with:
   - Key business metrics (total revenue, orders, average order value, customer count)
   - Revenue trend chart (12 months)

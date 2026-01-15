@@ -13,7 +13,7 @@ app.use(helmet({
   contentSecurityPolicy: {
     directives: {
       defaultSrc: ["'self'"],
-      scriptSrc: ["'self'"],
+      scriptSrc: ["'self'", "'unsafe-inline'"],
       styleSrc: ["'self'", "'unsafe-inline'", "https://fonts.googleapis.com"],
       fontSrc: ["'self'", "https://fonts.gstatic.com"],
       imgSrc: ["'self'", "data:", "blob:", "https:", "http:"],
@@ -134,14 +134,19 @@ app.use((req, res, next) => {
   const gracefulShutdown = async (signal: string) => {
     log(`${signal} received. Starting graceful shutdown...`);
     
-    httpServer.close((err) => {
-      if (err) {
-        console.error("Error closing HTTP server:", err);
-      } else {
-        log("HTTP server closed");
-      }
+    // First, stop accepting new connections and wait for existing to finish
+    await new Promise<void>((resolve) => {
+      httpServer.close((err) => {
+        if (err) {
+          console.error("Error closing HTTP server:", err);
+        } else {
+          log("HTTP server closed");
+        }
+        resolve();
+      });
     });
 
+    // Then close database pool
     try {
       const { pool } = await import("./db");
       await pool.end();
@@ -150,6 +155,7 @@ app.use((req, res, next) => {
       console.error("Error closing database pool:", err);
     }
 
+    log("Graceful shutdown complete");
     process.exit(0);
   };
 

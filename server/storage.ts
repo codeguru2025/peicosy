@@ -252,29 +252,39 @@ export class DatabaseStorage implements IStorage {
 
   async createOrder(orderData: InsertOrder, itemsData: CreateOrderItem[]): Promise<Order> {
     return await db.transaction(async (tx) => {
-      // Validate stock availability and lock rows for update
+      // Aggregate quantities per productId to handle duplicate items
+      const quantityByProduct: Record<number, number> = {};
       for (const item of itemsData) {
+        quantityByProduct[item.productId] = (quantityByProduct[item.productId] || 0) + item.quantity;
+      }
+      
+      const productEntries = Object.entries(quantityByProduct);
+      
+      // Validate stock availability and lock rows for update
+      for (const [productIdStr, totalQuantity] of productEntries) {
+        const productId = Number(productIdStr);
         const [product] = await tx
           .select({ id: products.id, stock: products.stock, name: products.name })
           .from(products)
-          .where(eq(products.id, item.productId))
+          .where(eq(products.id, productId))
           .for('update');
         
         if (!product) {
-          throw new Error(`Product ${item.productId} not found`);
+          throw new Error(`Product ${productId} not found`);
         }
         
-        if (product.stock < item.quantity) {
-          throw new Error(`Insufficient stock for "${product.name}". Available: ${product.stock}, Requested: ${item.quantity}`);
+        if (product.stock < totalQuantity) {
+          throw new Error(`Insufficient stock for "${product.name}". Available: ${product.stock}, Requested: ${totalQuantity}`);
         }
       }
       
-      // Decrement stock atomically
-      for (const item of itemsData) {
+      // Decrement stock atomically using aggregated quantities
+      for (const [productIdStr, totalQuantity] of productEntries) {
+        const productId = Number(productIdStr);
         await tx
           .update(products)
-          .set({ stock: sql`${products.stock} - ${item.quantity}` })
-          .where(eq(products.id, item.productId));
+          .set({ stock: sql`${products.stock} - ${totalQuantity}` })
+          .where(eq(products.id, productId));
       }
       
       const [newOrder] = await tx.insert(orders).values(orderData).returning();
