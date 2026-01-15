@@ -78,7 +78,10 @@ export async function registerRoutes(
   registerShippingRoutes(app);
   registerPaymentRoutes(app);
 
-  await seedDatabase();
+  // Only seed database in development or if explicitly enabled
+  if (process.env.NODE_ENV !== "production" || process.env.ENABLE_SEEDING === "true") {
+    await seedDatabase();
+  }
 
   return httpServer;
 }

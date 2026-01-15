@@ -13,7 +13,7 @@ app.use(helmet({
   contentSecurityPolicy: {
     directives: {
       defaultSrc: ["'self'"],
-      scriptSrc: ["'self'", "'unsafe-inline'", "'unsafe-eval'"],
+      scriptSrc: ["'self'"],
       styleSrc: ["'self'", "'unsafe-inline'", "https://fonts.googleapis.com"],
       fontSrc: ["'self'", "https://fonts.gstatic.com"],
       imgSrc: ["'self'", "data:", "blob:", "https:", "http:"],
@@ -129,4 +129,30 @@ app.use((req, res, next) => {
       log(`serving on port ${port}`);
     },
   );
+
+  // Graceful shutdown handlers
+  const gracefulShutdown = async (signal: string) => {
+    log(`${signal} received. Starting graceful shutdown...`);
+    
+    httpServer.close((err) => {
+      if (err) {
+        console.error("Error closing HTTP server:", err);
+      } else {
+        log("HTTP server closed");
+      }
+    });
+
+    try {
+      const { pool } = await import("./db");
+      await pool.end();
+      log("Database pool closed");
+    } catch (err) {
+      console.error("Error closing database pool:", err);
+    }
+
+    process.exit(0);
+  };
+
+  process.on("SIGTERM", () => gracefulShutdown("SIGTERM"));
+  process.on("SIGINT", () => gracefulShutdown("SIGINT"));
 })();
