@@ -192,12 +192,31 @@ export const processedPaymentCallbacks = pgTable("processed_payment_callbacks", 
   rawPayload: jsonb("raw_payload"),
 });
 
+// === LOGIN ATTEMPTS (Account Lockout) ===
+export const loginAttempts = pgTable("login_attempts", {
+  id: serial("id").primaryKey(),
+  username: text("username").notNull(),
+  ipAddress: text("ip_address"),
+  success: boolean("success").notNull().default(false),
+  attemptedAt: timestamp("attempted_at").defaultNow(),
+});
+
+// Account lockout configuration
+export const LOCKOUT_CONFIG = {
+  MAX_ATTEMPTS: 10,
+  LOCKOUT_DURATION_MINUTES: 60,
+  ATTEMPT_WINDOW_MINUTES: 60,
+} as const;
+
 export const insertExchangeRateSchema = createInsertSchema(exchangeRates).omit({ id: true, updatedAt: true });
 export const insertProcessedCallbackSchema = createInsertSchema(processedPaymentCallbacks).omit({ id: true, processedAt: true });
+export const insertLoginAttemptSchema = createInsertSchema(loginAttempts).omit({ id: true, attemptedAt: true });
 
 // === TYPES ===
 export type ProcessedPaymentCallback = typeof processedPaymentCallbacks.$inferSelect;
 export type InsertProcessedPaymentCallback = z.infer<typeof insertProcessedCallbackSchema>;
+export type LoginAttempt = typeof loginAttempts.$inferSelect;
+export type InsertLoginAttempt = z.infer<typeof insertLoginAttemptSchema>;
 export type ExchangeRate = typeof exchangeRates.$inferSelect;
 export type InsertExchangeRate = z.infer<typeof insertExchangeRateSchema>;
 

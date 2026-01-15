@@ -10,6 +10,8 @@ import {
   productImages,
   inquiries,
   processedPaymentCallbacks,
+  loginAttempts,
+  LOCKOUT_CONFIG,
   type Product, 
   type InsertProduct,
   type Order,
@@ -27,7 +29,9 @@ import {
   type Inquiry,
   type InsertInquiry,
   type ProcessedPaymentCallback,
-  type InsertProcessedPaymentCallback
+  type InsertProcessedPaymentCallback,
+  type LoginAttempt,
+  type InsertLoginAttempt
 } from "@shared/schema";
 import { eq, desc, sql, asc } from "drizzle-orm";
 import { authStorage } from "./replit_integrations/auth";
@@ -103,6 +107,12 @@ export interface IStorage {
   // Payment Idempotency
   isCallbackProcessed(gateway: string, transactionId: string): Promise<boolean>;
   recordProcessedCallback(callback: InsertProcessedPaymentCallback): Promise<ProcessedPaymentCallback>;
+
+  // Login Attempts (Account Lockout)
+  recordLoginAttempt(username: string, success: boolean, ipAddress?: string): Promise<LoginAttempt>;
+  getRecentFailedAttempts(username: string): Promise<number>;
+  isAccountLocked(username: string): Promise<{ locked: boolean; remainingMinutes: number }>;
+  clearLoginAttempts(username: string): Promise<void>;
 }
 
 export class DatabaseStorage implements IStorage {
@@ -735,6 +745,68 @@ export class DatabaseStorage implements IStorage {
       .values(callback)
       .returning();
     return recorded;
+  }
+
+  // Login Attempts (Account Lockout)
+  async recordLoginAttempt(username: string, success: boolean, ipAddress?: string): Promise<LoginAttempt> {
+    const [attempt] = await db
+      .insert(loginAttempts)
+      .values({
+        username: username.toLowerCase(),
+        success,
+        ipAddress: ipAddress || null,
+      })
+      .returning();
+    return attempt;
+  }
+
+  async getRecentFailedAttempts(username: string): Promise<number> {
+    const windowStart = new Date(Date.now() - LOCKOUT_CONFIG.ATTEMPT_WINDOW_MINUTES * 60 * 1000);
+    
+    const result = await db
+      .select({ count: sql<number>`count(*)` })
+      .from(loginAttempts)
+      .where(sql`
+        ${loginAttempts.username} = ${username.toLowerCase()}
+        AND ${loginAttempts.success} = false
+        AND ${loginAttempts.attemptedAt} > ${windowStart}
+      `);
+    
+    return Number(result[0]?.count || 0);
+  }
+
+  async isAccountLocked(username: string): Promise<{ locked: boolean; remainingMinutes: number }> {
+    const failedAttempts = await this.getRecentFailedAttempts(username);
+    
+    if (failedAttempts >= LOCKOUT_CONFIG.MAX_ATTEMPTS) {
+      const lockoutStart = new Date(Date.now() - LOCKOUT_CONFIG.LOCKOUT_DURATION_MINUTES * 60 * 1000);
+      
+      const [lastAttempt] = await db
+        .select({ attemptedAt: loginAttempts.attemptedAt })
+        .from(loginAttempts)
+        .where(sql`
+          ${loginAttempts.username} = ${username.toLowerCase()}
+          AND ${loginAttempts.success} = false
+        `)
+        .orderBy(desc(loginAttempts.attemptedAt))
+        .limit(1);
+      
+      if (lastAttempt && lastAttempt.attemptedAt && lastAttempt.attemptedAt > lockoutStart) {
+        const unlockTime = new Date(lastAttempt.attemptedAt.getTime() + LOCKOUT_CONFIG.LOCKOUT_DURATION_MINUTES * 60 * 1000);
+        const remainingMs = unlockTime.getTime() - Date.now();
+        const remainingMinutes = Math.max(0, Math.ceil(remainingMs / 60000));
+        
+        return { locked: true, remainingMinutes };
+      }
+    }
+    
+    return { locked: false, remainingMinutes: 0 };
+  }
+
+  async clearLoginAttempts(username: string): Promise<void> {
+    await db
+      .delete(loginAttempts)
+      .where(eq(loginAttempts.username, username.toLowerCase()));
   }
 }
 
