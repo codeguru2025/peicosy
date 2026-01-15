@@ -252,6 +252,31 @@ export class DatabaseStorage implements IStorage {
 
   async createOrder(orderData: InsertOrder, itemsData: CreateOrderItem[]): Promise<Order> {
     return await db.transaction(async (tx) => {
+      // Validate stock availability and lock rows for update
+      for (const item of itemsData) {
+        const [product] = await tx
+          .select({ id: products.id, stock: products.stock, name: products.name })
+          .from(products)
+          .where(eq(products.id, item.productId))
+          .for('update');
+        
+        if (!product) {
+          throw new Error(`Product ${item.productId} not found`);
+        }
+        
+        if (product.stock < item.quantity) {
+          throw new Error(`Insufficient stock for "${product.name}". Available: ${product.stock}, Requested: ${item.quantity}`);
+        }
+      }
+      
+      // Decrement stock atomically
+      for (const item of itemsData) {
+        await tx
+          .update(products)
+          .set({ stock: sql`${products.stock} - ${item.quantity}` })
+          .where(eq(products.id, item.productId));
+      }
+      
       const [newOrder] = await tx.insert(orders).values(orderData).returning();
       
       const itemsWithOrderId = itemsData.map(item => ({
@@ -266,17 +291,28 @@ export class DatabaseStorage implements IStorage {
   }
 
   async updateOrderStatus(id: number, status: string, proofUrl?: string): Promise<Order | undefined> {
-    const updates: any = { status };
-    if (proofUrl) {
-      updates.proofOfPaymentUrl = proofUrl;
-    }
-    
-    const [updated] = await db
-      .update(orders)
-      .set(updates)
-      .where(eq(orders.id, id))
-      .returning();
-    return updated;
+    return await db.transaction(async (tx) => {
+      // Lock the order row for update to prevent race conditions
+      const [order] = await tx
+        .select()
+        .from(orders)
+        .where(eq(orders.id, id))
+        .for('update');
+      
+      if (!order) return undefined;
+      
+      const updates: any = { status };
+      if (proofUrl) {
+        updates.proofOfPaymentUrl = proofUrl;
+      }
+      
+      const [updated] = await tx
+        .update(orders)
+        .set(updates)
+        .where(eq(orders.id, id))
+        .returning();
+      return updated;
+    });
   }
 
   async updateOrderPaynowPollUrl(id: number, pollUrl: string): Promise<void> {

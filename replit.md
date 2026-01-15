@@ -221,6 +221,20 @@ server/routes/
 - [x] GBP/ZAR exchange rate is configured for South Africa pricing (23.50)
 - [ ] Schedule for updating exchange rates (recommended: daily)
 
+#### Scalability Considerations
+- [x] Graceful shutdown handlers for SIGTERM/SIGINT (database pool and HTTP server)
+- [x] Stock validation with row-level locking to prevent overselling
+- [x] Atomic stock decrement during order creation
+- [x] Transaction wrapping for payment status updates
+- **Cache Limitations (Single Instance)**:
+  - Current in-memory product cache is per-instance (Map-based, 5-minute TTL)
+  - For single-instance deployments (Replit default): Cache works correctly
+  - For multi-instance deployments: Cache will return stale data across replicas
+  - **Scaling Solution**: Migrate to Redis for shared cache when scaling beyond 1 instance
+  - Alternative: Disable cache entirely via code when horizontal scaling is needed
+- **Session Storage**: PostgreSQL-backed sessions (connect-pg-simple) - scales across instances
+- **Database Seeding**: Guarded by `NODE_ENV !== "production"` to prevent accidental production seeding
+
 ### Post-Launch Monitoring
 
 - Monitor payment callback logs for rejected or suspicious callbacks
