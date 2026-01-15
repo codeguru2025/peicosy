@@ -24,6 +24,9 @@ export const users = pgTable("users", {
   lastName: varchar("last_name"),
   profileImageUrl: varchar("profile_image_url"),
   isAdmin: boolean("is_admin").default(false),
+  twoFactorEnabled: boolean("two_factor_enabled").default(false),
+  twoFactorSecret: varchar("two_factor_secret"), // Base32 encoded TOTP secret
+  twoFactorBackupCodes: jsonb("two_factor_backup_codes"), // Array of hashed backup codes
   createdAt: timestamp("created_at").defaultNow(),
   updatedAt: timestamp("updated_at").defaultNow(),
 });

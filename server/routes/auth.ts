@@ -6,6 +6,7 @@ import {
   distributedAuthLoginLimiter, 
   distributedAuthRegisterLimiter 
 } from "../middleware/distributedRateLimiter";
+import { verifyTwoFactorCode } from "./twoFactor";
 
 export function registerAuthApiRoutes(app: Express) {
   app.post("/api/auth/register", distributedAuthRegisterLimiter, async (req, res) => {
@@ -152,6 +153,29 @@ export function registerAuthApiRoutes(app: Express) {
         });
       }
       
+      // Check if 2FA is enabled
+      if (user.twoFactorEnabled && user.twoFactorSecret) {
+        const { twoFactorCode } = req.body;
+        
+        if (!twoFactorCode) {
+          // 2FA required but no code provided - return prompt for 2FA
+          return res.status(200).json({
+            requiresTwoFactor: true,
+            message: "Please enter your two-factor authentication code.",
+            userId: user.id, // For the second step
+          });
+        }
+        
+        // Verify the 2FA code
+        const is2FAValid = await verifyTwoFactorCode(user.twoFactorSecret, twoFactorCode);
+        if (!is2FAValid) {
+          return res.status(401).json({
+            message: "Invalid two-factor authentication code.",
+            requiresTwoFactor: true,
+          });
+        }
+      }
+      
       // Successful login - record it and clear failed attempts
       await storage.recordLoginAttempt(username, true, ipAddress);
       await storage.clearLoginAttempts(username);
@@ -187,6 +211,7 @@ export function registerAuthApiRoutes(app: Express) {
             firstName: user.firstName,
             lastName: user.lastName,
             isAdmin: user.isAdmin,
+            twoFactorEnabled: user.twoFactorEnabled,
           });
         });
       });

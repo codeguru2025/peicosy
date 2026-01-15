@@ -11,6 +11,7 @@ import {
   registerAdminRoutes,
   registerShippingRoutes,
   registerPaymentRoutes,
+  registerTwoFactorRoutes,
 } from "./routes/index";
 
 const {
@@ -72,6 +73,7 @@ export async function registerRoutes(
   });
 
   registerAuthApiRoutes(app);
+  registerTwoFactorRoutes(app);
   registerProductRoutes(app);
   registerOrderRoutes(app);
   registerAdminRoutes(app);
