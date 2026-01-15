@@ -33,7 +33,9 @@ import {
   type InsertProcessedPaymentCallback,
   type LoginAttempt,
   type InsertLoginAttempt,
-  type RateLimit
+  type RateLimit,
+  type BackgroundJob,
+  backgroundJobs
 } from "@shared/schema";
 import { eq, desc, sql, asc } from "drizzle-orm";
 import { authStorage } from "./replit_integrations/auth";
@@ -119,6 +121,15 @@ export interface IStorage {
   // Rate Limiting (Distributed)
   checkRateLimit(key: string, maxRequests: number, windowMinutes: number): Promise<{ allowed: boolean; current: number; remaining: number; resetAt: Date }>;
   cleanupExpiredRateLimits(): Promise<number>;
+  
+  // Background Jobs (Job Queue)
+  createJob(type: string, payload: object, scheduledFor?: Date, maxAttempts?: number): Promise<BackgroundJob>;
+  claimNextJob(types: string[]): Promise<BackgroundJob | null>;
+  completeJob(id: number): Promise<void>;
+  failJob(id: number, error: string, scheduleRetry?: Date): Promise<void>;
+  cancelJob(id: number): Promise<void>;
+  getPendingJobs(type?: string): Promise<BackgroundJob[]>;
+  cleanupOldJobs(olderThanDays: number): Promise<number>;
 }
 
 export class DatabaseStorage implements IStorage {
@@ -879,6 +890,112 @@ export class DatabaseStorage implements IStorage {
     const result = await db
       .delete(rateLimits)
       .where(sql`${rateLimits.expiresAt} < ${now}`)
+      .returning();
+    
+    return result.length;
+  }
+
+  // === Background Jobs ===
+  async createJob(type: string, payload: object, scheduledFor?: Date, maxAttempts: number = 3): Promise<BackgroundJob> {
+    const [job] = await db.insert(backgroundJobs).values({
+      type,
+      payload,
+      status: "pending",
+      attempts: 0,
+      maxAttempts,
+      scheduledFor: scheduledFor || new Date(),
+    }).returning();
+    return job;
+  }
+
+  async claimNextJob(types: string[]): Promise<BackgroundJob | null> {
+    const now = new Date();
+    
+    if (types.length === 0) return null;
+    
+    const result = await db.transaction(async (tx) => {
+      const [job] = await tx
+        .select()
+        .from(backgroundJobs)
+        .where(sql`
+          ${backgroundJobs.status} = 'pending'
+          AND ${backgroundJobs.type} IN (${sql.join(types.map(t => sql`${t}`), sql`, `)})
+          AND ${backgroundJobs.scheduledFor} <= ${now}
+          AND ${backgroundJobs.attempts} < ${backgroundJobs.maxAttempts}
+        `)
+        .orderBy(asc(backgroundJobs.scheduledFor))
+        .limit(1)
+        .for("update", { skipLocked: true });
+      
+      if (!job) return null;
+      
+      const [updated] = await tx
+        .update(backgroundJobs)
+        .set({
+          status: "processing",
+          attempts: job.attempts + 1,
+          startedAt: now,
+        })
+        .where(eq(backgroundJobs.id, job.id))
+        .returning();
+      
+      return updated;
+    });
+    
+    return result;
+  }
+
+  async completeJob(id: number): Promise<void> {
+    await db
+      .update(backgroundJobs)
+      .set({
+        status: "completed",
+        completedAt: new Date(),
+      })
+      .where(eq(backgroundJobs.id, id));
+  }
+
+  async failJob(id: number, error: string, scheduleRetry?: Date): Promise<void> {
+    const [job] = await db.select().from(backgroundJobs).where(eq(backgroundJobs.id, id));
+    if (!job) return;
+    
+    const isFinalAttempt = job.attempts >= job.maxAttempts;
+    
+    await db
+      .update(backgroundJobs)
+      .set({
+        status: isFinalAttempt ? "failed" : "pending",
+        lastError: error,
+        scheduledFor: scheduleRetry || new Date(),
+        startedAt: null,
+      })
+      .where(eq(backgroundJobs.id, id));
+  }
+
+  async cancelJob(id: number): Promise<void> {
+    await db
+      .update(backgroundJobs)
+      .set({ status: "cancelled" })
+      .where(eq(backgroundJobs.id, id));
+  }
+
+  async getPendingJobs(type?: string): Promise<BackgroundJob[]> {
+    let query = db.select().from(backgroundJobs).where(eq(backgroundJobs.status, "pending"));
+    if (type) {
+      query = db.select().from(backgroundJobs).where(sql`${backgroundJobs.status} = 'pending' AND ${backgroundJobs.type} = ${type}`);
+    }
+    return await query.orderBy(asc(backgroundJobs.scheduledFor));
+  }
+
+  async cleanupOldJobs(olderThanDays: number): Promise<number> {
+    const cutoff = new Date(Date.now() - olderThanDays * 24 * 60 * 60 * 1000);
+    const result = await db
+      .delete(backgroundJobs)
+      .where(sql`
+        ${backgroundJobs.completedAt} < ${cutoff}
+        OR (${backgroundJobs.status} = 'failed' AND ${backgroundJobs.createdAt} < ${cutoff})
+        OR (${backgroundJobs.status} = 'cancelled' AND ${backgroundJobs.createdAt} < ${cutoff})
+      `)
       .returning();
     
     return result.length;

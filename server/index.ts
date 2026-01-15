@@ -130,9 +130,17 @@ app.use((req, res, next) => {
     },
   );
 
+  // Start background job processor
+  const { startJobProcessor, stopJobProcessor } = await import("./workers/jobProcessor");
+  startJobProcessor(60000); // Process jobs every 60 seconds
+
   // Graceful shutdown handlers
   const gracefulShutdown = async (signal: string) => {
     log(`${signal} received. Starting graceful shutdown...`);
+    
+    // Stop job processor
+    stopJobProcessor();
+    log("Job processor stopped");
     
     // First, stop accepting new connections and wait for existing to finish
     await new Promise<void>((resolve) => {

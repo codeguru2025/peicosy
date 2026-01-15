@@ -227,10 +227,32 @@ export const RATE_LIMIT_CONFIG = {
   API_SENSITIVE: { maxRequests: 20, windowMinutes: 15, keyPrefix: "api:sensitive" },
 } as const;
 
+// === BACKGROUND JOBS (Job Queue) ===
+export const backgroundJobs = pgTable("background_jobs", {
+  id: serial("id").primaryKey(),
+  type: text("type").notNull(), // e.g., "payment_retry", "email", "cleanup"
+  payload: jsonb("payload").notNull(),
+  status: text("status").notNull().default("pending"), // pending, processing, completed, failed, cancelled
+  attempts: integer("attempts").notNull().default(0),
+  maxAttempts: integer("max_attempts").notNull().default(3),
+  lastError: text("last_error"),
+  scheduledFor: timestamp("scheduled_for").notNull().defaultNow(),
+  startedAt: timestamp("started_at"),
+  completedAt: timestamp("completed_at"),
+  createdAt: timestamp("created_at").defaultNow(),
+});
+
+// Job configuration
+export const JOB_CONFIG = {
+  PAYMENT_RETRY: { type: "payment_retry", maxAttempts: 3, retryDelayMinutes: [5, 15, 60] },
+  CLEANUP: { type: "cleanup", maxAttempts: 1, retryDelayMinutes: [] },
+} as const;
+
 export const insertExchangeRateSchema = createInsertSchema(exchangeRates).omit({ id: true, updatedAt: true });
 export const insertProcessedCallbackSchema = createInsertSchema(processedPaymentCallbacks).omit({ id: true, processedAt: true });
 export const insertLoginAttemptSchema = createInsertSchema(loginAttempts).omit({ id: true, attemptedAt: true });
 export const insertRateLimitSchema = createInsertSchema(rateLimits).omit({ id: true });
+export const insertBackgroundJobSchema = createInsertSchema(backgroundJobs).omit({ id: true, createdAt: true });
 
 // === TYPES ===
 export type ProcessedPaymentCallback = typeof processedPaymentCallbacks.$inferSelect;
@@ -239,6 +261,8 @@ export type LoginAttempt = typeof loginAttempts.$inferSelect;
 export type InsertLoginAttempt = z.infer<typeof insertLoginAttemptSchema>;
 export type RateLimit = typeof rateLimits.$inferSelect;
 export type InsertRateLimit = z.infer<typeof insertRateLimitSchema>;
+export type BackgroundJob = typeof backgroundJobs.$inferSelect;
+export type InsertBackgroundJob = z.infer<typeof insertBackgroundJobSchema>;
 export type ExchangeRate = typeof exchangeRates.$inferSelect;
 export type InsertExchangeRate = z.infer<typeof insertExchangeRateSchema>;
 
