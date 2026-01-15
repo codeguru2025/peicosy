@@ -208,15 +208,37 @@ export const LOCKOUT_CONFIG = {
   ATTEMPT_WINDOW_MINUTES: 60,
 } as const;
 
+// === RATE LIMITS (Distributed Rate Limiting) ===
+export const rateLimits = pgTable("rate_limits", {
+  id: serial("id").primaryKey(),
+  key: text("key").notNull(), // Format: "type:identifier" e.g. "login:192.168.1.1" or "api:/api/products"
+  count: integer("count").notNull().default(1),
+  windowStart: timestamp("window_start").notNull().defaultNow(),
+  expiresAt: timestamp("expires_at").notNull(),
+});
+
+// Rate limit configurations for different endpoints
+export const RATE_LIMIT_CONFIG = {
+  // Authentication endpoints
+  AUTH_LOGIN: { maxRequests: 5, windowMinutes: 60, keyPrefix: "auth:login" },
+  AUTH_REGISTER: { maxRequests: 10, windowMinutes: 15, keyPrefix: "auth:register" },
+  // API endpoints
+  API_DEFAULT: { maxRequests: 100, windowMinutes: 15, keyPrefix: "api:default" },
+  API_SENSITIVE: { maxRequests: 20, windowMinutes: 15, keyPrefix: "api:sensitive" },
+} as const;
+
 export const insertExchangeRateSchema = createInsertSchema(exchangeRates).omit({ id: true, updatedAt: true });
 export const insertProcessedCallbackSchema = createInsertSchema(processedPaymentCallbacks).omit({ id: true, processedAt: true });
 export const insertLoginAttemptSchema = createInsertSchema(loginAttempts).omit({ id: true, attemptedAt: true });
+export const insertRateLimitSchema = createInsertSchema(rateLimits).omit({ id: true });
 
 // === TYPES ===
 export type ProcessedPaymentCallback = typeof processedPaymentCallbacks.$inferSelect;
 export type InsertProcessedPaymentCallback = z.infer<typeof insertProcessedCallbackSchema>;
 export type LoginAttempt = typeof loginAttempts.$inferSelect;
 export type InsertLoginAttempt = z.infer<typeof insertLoginAttemptSchema>;
+export type RateLimit = typeof rateLimits.$inferSelect;
+export type InsertRateLimit = z.infer<typeof insertRateLimitSchema>;
 export type ExchangeRate = typeof exchangeRates.$inferSelect;
 export type InsertExchangeRate = z.infer<typeof insertExchangeRateSchema>;
 

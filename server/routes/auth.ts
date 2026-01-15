@@ -1,27 +1,14 @@
 import type { Express } from "express";
-import rateLimit from "express-rate-limit";
 import { storage } from "../storage";
 import { hashPassword, verifyPassword } from "./utils";
 import { LOCKOUT_CONFIG } from "@shared/schema";
-
-const authLimiter = rateLimit({
-  windowMs: 15 * 60 * 1000,
-  max: 10,
-  message: { message: "Too many attempts. Please try again in 15 minutes." },
-  standardHeaders: true,
-  legacyHeaders: false,
-});
-
-const strictAuthLimiter = rateLimit({
-  windowMs: 60 * 60 * 1000,
-  max: 20,
-  message: { message: "Too many requests. Please try again in an hour." },
-  standardHeaders: true,
-  legacyHeaders: false,
-});
+import { 
+  distributedAuthLoginLimiter, 
+  distributedAuthRegisterLimiter 
+} from "../middleware/distributedRateLimiter";
 
 export function registerAuthApiRoutes(app: Express) {
-  app.post("/api/auth/register", authLimiter, async (req, res) => {
+  app.post("/api/auth/register", distributedAuthRegisterLimiter, async (req, res) => {
     try {
       const { username, password, email, firstName, lastName } = req.body;
       
@@ -112,7 +99,7 @@ export function registerAuthApiRoutes(app: Express) {
     }
   });
 
-  app.post("/api/auth/login", strictAuthLimiter, async (req, res) => {
+  app.post("/api/auth/login", distributedAuthLoginLimiter, async (req, res) => {
     try {
       const { username, password } = req.body;
       const ipAddress = req.ip || req.socket.remoteAddress;

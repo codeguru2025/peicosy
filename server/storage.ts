@@ -11,6 +11,7 @@ import {
   inquiries,
   processedPaymentCallbacks,
   loginAttempts,
+  rateLimits,
   LOCKOUT_CONFIG,
   type Product, 
   type InsertProduct,
@@ -31,7 +32,8 @@ import {
   type ProcessedPaymentCallback,
   type InsertProcessedPaymentCallback,
   type LoginAttempt,
-  type InsertLoginAttempt
+  type InsertLoginAttempt,
+  type RateLimit
 } from "@shared/schema";
 import { eq, desc, sql, asc } from "drizzle-orm";
 import { authStorage } from "./replit_integrations/auth";
@@ -113,6 +115,10 @@ export interface IStorage {
   getRecentFailedAttempts(username: string): Promise<number>;
   isAccountLocked(username: string): Promise<{ locked: boolean; remainingMinutes: number }>;
   clearLoginAttempts(username: string): Promise<void>;
+  
+  // Rate Limiting (Distributed)
+  checkRateLimit(key: string, maxRequests: number, windowMinutes: number): Promise<{ allowed: boolean; current: number; remaining: number; resetAt: Date }>;
+  cleanupExpiredRateLimits(): Promise<number>;
 }
 
 export class DatabaseStorage implements IStorage {
@@ -807,6 +813,75 @@ export class DatabaseStorage implements IStorage {
     await db
       .delete(loginAttempts)
       .where(eq(loginAttempts.username, username.toLowerCase()));
+  }
+
+  // === Rate Limiting ===
+  async checkRateLimit(key: string, maxRequests: number, windowMinutes: number): Promise<{ allowed: boolean; current: number; remaining: number; resetAt: Date }> {
+    const now = new Date();
+    const windowStart = new Date(now.getTime() - windowMinutes * 60 * 1000);
+    const expiresAt = new Date(now.getTime() + windowMinutes * 60 * 1000);
+    
+    // Use a transaction for atomic read-modify-write
+    const result = await db.transaction(async (tx) => {
+      // Clean up expired entries for this key
+      await tx
+        .delete(rateLimits)
+        .where(sql`${rateLimits.key} = ${key} AND ${rateLimits.expiresAt} < ${now}`);
+      
+      // Get current entry
+      const [existing] = await tx
+        .select()
+        .from(rateLimits)
+        .where(sql`${rateLimits.key} = ${key} AND ${rateLimits.windowStart} > ${windowStart}`)
+        .limit(1);
+      
+      if (existing) {
+        // Entry exists - increment count
+        const newCount = existing.count + 1;
+        const allowed = newCount <= maxRequests;
+        
+        if (allowed) {
+          await tx
+            .update(rateLimits)
+            .set({ count: newCount })
+            .where(eq(rateLimits.id, existing.id));
+        }
+        
+        return {
+          allowed,
+          current: allowed ? newCount : existing.count,
+          remaining: Math.max(0, maxRequests - (allowed ? newCount : existing.count)),
+          resetAt: existing.expiresAt || expiresAt,
+        };
+      } else {
+        // No entry - create new one
+        await tx.insert(rateLimits).values({
+          key,
+          count: 1,
+          windowStart: now,
+          expiresAt,
+        });
+        
+        return {
+          allowed: true,
+          current: 1,
+          remaining: maxRequests - 1,
+          resetAt: expiresAt,
+        };
+      }
+    });
+    
+    return result;
+  }
+
+  async cleanupExpiredRateLimits(): Promise<number> {
+    const now = new Date();
+    const result = await db
+      .delete(rateLimits)
+      .where(sql`${rateLimits.expiresAt} < ${now}`)
+      .returning();
+    
+    return result.length;
   }
 }
 
