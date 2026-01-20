@@ -42,7 +42,9 @@ Preferred communication style: Simple, everyday language.
 
 ### Key Features
 - **Paynow Zimbabwe Integration**: Web checkout (Visa, Mastercard) and mobile money (Ecocash, OneMoney) with GBP to USD conversion and secure callback handling.
-- **Multi-Image Product System**: Supports multiple images per product with roles (thumbnail, hero, gallery), drag-and-drop uploader, and cloud storage integration.
+- **Multi-Image Product System**: Supports multiple images and videos per product with roles (thumbnail, hero, gallery), drag-and-drop uploader, and cloud storage integration.
+- **Video Streaming**: HTTP Range request support for video playback (RFC 7233 compliant with proper 206 Partial Content and 416 Range Not Satisfiable responses).
+- **Admin Product Management**: Full CRUD for products including create, update (edit dialog), and delete with proper auth/session handling.
 - **Admin Reports & Analytics**: Key business metrics, revenue trends, order status distribution, product/category performance.
 - **Data Export**: CSV/JSON export for all database tables.
 

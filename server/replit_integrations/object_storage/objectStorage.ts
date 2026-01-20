@@ -94,36 +94,109 @@ export class ObjectStorageService {
     return null;
   }
 
-  // Downloads an object to the response.
+  // Downloads an object to the response with Range request support for video streaming.
   // Default cache TTL is 1 year for immutable product images
-  async downloadObject(file: File, res: Response, cacheTtlSec: number = 31536000) {
+  async downloadObject(file: File, res: Response, rangeHeader?: string, cacheTtlSec: number = 31536000) {
     try {
       // Get file metadata
       const [metadata] = await file.getMetadata();
       // Get the ACL policy for the object.
       const aclPolicy = await getObjectAclPolicy(file);
       const isPublic = aclPolicy?.visibility === "public";
-      // Set appropriate headers with long cache and immutable for static assets
-      res.set({
-        "Content-Type": metadata.contentType || "application/octet-stream",
-        "Content-Length": metadata.size,
-        "Cache-Control": `${
-          isPublic ? "public" : "private"
-        }, max-age=${cacheTtlSec}, immutable`,
-        "Vary": "Accept-Encoding",
-      });
-
-      // Stream the file to the response
-      const stream = file.createReadStream();
-
-      stream.on("error", (err) => {
-        console.error("Stream error:", err);
-        if (!res.headersSent) {
-          res.status(500).json({ error: "Error streaming file" });
+      
+      const contentType = metadata.contentType || "application/octet-stream";
+      const fileSize = parseInt(metadata.size as string, 10);
+      
+      // Check if this is a Range request (for video streaming)
+      if (rangeHeader) {
+        // Parse and validate Range header (RFC 7233)
+        const rangeMatch = rangeHeader.match(/^bytes=(\d*)-(\d*)$/);
+        if (!rangeMatch) {
+          // Invalid Range header format - return 416
+          res.status(416).set({ 
+            "Content-Range": `bytes */${fileSize}`,
+            "Accept-Ranges": "bytes"
+          }).end();
+          return;
         }
-      });
+        
+        let start: number, end: number;
+        
+        if (rangeMatch[1] === "") {
+          // Suffix range: bytes=-N (last N bytes)
+          const suffixLength = parseInt(rangeMatch[2], 10);
+          // bytes=-0 is invalid per RFC 7233
+          if (isNaN(suffixLength) || suffixLength <= 0) {
+            res.status(416).set({ 
+              "Content-Range": `bytes */${fileSize}`,
+              "Accept-Ranges": "bytes"
+            }).end();
+            return;
+          }
+          start = Math.max(0, fileSize - suffixLength);
+          end = fileSize - 1;
+        } else if (rangeMatch[2] === "") {
+          // Open range: bytes=N- (from N to end)
+          start = parseInt(rangeMatch[1], 10);
+          end = fileSize - 1;
+        } else {
+          // Standard range: bytes=N-M
+          start = parseInt(rangeMatch[1], 10);
+          end = parseInt(rangeMatch[2], 10);
+        }
+        
+        // Validate range bounds
+        if (isNaN(start) || isNaN(end) || start < 0 || start >= fileSize || end < start || end >= fileSize) {
+          res.status(416).set({ 
+            "Content-Range": `bytes */${fileSize}`,
+            "Accept-Ranges": "bytes"
+          }).end();
+          return;
+        }
+        
+        const chunkSize = (end - start) + 1;
+        
+        // Set 206 Partial Content response
+        res.status(206);
+        res.set({
+          "Content-Range": `bytes ${start}-${end}/${fileSize}`,
+          "Accept-Ranges": "bytes",
+          "Content-Length": chunkSize,
+          "Content-Type": contentType,
+          "Cache-Control": `${isPublic ? "public" : "private"}, max-age=${cacheTtlSec}`,
+        });
+        
+        // Stream only the requested range
+        const stream = file.createReadStream({ start, end });
+        stream.on("error", (err) => {
+          console.error("Stream error:", err);
+          if (!res.headersSent) {
+            res.status(500).json({ error: "Error streaming file" });
+          }
+        });
+        stream.pipe(res);
+      } else {
+        // Full file response
+        res.set({
+          "Content-Type": contentType,
+          "Content-Length": fileSize,
+          "Accept-Ranges": "bytes",
+          "Cache-Control": `${isPublic ? "public" : "private"}, max-age=${cacheTtlSec}, immutable`,
+          "Vary": "Accept-Encoding",
+        });
 
-      stream.pipe(res);
+        // Stream the file to the response
+        const stream = file.createReadStream();
+
+        stream.on("error", (err) => {
+          console.error("Stream error:", err);
+          if (!res.headersSent) {
+            res.status(500).json({ error: "Error streaming file" });
+          }
+        });
+
+        stream.pipe(res);
+      }
     } catch (error) {
       console.error("Error downloading file:", error);
       if (!res.headersSent) {

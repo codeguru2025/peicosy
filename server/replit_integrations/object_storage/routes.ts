@@ -145,7 +145,9 @@ export function registerObjectStorageRoutes(app: Express, isAuthenticated?: Requ
   app.get("/objects/:objectPath(*)", async (req, res) => {
     try {
       const objectFile = await objectStorageService.getObjectEntityFile(req.path);
-      await objectStorageService.downloadObject(objectFile, res);
+      // Pass Range header for video streaming support
+      const rangeHeader = req.headers.range;
+      await objectStorageService.downloadObject(objectFile, res, rangeHeader);
     } catch (error) {
       console.error("Error serving object:", error);
       if (error instanceof ObjectNotFoundError) {

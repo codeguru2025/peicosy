@@ -138,13 +138,61 @@ const PRODUCT_CATEGORIES = ['Fashion', 'Tech', 'Home', 'Beauty'] as const;
 function ProductsTab() {
   const { data: products, isLoading } = useProducts({});
   const { mutate: createProduct, isPending: isCreating } = useCreateProduct();
+  const { mutate: updateProduct, isPending: isUpdating } = useUpdateProduct();
   const { mutate: deleteProduct } = useDeleteProduct();
   const [isAddOpen, setIsAddOpen] = useState(false);
+  const [isEditOpen, setIsEditOpen] = useState(false);
+  const [editingProduct, setEditingProduct] = useState<any>(null);
   const [productImages, setProductImages] = useState<UploadedImage[]>([]);
   const [isUploadingImages, setIsUploadingImages] = useState(false);
   const [selectedCategory, setSelectedCategory] = useState<string>("");
+  const [editSelectedCategory, setEditSelectedCategory] = useState<string>("");
   const { register, handleSubmit, reset, setValue } = useForm();
+  const { register: registerEdit, handleSubmit: handleEditSubmit, reset: resetEdit, setValue: setEditValue } = useForm();
   const { toast } = useToast();
+  
+  const openEditDialog = (product: any) => {
+    setEditingProduct(product);
+    setEditValue("brand", product.brand);
+    setEditValue("name", product.name);
+    setEditValue("description", product.description);
+    setEditValue("price", product.price);
+    setEditValue("category", product.category);
+    setEditValue("stock", product.stock);
+    setEditSelectedCategory(product.category || "");
+    setIsEditOpen(true);
+  };
+  
+  const onEditSubmit = (data: any) => {
+    if (!editingProduct) return;
+    
+    updateProduct({
+      id: editingProduct.id,
+      brand: data.brand,
+      name: data.name,
+      description: data.description,
+      price: data.price,
+      currency: "GBP",
+      category: data.category,
+      stock: parseInt(data.stock) || 0,
+    }, {
+      onSuccess: () => {
+        setIsEditOpen(false);
+        setEditingProduct(null);
+        resetEdit();
+        setEditSelectedCategory("");
+      }
+    });
+  };
+  
+  const handleEditDialogClose = (open: boolean) => {
+    if (!open) {
+      setEditingProduct(null);
+      setEditSelectedCategory("");
+      resetEdit();
+    }
+    setIsEditOpen(open);
+  };
 
   const addImageToProduct = useMutation({
     mutationFn: async ({ productId, image }: { productId: number; image: UploadedImage }) => {
@@ -297,6 +345,71 @@ function ProductsTab() {
             </ScrollArea>
           </DialogContent>
         </Dialog>
+
+        {/* Edit Product Dialog */}
+        <Dialog open={isEditOpen} onOpenChange={handleEditDialogClose}>
+          <DialogContent className="max-w-2xl max-h-[90vh]">
+            <DialogHeader>
+              <DialogTitle className="font-serif text-2xl font-light text-secondary">Edit Product</DialogTitle>
+            </DialogHeader>
+            <ScrollArea className="max-h-[70vh] pr-4">
+              <form onSubmit={handleEditSubmit(onEditSubmit)} className="space-y-4 mt-4">
+                <div className="grid grid-cols-2 gap-4">
+                  <div className="space-y-2">
+                    <Label className="text-[10px] uppercase tracking-[0.3em] font-medium text-muted-foreground">Brand</Label>
+                    <Input {...registerEdit("brand")} required className="rounded-xl" data-testid="edit-input-brand" />
+                  </div>
+                  <div className="space-y-2">
+                    <Label className="text-[10px] uppercase tracking-[0.3em] font-medium text-muted-foreground">Name</Label>
+                    <Input {...registerEdit("name")} required className="rounded-xl" data-testid="edit-input-name" />
+                  </div>
+                </div>
+                <div className="space-y-2">
+                  <Label className="text-[10px] uppercase tracking-[0.3em] font-medium text-muted-foreground">Description</Label>
+                  <Input {...registerEdit("description")} required className="rounded-xl" data-testid="edit-input-description" />
+                </div>
+                <div className="grid grid-cols-3 gap-4">
+                  <div className="space-y-2">
+                    <Label className="text-[10px] uppercase tracking-[0.3em] font-medium text-muted-foreground">Price (£)</Label>
+                    <Input {...registerEdit("price")} type="number" step="0.01" required className="rounded-xl" data-testid="edit-input-price" />
+                  </div>
+                  <div className="space-y-2">
+                    <Label className="text-[10px] uppercase tracking-[0.3em] font-medium text-muted-foreground">Category</Label>
+                    <Select 
+                      value={editSelectedCategory} 
+                      onValueChange={(value) => {
+                        setEditSelectedCategory(value);
+                        setEditValue("category", value);
+                      }}
+                    >
+                      <SelectTrigger className="rounded-xl" data-testid="edit-select-category">
+                        <SelectValue placeholder="Select category" />
+                      </SelectTrigger>
+                      <SelectContent>
+                        {PRODUCT_CATEGORIES.map(cat => (
+                          <SelectItem key={cat} value={cat}>{cat}</SelectItem>
+                        ))}
+                      </SelectContent>
+                    </Select>
+                  </div>
+                  <div className="space-y-2">
+                    <Label className="text-[10px] uppercase tracking-[0.3em] font-medium text-muted-foreground">Stock</Label>
+                    <Input {...registerEdit("stock")} type="number" required className="rounded-xl" data-testid="edit-input-stock" />
+                  </div>
+                </div>
+
+                <Button 
+                  type="submit" 
+                  disabled={isUpdating} 
+                  className="w-full rounded-full bg-primary hover:bg-primary/90 text-white text-[10px] uppercase tracking-[0.3em] font-bold h-12" 
+                  data-testid="button-submit-edit"
+                >
+                  {isUpdating ? "Saving..." : "Save Changes"}
+                </Button>
+              </form>
+            </ScrollArea>
+          </DialogContent>
+        </Dialog>
       </div>
 
       {isLoading ? (
@@ -340,7 +453,13 @@ function ProductsTab() {
                     <p className="font-serif text-xl text-secondary">£{product.price}</p>
                   </div>
                   <div className="flex gap-2">
-                    <Button size="icon" variant="outline" className="rounded-xl" data-testid={`button-edit-${product.id}`}>
+                    <Button 
+                      size="icon" 
+                      variant="outline" 
+                      className="rounded-xl"
+                      onClick={() => openEditDialog(product)}
+                      data-testid={`button-edit-${product.id}`}
+                    >
                       <Pencil className="w-4 h-4" />
                     </Button>
                     <Button 
