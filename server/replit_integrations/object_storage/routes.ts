@@ -1,18 +1,22 @@
 import type { Express, RequestHandler } from "express";
 import { ObjectStorageService, ObjectNotFoundError } from "./objectStorage";
 
-// Security: Allowed file types for uploads (proof of payment images/documents)
+// Security: Allowed file types for uploads (images, videos, documents)
 const ALLOWED_MIME_TYPES = [
   'image/jpeg',
   'image/jpg',
   'image/png',
   'image/gif',
   'image/webp',
+  'video/mp4',
+  'video/webm',
+  'video/quicktime',
   'application/pdf',
 ];
 
-// Security: Maximum file size (10MB)
-const MAX_FILE_SIZE = 10 * 1024 * 1024;
+// Security: Maximum file size (100MB for videos, 10MB for images/docs)
+const MAX_FILE_SIZE = 100 * 1024 * 1024;
+const MAX_IMAGE_SIZE = 10 * 1024 * 1024;
 
 // Security: Validate file extension matches content type
 const MIME_TO_EXTENSION: Record<string, string[]> = {
@@ -21,6 +25,9 @@ const MIME_TO_EXTENSION: Record<string, string[]> = {
   'image/png': ['.png'],
   'image/gif': ['.gif'],
   'image/webp': ['.webp'],
+  'video/mp4': ['.mp4'],
+  'video/webm': ['.webm'],
+  'video/quicktime': ['.mov'],
   'application/pdf': ['.pdf'],
 };
 
@@ -48,9 +55,13 @@ function validateFileUpload(name: string, size: number | undefined, contentType:
     return { valid: false, error: "File extension does not match content type" };
   }
   
+  // Determine max size based on content type
+  const isVideo = contentType?.startsWith('video/');
+  const maxSize = isVideo ? MAX_FILE_SIZE : MAX_IMAGE_SIZE;
+  
   // Validate file size
-  if (size !== undefined && (typeof size !== 'number' || size <= 0 || size > MAX_FILE_SIZE)) {
-    return { valid: false, error: `File size must be between 1 byte and ${MAX_FILE_SIZE / (1024 * 1024)}MB` };
+  if (size !== undefined && (typeof size !== 'number' || size <= 0 || size > maxSize)) {
+    return { valid: false, error: `File size must be between 1 byte and ${maxSize / (1024 * 1024)}MB` };
   }
   
   return { valid: true };

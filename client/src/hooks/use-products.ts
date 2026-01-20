@@ -115,3 +115,47 @@ export function useDeleteProduct() {
     },
   });
 }
+
+export interface ProductImage {
+  id: number;
+  productId: number;
+  objectPath: string;
+  cdnUrl: string;
+  role: 'thumbnail' | 'hero' | 'gallery';
+  originalFilename?: string;
+  mimeType: string;
+  fileSize?: number;
+  width?: number;
+  height?: number;
+  sortOrder: number;
+  isLegacy: boolean;
+  createdAt: string;
+}
+
+export interface ProductWithImages extends Product {
+  images: ProductImage[];
+}
+
+export function useProductWithImages(id: number) {
+  return useQuery<ProductWithImages>({
+    queryKey: ['/api/products', id, 'with-images'],
+    queryFn: async () => {
+      const res = await fetch(`/api/products/${id}/with-images`);
+      if (!res.ok) throw new Error("Failed to fetch product");
+      return res.json();
+    },
+    enabled: !!id,
+  });
+}
+
+export function useProductImages(productId: number) {
+  return useQuery<ProductImage[]>({
+    queryKey: ['/api/products', productId, 'images'],
+    queryFn: async () => {
+      const res = await fetch(`/api/products/${productId}/images`);
+      if (!res.ok) throw new Error("Failed to fetch product images");
+      return res.json();
+    },
+    enabled: !!productId,
+  });
+}

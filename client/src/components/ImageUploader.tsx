@@ -1,5 +1,5 @@
 import { useState, useCallback, useRef } from 'react';
-import { Upload, X, Image, Loader2, Star, LayoutTemplate, GripVertical } from 'lucide-react';
+import { Upload, X, Image, Loader2, Star, LayoutTemplate, GripVertical, Play } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import { Badge } from '@/components/ui/badge';
 import { cn } from '@/lib/utils';
@@ -24,30 +24,40 @@ interface ImageUploaderProps {
   images: UploadedImage[];
   onImagesChange: (images: UploadedImage[]) => void;
   maxImages?: number;
+  allowVideos?: boolean;
   className?: string;
 }
 
-const ALLOWED_TYPES = ['image/jpeg', 'image/jpg', 'image/png', 'image/gif', 'image/webp'];
-const MAX_FILE_SIZE = 10 * 1024 * 1024; // 10MB
+const IMAGE_TYPES = ['image/jpeg', 'image/jpg', 'image/png', 'image/gif', 'image/webp'];
+const VIDEO_TYPES = ['video/mp4', 'video/webm', 'video/quicktime'];
+const MAX_IMAGE_SIZE = 10 * 1024 * 1024; // 10MB
+const MAX_VIDEO_SIZE = 100 * 1024 * 1024; // 100MB
 
 export function ImageUploader({ 
   images, 
   onImagesChange, 
   maxImages = 10,
+  allowVideos = true,
   className 
 }: ImageUploaderProps) {
   const [isDragging, setIsDragging] = useState(false);
   const [isUploading, setIsUploading] = useState(false);
   const [uploadError, setUploadError] = useState<string | null>(null);
   const fileInputRef = useRef<HTMLInputElement>(null);
+  
+  const ALLOWED_TYPES = allowVideos ? [...IMAGE_TYPES, ...VIDEO_TYPES] : IMAGE_TYPES;
 
   const uploadFile = async (file: File): Promise<UploadedImage | null> => {
+    const isVideo = file.type.startsWith('video/');
+    const maxSize = isVideo ? MAX_VIDEO_SIZE : MAX_IMAGE_SIZE;
+    
     if (!ALLOWED_TYPES.includes(file.type)) {
-      throw new Error(`This file type isn't supported. Please use JPEG, PNG, GIF, or WebP images.`);
+      const types = allowVideos ? 'JPEG, PNG, GIF, WebP images or MP4, WebM videos' : 'JPEG, PNG, GIF, or WebP images';
+      throw new Error(`This file type isn't supported. Please use ${types}.`);
     }
 
-    if (file.size > MAX_FILE_SIZE) {
-      throw new Error(`This image is too large. Please use images under ${MAX_FILE_SIZE / (1024 * 1024)}MB.`);
+    if (file.size > maxSize) {
+      throw new Error(`This file is too large. Maximum size is ${maxSize / (1024 * 1024)}MB.`);
     }
 
     const response = await fetch('/api/uploads/request-url', {
@@ -239,10 +249,13 @@ export function ImageUploader({
         ) : (
           <div className="flex flex-col items-center gap-1 sm:gap-2">
             <Upload className="h-8 w-8 sm:h-10 sm:w-10 text-muted-foreground" />
-            <div>
-              <p className="text-sm sm:text-base font-medium">Tap to add images</p>
+            <div className="text-center">
+              <p className="text-sm sm:text-base font-medium">Tap to add {allowVideos ? 'images or videos' : 'images'}</p>
               <p className="text-xs sm:text-sm text-muted-foreground">
-                JPEG, PNG, GIF, WebP (max {MAX_FILE_SIZE / (1024 * 1024)}MB)
+                {allowVideos 
+                  ? `Images (max ${MAX_IMAGE_SIZE / (1024 * 1024)}MB) • Videos (max ${MAX_VIDEO_SIZE / (1024 * 1024)}MB)`
+                  : `JPEG, PNG, GIF, WebP (max ${MAX_IMAGE_SIZE / (1024 * 1024)}MB)`
+                }
               </p>
             </div>
           </div>
@@ -254,19 +267,33 @@ export function ImageUploader({
       )}
 
       {images.length > 0 && (
-        <div className="grid grid-cols-2 xs:grid-cols-2 sm:grid-cols-3 lg:grid-cols-4 gap-2 sm:gap-4">
-          {images.map((image, index) => (
+        <div className="grid grid-cols-2 sm:grid-cols-3 lg:grid-cols-4 gap-2 sm:gap-3">
+          {images.map((image, index) => {
+            const isVideo = image.mimeType?.startsWith('video/');
+            return (
             <div 
               key={image.objectPath + index} 
-              className="relative group rounded-lg overflow-hidden border bg-card aspect-square"
+              className="relative group rounded-lg overflow-hidden border bg-card"
+              style={{ paddingBottom: '100%' }}
               data-testid={`image-preview-${index}`}
             >
-              <img
-                src={image.cdnUrl}
-                alt={image.originalFilename || `Product image ${index + 1}`}
-                className="w-full h-full object-cover"
-                loading="lazy"
-              />
+              {isVideo ? (
+                <div className="absolute inset-0 flex items-center justify-center bg-muted">
+                  <Play className="w-8 h-8 text-muted-foreground" />
+                  <video
+                    src={image.cdnUrl}
+                    className="absolute inset-0 w-full h-full object-cover opacity-50"
+                    muted
+                  />
+                </div>
+              ) : (
+                <img
+                  src={image.cdnUrl}
+                  alt={image.originalFilename || `Product image ${index + 1}`}
+                  className="absolute inset-0 w-full h-full object-cover"
+                  loading="lazy"
+                />
+              )}
               
               <div className="absolute top-1 left-1 sm:top-2 sm:left-2 flex gap-1 flex-wrap">
                 {image.role === 'thumbnail' && (
@@ -288,7 +315,7 @@ export function ImageUploader({
                 )}
               </div>
 
-              <div className="absolute inset-0 bg-black/60 opacity-0 group-hover:opacity-100 sm:group-hover:opacity-100 group-focus-within:opacity-100 active:opacity-100 transition-opacity flex flex-col items-center justify-center gap-1 sm:gap-2 p-1 sm:p-2">
+              <div className="absolute inset-0 bg-black/60 opacity-0 group-hover:opacity-100 group-focus-within:opacity-100 active:opacity-100 transition-opacity flex flex-col items-center justify-center gap-1 sm:gap-2 p-1 sm:p-2">
                 <div className="flex gap-1">
                   <Button
                     type="button"
@@ -343,12 +370,13 @@ export function ImageUploader({
                 </div>
               </div>
             </div>
-          ))}
+          );
+          })}
         </div>
       )}
 
       <p className="text-xs text-muted-foreground">
-        {images.length} / {maxImages} images. First image becomes the main thumbnail.
+        {images.length} / {maxImages} {allowVideos ? 'files' : 'images'}. First image becomes the main thumbnail.
       </p>
     </div>
   );

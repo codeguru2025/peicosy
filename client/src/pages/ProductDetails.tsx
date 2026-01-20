@@ -1,9 +1,10 @@
-import { useProduct } from "@/hooks/use-products";
+import { useProductWithImages } from "@/hooks/use-products";
 import { useCart } from "@/hooks/use-cart";
 import { useCalculateLandedCost, useExchangeRate, formatZAR } from "@/hooks/use-shipping";
 import { Navigation } from "@/components/Navigation";
 import { Footer } from "@/components/Footer";
 import { CartDrawer } from "@/components/CartDrawer";
+import { ProductImageGallery } from "@/components/ProductImageGallery";
 import { Button } from "@/components/ui/button";
 import { useLocation, useParams } from "wouter";
 import { ShoppingBag, ArrowLeft, Truck, Shield, Globe, Minus, Plus, Loader2 } from "lucide-react";
@@ -12,7 +13,7 @@ import { useState, useEffect } from "react";
 export default function ProductDetails() {
   const params = useParams<{ id: string }>();
   const productId = parseInt(params.id || "0");
-  const { data: product, isLoading } = useProduct(productId);
+  const { data: product, isLoading } = useProductWithImages(productId);
   const { mutate: calculateCost, data: costData, isPending: isCalculating } = useCalculateLandedCost();
   const { data: exchangeRateData } = useExchangeRate();
   const { addItem } = useCart();
@@ -84,17 +85,14 @@ export default function ProductDetails() {
           <span className="text-[10px] uppercase tracking-[0.4em] font-bold">Back to Collection</span>
         </button>
 
-        <div className="grid grid-cols-1 lg:grid-cols-2 gap-16">
-          {/* Product Image */}
+        <div className="grid grid-cols-1 lg:grid-cols-2 gap-8 lg:gap-16">
           <div className="relative">
-            <div className="aspect-square bg-muted rounded-3xl overflow-hidden shadow-2xl">
-              <img 
-                src={product.imageUrl} 
-                alt={product.name}
-                className="w-full h-full object-cover hover:scale-105 transition-transform duration-700"
-              />
-            </div>
-            <div className="absolute top-6 left-6">
+            <ProductImageGallery 
+              images={product.images || []} 
+              productName={product.name}
+              mainImageUrl={product.imageUrl}
+            />
+            <div className="absolute top-6 left-6 z-10">
               <span className="px-4 py-2 bg-white/90 backdrop-blur-sm rounded-full text-[9px] uppercase tracking-[0.4em] font-bold text-secondary">
                 {product.category}
               </span>
