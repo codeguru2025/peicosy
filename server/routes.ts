@@ -38,7 +38,14 @@ const csrfProtection = (req: Request, res: Response, next: NextFunction) => {
     return next();
   }
   
-  return csrfSynchronisedProtection(req, res, next);
+  try {
+    return csrfSynchronisedProtection(req, res, next);
+  } catch (err: any) {
+    if (err?.code === 'EBADCSRFTOKEN' || err?.message?.includes('csrf')) {
+      return res.status(403).json({ message: "Invalid or missing CSRF token. Please refresh and try again." });
+    }
+    throw err;
+  }
 };
 
 export async function registerRoutes(
