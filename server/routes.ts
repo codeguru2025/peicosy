@@ -22,30 +22,22 @@ const {
 });
 
 const csrfProtection = (req: Request, res: Response, next: NextFunction) => {
+  // Payment webhooks skip CSRF (they have their own security)
   const skipPaths = [
     "/api/payment/payfast/notify",
     "/api/payments/paynow/callback",
-    "/api/uploads/request-url",
-    "/api/uploads/commit",
   ];
   
-  // Skip CSRF for upload-related paths (they use authentication instead)
-  if (skipPaths.includes(req.path) || req.path.startsWith("/api/uploads/")) {
+  if (skipPaths.includes(req.path)) {
     return next();
   }
   
+  // Read-only methods don't need CSRF protection
   if (["GET", "HEAD", "OPTIONS"].includes(req.method)) {
     return next();
   }
   
-  try {
-    return csrfSynchronisedProtection(req, res, next);
-  } catch (err: any) {
-    if (err?.code === 'EBADCSRFTOKEN' || err?.message?.includes('csrf')) {
-      return res.status(403).json({ message: "Invalid or missing CSRF token. Please refresh and try again." });
-    }
-    throw err;
-  }
+  return csrfSynchronisedProtection(req, res, next);
 };
 
 export async function registerRoutes(
