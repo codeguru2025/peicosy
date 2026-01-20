@@ -2,6 +2,7 @@ import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
 import { api, buildUrl } from "@shared/routes";
 import { type InsertProduct, type Product } from "@shared/schema";
 import { useToast } from "@/hooks/use-toast";
+import { apiRequest } from "@/lib/queryClient";
 
 export function useProducts(filters?: { category?: string; search?: string }) {
   const queryParams = new URLSearchParams();
@@ -38,18 +39,7 @@ export function useCreateProduct() {
 
   return useMutation({
     mutationFn: async (data: InsertProduct) => {
-      // Ensure numeric/boolean conversions if needed, though zod handles type checks
-      const res = await fetch(api.products.create.path, {
-        method: api.products.create.method,
-        headers: { "Content-Type": "application/json" },
-        body: JSON.stringify(data),
-        credentials: "include",
-      });
-      
-      if (!res.ok) {
-        const error = await res.json().catch(() => ({}));
-        throw new Error(error.message || "Failed to create product");
-      }
+      const res = await apiRequest(api.products.create.method, api.products.create.path, data);
       return api.products.create.responses[201].parse(await res.json());
     },
     onSuccess: () => {
@@ -69,17 +59,7 @@ export function useUpdateProduct() {
   return useMutation({
     mutationFn: async ({ id, ...data }: Partial<InsertProduct> & { id: number }) => {
       const url = buildUrl(api.products.update.path, { id });
-      const res = await fetch(url, {
-        method: api.products.update.method,
-        headers: { "Content-Type": "application/json" },
-        body: JSON.stringify(data),
-        credentials: "include",
-      });
-
-      if (!res.ok) {
-        const error = await res.json().catch(() => ({}));
-        throw new Error(error.message || "Failed to update product");
-      }
+      const res = await apiRequest(api.products.update.method, url, data);
       return api.products.update.responses[200].parse(await res.json());
     },
     onSuccess: () => {
@@ -99,12 +79,7 @@ export function useDeleteProduct() {
   return useMutation({
     mutationFn: async (id: number) => {
       const url = buildUrl(api.products.delete.path, { id });
-      const res = await fetch(url, {
-        method: api.products.delete.method,
-        credentials: "include",
-      });
-
-      if (!res.ok) throw new Error("Failed to delete product");
+      await apiRequest(api.products.delete.method, url);
     },
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: [api.products.list.path] });
