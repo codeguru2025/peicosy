@@ -310,12 +310,26 @@ function ProductsTab() {
               <CardContent className="p-6">
                 <div className="flex items-center gap-6">
                   <div className="w-16 h-16 rounded-xl bg-muted overflow-hidden flex-shrink-0">
-                    <img 
-                      src={product.imageUrl} 
-                      alt={product.name} 
-                      className="w-full h-full object-cover"
-                      loading="lazy"
-                    />
+                    {product.imageUrl ? (
+                      <img 
+                        src={product.imageUrl} 
+                        alt={product.name} 
+                        className="w-full h-full object-cover"
+                        loading="lazy"
+                        onError={(e) => {
+                          e.currentTarget.style.display = 'none';
+                          e.currentTarget.parentElement?.classList.add('flex', 'items-center', 'justify-center');
+                          const fallback = document.createElement('span');
+                          fallback.className = 'text-xl font-serif text-muted-foreground';
+                          fallback.textContent = product.brand?.charAt(0) || 'P';
+                          e.currentTarget.parentElement?.appendChild(fallback);
+                        }}
+                      />
+                    ) : (
+                      <div className="w-full h-full flex items-center justify-center">
+                        <span className="text-xl font-serif text-muted-foreground">{product.brand?.charAt(0) || 'P'}</span>
+                      </div>
+                    )}
                   </div>
                   <div className="flex-1 min-w-0">
                     <p className="text-[9px] text-primary uppercase tracking-[0.4em] font-bold">{product.brand}</p>

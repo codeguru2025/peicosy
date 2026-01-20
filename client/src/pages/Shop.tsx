@@ -5,7 +5,7 @@ import { CartDrawer } from "@/components/CartDrawer";
 import { Input } from "@/components/ui/input";
 import { Search } from "lucide-react";
 import { useState } from "react";
-import { Link } from "wouter";
+import { Link, useLocation } from "wouter";
 import { Button } from "@/components/ui/button";
 import { useCart } from "@/hooks/use-cart";
 import { useExchangeRate, formatZAR } from "@/hooks/use-shipping";
@@ -106,10 +106,19 @@ import { Product } from "@shared/schema";
 
 function ProductCard({ product, exchangeRate }: { product: Product; exchangeRate: number }) {
   const { addItem } = useCart();
+  const [, setLocation] = useLocation();
   const priceZAR = Number(product.price) * exchangeRate;
   
+  const handleCardClick = () => {
+    setLocation(`/product/${product.id}`);
+  };
+  
   return (
-    <div className="group bg-white rounded-[2rem] overflow-hidden transition-all duration-700 flex flex-col shadow-lg hover:shadow-2xl hover:shadow-primary/10" data-testid={`card-product-${product.id}`}>
+    <div 
+      className="group bg-white rounded-[2rem] overflow-hidden transition-all duration-700 flex flex-col shadow-lg hover:shadow-2xl hover:shadow-primary/10 cursor-pointer" 
+      onClick={handleCardClick}
+      data-testid={`card-product-${product.id}`}
+    >
       <div className="aspect-[3/4] relative overflow-hidden">
         <OptimizedImage
           src={product.imageUrl}
@@ -121,7 +130,7 @@ function ProductCard({ product, exchangeRate }: { product: Product; exchangeRate
         <div className="absolute bottom-8 left-8 right-8 translate-y-12 opacity-0 group-hover:translate-y-0 group-hover:opacity-100 transition-all duration-700">
           <Button 
             className="w-full rounded-full bg-primary hover:bg-primary/90 text-white text-[10px] uppercase tracking-[0.3em] font-bold py-6 shadow-2xl" 
-            onClick={() => addItem(product)}
+            onClick={(e) => { e.stopPropagation(); addItem(product); }}
             data-testid={`button-add-${product.id}`}
           >
             Acquire
@@ -130,9 +139,7 @@ function ProductCard({ product, exchangeRate }: { product: Product; exchangeRate
       </div>
       <div className="p-6 flex-1 flex flex-col">
         <p className="text-[10px] font-bold text-primary mb-3 uppercase tracking-[0.4em]">{product.brand}</p>
-        <Link href={`/product/${product.id}`} className="block">
-          <h3 className="font-serif font-light text-xl mb-2 text-secondary group-hover:text-primary transition-colors line-clamp-1 tracking-wide">{product.name}</h3>
-        </Link>
+        <h3 className="font-serif font-light text-xl mb-2 text-secondary group-hover:text-primary transition-colors line-clamp-1 tracking-wide">{product.name}</h3>
         <div className="mt-auto pt-2 flex flex-col">
           <span className="font-bold text-primary tracking-wide text-lg" data-testid={`text-price-zar-${product.id}`}>{formatZAR(priceZAR)}</span>
           <span className="text-muted-foreground text-xs tracking-wider">£{product.price}</span>

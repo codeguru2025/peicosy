@@ -1,10 +1,11 @@
 import { Navigation } from "@/components/Navigation";
 import { Footer } from "@/components/Footer";
 import { Button } from "@/components/ui/button";
-import { Link } from "wouter";
+import { Link, useLocation } from "wouter";
 import { ArrowRight, ShieldCheck, Plane, CreditCard } from "lucide-react";
 import { useProducts } from "@/hooks/use-products";
 import { CartDrawer } from "@/components/CartDrawer";
+import { useState } from "react";
 
 export default function Home() {
   const { data: featuredProducts } = useProducts({ category: "featured" });
@@ -139,27 +140,51 @@ import { useCart } from "@/hooks/use-cart";
 
 function ProductCard({ product }: { product: Product }) {
   const { addItem } = useCart();
+  const [, setLocation] = useLocation();
+  const [imageError, setImageError] = useState(false);
+  
+  const handleCardClick = () => {
+    setLocation(`/product/${product.id}`);
+  };
   
   return (
-    <div className="group bg-white rounded-[2rem] overflow-hidden transition-all duration-700 flex flex-col shadow-lg hover:shadow-2xl hover:shadow-primary/10">
-      <div className="aspect-[3/4] relative overflow-hidden">
-        <img 
-          src={product.imageUrl} 
-          alt={product.name}
-          className="object-cover w-full h-full grayscale group-hover:grayscale-0 transition-all duration-1000 group-hover:scale-110"
-        />
+    <div 
+      className="group bg-white rounded-[2rem] overflow-hidden transition-all duration-700 flex flex-col shadow-lg hover:shadow-2xl hover:shadow-primary/10 cursor-pointer"
+      onClick={handleCardClick}
+      data-testid={`card-product-${product.id}`}
+    >
+      <div className="aspect-[3/4] relative overflow-hidden bg-muted">
+        {!imageError && product.imageUrl ? (
+          <img 
+            src={product.imageUrl} 
+            alt={product.name}
+            className="object-cover w-full h-full grayscale group-hover:grayscale-0 transition-all duration-1000 group-hover:scale-110"
+            onError={() => setImageError(true)}
+            loading="lazy"
+          />
+        ) : (
+          <div className="w-full h-full flex items-center justify-center text-muted-foreground/50">
+            <div className="text-center">
+              <div className="w-16 h-16 mx-auto mb-2 bg-muted-foreground/10 rounded-full flex items-center justify-center">
+                <span className="text-2xl font-serif">{product.brand?.charAt(0) || 'P'}</span>
+              </div>
+              <span className="text-xs uppercase tracking-widest">{product.brand}</span>
+            </div>
+          </div>
+        )}
         <div className="absolute inset-0 bg-secondary/20 opacity-0 group-hover:opacity-100 transition-opacity duration-700"></div>
         <div className="absolute bottom-8 left-8 right-8 translate-y-12 opacity-0 group-hover:translate-y-0 group-hover:opacity-100 transition-all duration-700">
-          <Button className="w-full rounded-full bg-primary hover:bg-primary/90 text-white text-[10px] uppercase tracking-[0.3em] font-bold py-6 shadow-2xl" onClick={() => addItem(product)}>
+          <Button 
+            className="w-full rounded-full bg-primary hover:bg-primary/90 text-white text-[10px] uppercase tracking-[0.3em] font-bold py-6 shadow-2xl" 
+            onClick={(e) => { e.stopPropagation(); addItem(product); }}
+          >
             Acquire
           </Button>
         </div>
       </div>
       <div className="p-6 flex-1 flex flex-col">
         <p className="text-[10px] font-bold text-primary mb-3 uppercase tracking-[0.4em]">{product.brand}</p>
-        <Link href={`/product/${product.id}`} className="block">
-          <h3 className="font-serif font-light text-xl mb-2 text-secondary group-hover:text-primary transition-colors line-clamp-1 tracking-wide">{product.name}</h3>
-        </Link>
+        <h3 className="font-serif font-light text-xl mb-2 text-secondary group-hover:text-primary transition-colors line-clamp-1 tracking-wide">{product.name}</h3>
         <div className="mt-auto pt-2 flex items-baseline justify-between">
           <span className="font-medium text-secondary tracking-widest text-sm">£{product.price}</span>
         </div>
