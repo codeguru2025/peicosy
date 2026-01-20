@@ -25,9 +25,12 @@ const csrfProtection = (req: Request, res: Response, next: NextFunction) => {
   const skipPaths = [
     "/api/payment/payfast/notify",
     "/api/payments/paynow/callback",
+    "/api/uploads/request-url",
+    "/api/uploads/commit",
   ];
   
-  if (skipPaths.includes(req.path)) {
+  // Skip CSRF for upload-related paths (they use authentication instead)
+  if (skipPaths.includes(req.path) || req.path.startsWith("/api/uploads/")) {
     return next();
   }
   
