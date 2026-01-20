@@ -20,6 +20,7 @@ export function createApp() {
         styleSrc: ["'self'", "'unsafe-inline'", "https://fonts.googleapis.com"],
         fontSrc: ["'self'", "https://fonts.gstatic.com"],
         imgSrc: ["'self'", "data:", "blob:", "https:", "http:"],
+        mediaSrc: ["'self'", "blob:", "data:"],
         connectSrc: ["'self'", "https:", "wss:", "ws:"],
         frameSrc: ["'self'", "https://www.payfast.co.za", "https://sandbox.payfast.co.za"],
       },

@@ -52,8 +52,11 @@ export function ProductImageGallery({ images, productName, mainImageUrl }: Produ
           <video
             src={currentImage.cdnUrl}
             controls
-            className="w-full h-full object-contain"
+            playsInline
+            preload="metadata"
+            className="w-full h-full object-contain bg-black"
             poster={allImages.find(img => img.role === 'thumbnail')?.cdnUrl}
+            data-testid="product-video"
           >
             Your browser does not support the video tag.
           </video>
