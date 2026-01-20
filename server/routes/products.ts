@@ -7,26 +7,36 @@ import { productCache, cacheKeys, invalidateProductCaches } from "../cache";
 
 export function registerProductRoutes(app: Express) {
   app.get(api.products.list.path, async (req, res) => {
-    const category = req.query.category as string;
-    const search = req.query.search as string;
-    
-    const products = await productCache.get(
-      cacheKeys.products,
-      { category, search },
-      () => storage.getProducts(category, search)
-    );
-    res.json(products);
+    try {
+      const category = req.query.category as string;
+      const search = req.query.search as string;
+      
+      const products = await productCache.get(
+        cacheKeys.products,
+        { category, search },
+        () => storage.getProducts(category, search)
+      );
+      res.json(products);
+    } catch (err) {
+      console.error("Error fetching products:", err);
+      res.status(500).json({ message: "Failed to fetch products" });
+    }
   });
 
   app.get(api.products.get.path, async (req, res) => {
-    const id = Number(req.params.id);
-    const product = await productCache.get(
-      cacheKeys.product,
-      { id },
-      () => storage.getProduct(id)
-    );
-    if (!product) return res.status(404).json({ message: "Product not found" });
-    res.json(product);
+    try {
+      const id = Number(req.params.id);
+      const product = await productCache.get(
+        cacheKeys.product,
+        { id },
+        () => storage.getProduct(id)
+      );
+      if (!product) return res.status(404).json({ message: "Product not found" });
+      res.json(product);
+    } catch (err) {
+      console.error("Error fetching product:", err);
+      res.status(500).json({ message: "Failed to fetch product" });
+    }
   });
 
   app.post(api.products.create.path, isAuthenticated, isAdmin, async (req, res) => {
