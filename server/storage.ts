@@ -49,6 +49,7 @@ export interface IStorage {
   createProduct(product: InsertProduct): Promise<Product>;
   updateProduct(id: number, product: Partial<InsertProduct>): Promise<Product | undefined>;
   deleteProduct(id: number): Promise<void>;
+  productHasOrders(productId: number): Promise<boolean>;
 
   // Orders
   getOrders(userId: string): Promise<OrderWithItems[]>; // User's orders
@@ -180,6 +181,14 @@ export class DatabaseStorage implements IStorage {
 
   async deleteProduct(id: number): Promise<void> {
     await db.delete(products).where(eq(products.id, id));
+  }
+
+  async productHasOrders(productId: number): Promise<boolean> {
+    const [result] = await db
+      .select({ count: sql<number>`count(*)` })
+      .from(orderItems)
+      .where(eq(orderItems.productId, productId));
+    return Number(result?.count || 0) > 0;
   }
 
   // Orders

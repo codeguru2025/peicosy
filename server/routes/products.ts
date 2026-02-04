@@ -69,9 +69,30 @@ export function registerProductRoutes(app: Express) {
   });
 
   app.delete(api.products.delete.path, isAuthenticated, isAdmin, async (req, res) => {
-    await storage.deleteProduct(Number(req.params.id));
-    invalidateProductCaches();
-    res.status(204).send();
+    try {
+      const productId = Number(req.params.id);
+      
+      // Check if product exists
+      const product = await storage.getProduct(productId);
+      if (!product) {
+        return res.status(404).json({ message: "Product not found" });
+      }
+      
+      // Check if product has been ordered (foreign key constraint)
+      const hasOrders = await storage.productHasOrders(productId);
+      if (hasOrders) {
+        return res.status(400).json({ 
+          message: "Cannot delete this product because it has been ordered. You can set its stock to 0 to hide it from the store instead." 
+        });
+      }
+      
+      await storage.deleteProduct(productId);
+      invalidateProductCaches();
+      res.status(204).send();
+    } catch (err) {
+      console.error("Error deleting product:", err);
+      res.status(500).json({ message: "Failed to delete product" });
+    }
   });
 
   app.get("/api/products/:productId/images", async (req, res) => {
