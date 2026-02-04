@@ -14,7 +14,7 @@ import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@
 import { ScrollArea } from "@/components/ui/scroll-area";
 import { BarChart, Bar, XAxis, YAxis, Tooltip, ResponsiveContainer, PieChart as RechartsPie, Pie, Cell, LineChart, Line, Legend } from "recharts";
 import { useQuery, useMutation } from "@tanstack/react-query";
-import { DollarSign, Package, AlertCircle, Plus, Pencil, Trash2, Eye, Check, Settings, Download, FileSpreadsheet, TrendingUp, Users, ShoppingBag, BarChart3, PieChart, ImageIcon } from "lucide-react";
+import { DollarSign, Package, AlertCircle, Plus, Pencil, Trash2, Eye, Check, Settings, Download, FileSpreadsheet, TrendingUp, Users, ShoppingBag, BarChart3, PieChart, ImageIcon, ChevronDown, ChevronUp } from "lucide-react";
 import { useForm } from "react-hook-form";
 import { useToast } from "@/hooks/use-toast";
 import { ImageUploader, type UploadedImage } from "@/components/ImageUploader";
@@ -485,9 +485,24 @@ function ProductsTab() {
 function OrdersTab() {
   const { data: orders, isLoading } = useAdminOrders();
   const { mutate: updateStatus, isPending } = useUpdateOrderStatus();
+  const [expandedOrders, setExpandedOrders] = useState<Record<number, boolean>>({});
+  const [selectedProduct, setSelectedProduct] = useState<any>(null);
 
   const handleStatusChange = (orderId: number, newStatus: string) => {
     updateStatus({ id: orderId, status: newStatus });
+  };
+
+  const toggleOrderExpanded = (orderId: number) => {
+    setExpandedOrders(prev => ({ ...prev, [orderId]: !prev[orderId] }));
+  };
+
+  const getProductImageUrl = (product: any) => {
+    if (product?.images && product.images.length > 0) {
+      const thumbnail = product.images.find((img: any) => img.role === 'thumbnail') || product.images[0];
+      return thumbnail.cdnUrl || `/objects/${thumbnail.objectPath}`;
+    }
+    if (product?.imageUrl) return product.imageUrl;
+    return null;
   };
 
   return (
@@ -508,7 +523,7 @@ function OrdersTab() {
       ) : (
         <div className="space-y-4">
           {orders?.map((order: any) => (
-            <Card key={order.id} className="border-border shadow-sm hover:shadow-md transition-shadow" data-testid={`admin-order-${order.id}`}>
+            <Card key={order.id} className="border-border shadow-sm" data-testid={`admin-order-${order.id}`}>
               <CardContent className="p-6">
                 <div className="flex flex-col lg:flex-row lg:items-center gap-6">
                   <div className="flex-1">
@@ -528,6 +543,16 @@ function OrdersTab() {
                     )}
                   </div>
                   <div className="flex items-center gap-4">
+                    <Button
+                      variant="outline"
+                      size="sm"
+                      onClick={() => toggleOrderExpanded(order.id)}
+                      className="gap-2 rounded-full"
+                      data-testid={`button-expand-${order.id}`}
+                    >
+                      {expandedOrders[order.id] ? <ChevronUp className="w-4 h-4" /> : <ChevronDown className="w-4 h-4" />}
+                      View Products
+                    </Button>
                     <Select 
                       value={order.status} 
                       onValueChange={(val) => handleStatusChange(order.id, val)}
@@ -558,11 +583,107 @@ function OrdersTab() {
                     )}
                   </div>
                 </div>
+                
+                {expandedOrders[order.id] && order.items && order.items.length > 0 && (
+                  <div className="mt-6 pt-6 border-t border-border">
+                    <h4 className="text-[10px] uppercase tracking-[0.3em] font-bold text-muted-foreground mb-4">Ordered Products</h4>
+                    <div className="grid gap-3">
+                      {order.items.map((item: any) => (
+                        <div 
+                          key={item.id} 
+                          className="flex items-center gap-4 p-3 bg-muted/30 rounded-xl cursor-pointer hover:bg-muted/50 transition-colors"
+                          onClick={() => setSelectedProduct(item.product)}
+                          data-testid={`order-item-${item.id}`}
+                        >
+                          <div className="w-16 h-16 rounded-lg overflow-hidden bg-muted flex-shrink-0">
+                            {getProductImageUrl(item.product) ? (
+                              <img 
+                                src={getProductImageUrl(item.product)} 
+                                alt={item.product?.name || 'Product'} 
+                                className="w-full h-full object-cover"
+                              />
+                            ) : (
+                              <div className="w-full h-full flex items-center justify-center">
+                                <ImageIcon className="w-6 h-6 text-muted-foreground/50" />
+                              </div>
+                            )}
+                          </div>
+                          <div className="flex-1 min-w-0">
+                            <p className="text-[10px] uppercase tracking-[0.3em] text-primary font-bold">{item.product?.brand || 'Unknown Brand'}</p>
+                            <p className="font-serif text-secondary truncate">{item.product?.name || 'Unknown Product'}</p>
+                            <div className="flex items-center gap-4 mt-1 text-sm text-muted-foreground">
+                              <span>Qty: {item.quantity}</span>
+                              <span>£{item.priceAtPurchase} each</span>
+                              <span className={`${(item.product?.stock || 0) > 0 ? 'text-green-600' : 'text-red-500'}`}>
+                                Stock: {item.product?.stock ?? 'N/A'}
+                              </span>
+                            </div>
+                          </div>
+                          <Button variant="ghost" size="icon" className="flex-shrink-0" data-testid={`button-view-product-${item.id}`}>
+                            <Eye className="w-4 h-4" />
+                          </Button>
+                        </div>
+                      ))}
+                    </div>
+                  </div>
+                )}
               </CardContent>
             </Card>
           ))}
         </div>
       )}
+
+      <Dialog open={!!selectedProduct} onOpenChange={(open) => !open && setSelectedProduct(null)}>
+        <DialogContent className="max-w-lg">
+          <DialogHeader>
+            <DialogTitle className="font-serif text-2xl font-light">Product Details</DialogTitle>
+          </DialogHeader>
+          {selectedProduct && (
+            <div className="space-y-6">
+              <div className="aspect-square w-full rounded-xl overflow-hidden bg-muted">
+                {getProductImageUrl(selectedProduct) ? (
+                  <img 
+                    src={getProductImageUrl(selectedProduct)} 
+                    alt={selectedProduct.name} 
+                    className="w-full h-full object-cover"
+                  />
+                ) : (
+                  <div className="w-full h-full flex items-center justify-center">
+                    <ImageIcon className="w-16 h-16 text-muted-foreground/30" />
+                  </div>
+                )}
+              </div>
+              
+              <div className="space-y-4">
+                <div>
+                  <p className="text-[10px] uppercase tracking-[0.3em] text-primary font-bold">{selectedProduct.brand}</p>
+                  <h3 className="font-serif text-2xl text-secondary">{selectedProduct.name}</h3>
+                </div>
+                
+                <p className="text-muted-foreground">{selectedProduct.description}</p>
+                
+                <div className="grid grid-cols-2 gap-4">
+                  <div className="bg-muted/30 rounded-xl p-4">
+                    <p className="text-[10px] uppercase tracking-[0.3em] text-muted-foreground mb-1">Price</p>
+                    <p className="font-serif text-xl text-secondary">£{selectedProduct.price}</p>
+                  </div>
+                  <div className="bg-muted/30 rounded-xl p-4">
+                    <p className="text-[10px] uppercase tracking-[0.3em] text-muted-foreground mb-1">Stock Remaining</p>
+                    <p className={`font-serif text-xl ${selectedProduct.stock > 0 ? 'text-green-600' : 'text-red-500'}`}>
+                      {selectedProduct.stock} {selectedProduct.stock === 1 ? 'item' : 'items'}
+                    </p>
+                  </div>
+                </div>
+                
+                <div className="bg-muted/30 rounded-xl p-4">
+                  <p className="text-[10px] uppercase tracking-[0.3em] text-muted-foreground mb-1">Category</p>
+                  <p className="text-secondary">{selectedProduct.category}</p>
+                </div>
+              </div>
+            </div>
+          )}
+        </DialogContent>
+      </Dialog>
     </div>
   );
 }
