@@ -18,11 +18,11 @@ services:
     instance_size_slug: professional-xs
     http_port: 5000
     envs:
-      # --- Database (use a DO Managed Database and reference it) ---
+      # --- Database (paste your managed DB connection string in DO dashboard) ---
       - key: DATABASE_URL
         scope: RUN_AND_BUILD_TIME
         type: SECRET
-        value: "${db.DATABASE_URL}"
+        value: "CHANGE_ME"
 
       # --- Session ---
       - key: SESSION_SECRET
@@ -79,10 +79,3 @@ services:
       - key: NODE_ENV
         scope: RUN_TIME
         value: "production"
-
-databases:
-  - name: db
-    engine: PG
-    version: "16"
-    production: true
-    cluster_name: peicosy-db
