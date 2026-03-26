@@ -1,0 +1,88 @@
+# =============================================================================
+# DigitalOcean App Platform Specification
+# https://docs.digitalocean.com/products/app-platform/reference/app-spec/
+# =============================================================================
+
+name: peicosy
+
+services:
+  - name: web
+    github:
+      repo: codeguru2025/peicosy
+      branch: main
+      deploy_on_push: true
+    build_command: npm install && npm run build
+    run_command: npm start
+    environment_slug: node-js
+    instance_count: 1
+    instance_size_slug: professional-xs
+    http_port: 5000
+    envs:
+      # --- Database (use a DO Managed Database and reference it) ---
+      - key: DATABASE_URL
+        scope: RUN_AND_BUILD_TIME
+        type: SECRET
+        value: "${db.DATABASE_URL}"
+
+      # --- Session ---
+      - key: SESSION_SECRET
+        scope: RUN_TIME
+        type: SECRET
+        value: "CHANGE_ME"
+
+      # --- Admin Credentials ---
+      - key: ADMIN_USERNAME
+        scope: RUN_TIME
+        type: SECRET
+        value: "CHANGE_ME"
+      - key: ADMIN_PASSWORD
+        scope: RUN_TIME
+        type: SECRET
+        value: "CHANGE_ME"
+
+      # --- DigitalOcean Spaces ---
+      - key: DO_SPACES_KEY
+        scope: RUN_TIME
+        type: SECRET
+        value: "CHANGE_ME"
+      - key: DO_SPACES_SECRET
+        scope: RUN_TIME
+        type: SECRET
+        value: "CHANGE_ME"
+      - key: DO_SPACES_ENDPOINT
+        scope: RUN_TIME
+        value: "https://nyc3.digitaloceanspaces.com"
+      - key: DO_SPACES_BUCKET
+        scope: RUN_TIME
+        value: "CHANGE_ME"
+      - key: DO_SPACES_REGION
+        scope: RUN_TIME
+        value: "nyc3"
+      - key: DO_SPACES_CDN_ENDPOINT
+        scope: RUN_TIME
+        value: "CHANGE_ME"
+
+      # --- Paynow (Zimbabwe) ---
+      - key: PAYNOW_INTEGRATION_ID
+        scope: RUN_TIME
+        type: SECRET
+        value: "CHANGE_ME"
+      - key: PAYNOW_INTEGRATION_KEY
+        scope: RUN_TIME
+        type: SECRET
+        value: "CHANGE_ME"
+
+      # --- Application ---
+      - key: APP_BASE_URL
+        scope: RUN_TIME
+        value: "${APP_DOMAIN}"
+      - key: NODE_ENV
+        scope: RUN_TIME
+        value: "production"
+
+databases:
+  - name: db
+    engine: PG
+    version: "16"
+    production: true
+    cluster_name: peicosy-db
