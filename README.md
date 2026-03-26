@@ -106,6 +106,17 @@ ADMIN_PASSWORD=your-secure-admin-password
 # Paynow (Zimbabwe payments)
 PAYNOW_INTEGRATION_ID=your-paynow-id
 PAYNOW_INTEGRATION_KEY=your-paynow-key
+
+# DigitalOcean Spaces (file uploads / CDN)
+DO_SPACES_KEY=your-spaces-access-key
+DO_SPACES_SECRET=your-spaces-secret-key
+DO_SPACES_ENDPOINT=https://nyc3.digitaloceanspaces.com
+DO_SPACES_BUCKET=your-bucket-name
+DO_SPACES_REGION=nyc3
+DO_SPACES_CDN_ENDPOINT=https://your-bucket.nyc3.cdn.digitaloceanspaces.com
+
+# Application base URL (used for payment callbacks)
+APP_BASE_URL=https://your-domain.com
 ```
 
 4. **Set up the database**
@@ -233,13 +244,6 @@ Calculate shipping and landed costs.
 
 ## Deployment
 
-### Replit Deployment
-1. Click the "Deploy" button in Replit
-2. Configure environment secrets in the Secrets panel
-3. The app will be live at your `.replit.app` domain
-
-### Manual Deployment
-
 1. **Build the application**
 ```bash
 npm run build
@@ -257,6 +261,8 @@ npm start
 - [ ] Set random 32+ character `SESSION_SECRET`
 - [ ] Configure Paynow credentials for live mode
 - [ ] Enable HTTPS
+- [ ] Configure DigitalOcean Spaces credentials
+- [ ] Set `APP_BASE_URL` for payment callbacks
 
 #### Database
 - [ ] Configure database backups

@@ -30,11 +30,7 @@ export function getPaynowConfig(): PaynowConfig | null {
     return null;
   }
   
-  const baseUrl = process.env.REPLIT_DEV_DOMAIN 
-    ? `https://${process.env.REPLIT_DEV_DOMAIN}`
-    : process.env.REPLIT_DOMAINS 
-      ? `https://${process.env.REPLIT_DOMAINS.split(',')[0]}`
-      : 'http://localhost:5000';
+  const baseUrl = process.env.APP_BASE_URL || 'http://localhost:5000';
   
   return {
     integrationId,

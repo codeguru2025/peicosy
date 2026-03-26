@@ -1,5 +1,5 @@
 import type { Express, RequestHandler } from "express";
-import { ObjectStorageService, ObjectNotFoundError } from "./objectStorage";
+import { SpacesStorageService, ObjectNotFoundError, isSpacesConfigured } from "./spaces";
 
 // Security: Allowed file types for uploads (images, videos, documents)
 const ALLOWED_MIME_TYPES = [
@@ -68,45 +68,26 @@ function validateFileUpload(name: string, size: number | undefined, contentType:
 }
 
 /**
- * Register object storage routes for file uploads.
+ * Register object storage routes for file uploads via DigitalOcean Spaces.
  *
- * This provides example routes for the presigned URL upload flow:
+ * Upload flow:
  * 1. POST /api/uploads/request-url - Get a presigned URL for uploading
- * 2. The client then uploads directly to the presigned URL
+ * 2. Client uploads directly to the presigned URL (PUT)
  *
- * Security measures implemented:
- * - Authentication required for uploads
- * - File type validation (images and PDFs only)
- * - File size limits (10MB max)
- * - File name sanitization (path traversal prevention)
- * - Content type / extension matching
+ * Security: Auth required, file type validation, size limits, path traversal prevention.
  */
 export function registerObjectStorageRoutes(app: Express, isAuthenticated?: RequestHandler): void {
-  const objectStorageService = new ObjectStorageService();
+  const spacesService = new SpacesStorageService();
 
-  /**
-   * Request a presigned URL for file upload.
-   *
-   * Request body (JSON):
-   * {
-   *   "name": "filename.jpg",
-   *   "size": 12345,
-   *   "contentType": "image/jpeg"
-   * }
-   *
-   * Response:
-   * {
-   *   "uploadURL": "https://storage.googleapis.com/...",
-   *   "objectPath": "/objects/uploads/uuid"
-   * }
-   *
-   * IMPORTANT: The client should NOT send the file to this endpoint.
-   * Send JSON metadata only, then upload the file directly to uploadURL.
-   * Authentication is required to upload files.
-   */
   const uploadMiddleware = isAuthenticated ? [isAuthenticated] : [];
   app.post("/api/uploads/request-url", ...uploadMiddleware, async (req, res) => {
     try {
+      if (!isSpacesConfigured()) {
+        return res.status(503).json({
+          error: "File storage is not configured. Please contact the administrator.",
+        });
+      }
+
       const { name, size, contentType } = req.body;
 
       // Security: Validate file before generating presigned URL
@@ -117,14 +98,13 @@ export function registerObjectStorageRoutes(app: Express, isAuthenticated?: Requ
         });
       }
 
-      const uploadURL = await objectStorageService.getObjectEntityUploadURL();
-
-      // Extract object path from the presigned URL for later reference
-      const objectPath = objectStorageService.normalizeObjectEntityPath(uploadURL);
+      const { uploadURL, objectKey, objectPath } = await spacesService.getUploadUrl(contentType);
+      const cdnUrl = spacesService.getCdnUrl(objectKey);
 
       res.json({
         uploadURL,
         objectPath,
+        cdnUrl,
         // Echo back the metadata for client convenience
         metadata: { name, size, contentType },
       });
@@ -135,26 +115,23 @@ export function registerObjectStorageRoutes(app: Express, isAuthenticated?: Requ
   });
 
   /**
-   * Serve uploaded objects.
-   *
-   * GET /objects/:objectPath(*)
-   *
-   * This serves files from object storage. For public files, no auth needed.
-   * For protected files, add authentication middleware and ACL checks.
+   * Serve uploaded objects (proxy through Express for non-CDN access).
+   * For best performance, prefer using the CDN URL directly from the client.
    */
   app.get("/objects/:objectPath(*)", async (req, res) => {
     try {
-      const objectFile = await objectStorageService.getObjectEntityFile(req.path);
-      // Pass Range header for video streaming support
+      if (!isSpacesConfigured()) {
+        return res.status(503).json({ error: "File storage is not configured." });
+      }
+
       const rangeHeader = req.headers.range;
-      await objectStorageService.downloadObject(objectFile, res, rangeHeader);
+      await spacesService.downloadObject(req.path, res, rangeHeader);
     } catch (error) {
-      console.error("Error serving object:", error);
       if (error instanceof ObjectNotFoundError) {
         return res.status(404).json({ error: "Object not found" });
       }
+      console.error("Error serving object:", error);
       return res.status(500).json({ error: "Failed to serve object" });
     }
   });
 }
-

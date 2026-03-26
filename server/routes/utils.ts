@@ -1,6 +1,6 @@
 import type { Request } from "express";
 import bcrypt from "bcrypt";
-import { authStorage } from "../replit_integrations/auth/storage";
+import { authStorage } from "../auth/storage";
 
 export interface AuthenticatedUser {
   id?: string;

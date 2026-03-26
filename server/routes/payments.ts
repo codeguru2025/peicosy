@@ -1,7 +1,7 @@
 import type { Express } from "express";
 import { storage } from "../storage";
 import { OrderStatus, paynowInitiateSchema, paynowMobileSchema } from "@shared/schema";
-import { isAuthenticated } from "../replit_integrations/auth";
+import { isAuthenticated } from "../auth";
 import { generatePayFastForm, isPayFastConfigured, validatePayFastITN } from "../payfast";
 import { isPaynowConfigured, initiateWebPayment, initiateMobilePayment, checkPaymentStatus, validatePaynowHash } from "../paynow";
 import { logPaymentEvent } from "./utils";
@@ -75,17 +75,6 @@ export function registerPaymentRoutes(app: Express) {
         amount: req.body.amount_gross,
       });
       
-      if (pfPaymentId) {
-        const alreadyProcessed = await storage.isCallbackProcessed('payfast', pfPaymentId);
-        if (alreadyProcessed) {
-          logPaymentEvent("PAYFAST_ITN_DUPLICATE_IDEMPOTENCY", {
-            pfPaymentId,
-            orderId: req.body.m_payment_id,
-          });
-          return res.status(200).send("Already processed");
-        }
-      }
-      
       const result = validatePayFastITN(req.body);
       
       if (!result.valid) {
@@ -105,6 +94,18 @@ export function registerPaymentRoutes(app: Express) {
         return res.status(400).send("Invalid payment amount");
       }
       
+      // ACID: Atomically claim this callback — prevents duplicate processing
+      if (pfPaymentId) {
+        const claimed = await storage.tryClaimCallback('payfast', pfPaymentId, result.orderId, req.body);
+        if (!claimed) {
+          logPaymentEvent("PAYFAST_ITN_DUPLICATE_IDEMPOTENCY", {
+            pfPaymentId,
+            orderId: result.orderId,
+          });
+          return res.status(200).send("Already processed");
+        }
+      }
+      
       const order = await storage.getOrder(result.orderId);
       if (!order) {
         logPaymentEvent("PAYFAST_ITN_REJECTED", {
@@ -112,14 +113,6 @@ export function registerPaymentRoutes(app: Express) {
           orderId: result.orderId,
         });
         return res.status(404).send("Order not found");
-      }
-      
-      if (order.status === OrderStatus.CONFIRMED || order.status === OrderStatus.COMPLETED) {
-        logPaymentEvent("PAYFAST_ITN_DUPLICATE", {
-          orderId: result.orderId,
-          currentStatus: order.status,
-        });
-        return res.status(200).send("Already processed");
       }
       
       const expectedAmountZAR = order.expectedAmountZar 
@@ -137,35 +130,35 @@ export function registerPaymentRoutes(app: Express) {
         return res.status(400).send("Amount mismatch");
       }
       
+      // ACID: Atomically check-and-update order status with row lock
       if (result.paymentStatus === "COMPLETE") {
-        await storage.updateOrderStatus(result.orderId, OrderStatus.CONFIRMED);
-        logPaymentEvent("PAYFAST_PAYMENT_CONFIRMED", {
-          orderId: result.orderId,
-          amount: result.amount,
-          pfPaymentId,
-        });
+        const updated = await storage.confirmOrderPayment(result.orderId, OrderStatus.PENDING_PAYMENT, OrderStatus.CONFIRMED);
+        if (updated) {
+          logPaymentEvent("PAYFAST_PAYMENT_CONFIRMED", {
+            orderId: result.orderId,
+            amount: result.amount,
+            pfPaymentId,
+          });
+        } else {
+          logPaymentEvent("PAYFAST_ITN_ALREADY_PROCESSED", {
+            orderId: result.orderId,
+            currentStatus: order.status,
+          });
+        }
       } else if (result.paymentStatus === "CANCELLED") {
-        await storage.updateOrderStatus(result.orderId, OrderStatus.CANCELLED);
+        await storage.confirmOrderPayment(result.orderId, OrderStatus.PENDING_PAYMENT, OrderStatus.CANCELLED);
         logPaymentEvent("PAYFAST_PAYMENT_CANCELLED", {
           orderId: result.orderId,
           pfPaymentId,
         });
       }
       
+      // Finalize the claimed callback record with actual status
       if (pfPaymentId) {
         try {
-          await storage.recordProcessedCallback({
-            gateway: 'payfast',
-            transactionId: pfPaymentId,
-            orderId: result.orderId,
-            status: result.paymentStatus,
-            amount: String(result.amount),
-            rawPayload: req.body,
-          });
+          await storage.finalizeClaimedCallback('payfast', pfPaymentId, result.paymentStatus, String(result.amount));
         } catch (err: any) {
-          if (err.code !== '23505') {
-            console.error("Failed to record PayFast callback (non-critical):", err);
-          }
+          console.error("Failed to finalize PayFast callback record (non-critical):", err);
         }
       }
       
@@ -347,9 +340,8 @@ export function registerPaymentRoutes(app: Express) {
       const status = await checkPaymentStatus(pollUrl);
       
       if (status.paid) {
-        if (order.status === OrderStatus.PENDING_PAYMENT) {
-          await storage.updateOrderStatus(orderId, OrderStatus.CONFIRMED);
-        }
+        // ACID: Atomically check-and-update order status with row lock
+        await storage.confirmOrderPayment(orderId, OrderStatus.PENDING_PAYMENT, OrderStatus.CONFIRMED);
         
         res.json({
           status: "paid",
@@ -380,17 +372,6 @@ export function registerPaymentRoutes(app: Express) {
         amount: req.body.amount,
       });
       
-      if (paynowTxId) {
-        const alreadyProcessed = await storage.isCallbackProcessed('paynow', paynowTxId);
-        if (alreadyProcessed) {
-          logPaymentEvent("PAYNOW_CALLBACK_DUPLICATE_IDEMPOTENCY", {
-            paynowReference: paynowTxId,
-            reference: req.body.reference,
-          });
-          return res.status(200).send("Already processed");
-        }
-      }
-      
       if (!validatePaynowHash(req.body)) {
         logPaymentEvent("PAYNOW_CALLBACK_REJECTED", {
           reason: "INVALID_HASH",
@@ -412,6 +393,18 @@ export function registerPaymentRoutes(app: Express) {
         return res.status(400).send("Invalid reference");
       }
 
+      // ACID: Atomically claim this callback — prevents duplicate processing
+      if (paynowTxId) {
+        const claimed = await storage.tryClaimCallback('paynow', paynowTxId, orderId, req.body);
+        if (!claimed) {
+          logPaymentEvent("PAYNOW_CALLBACK_DUPLICATE_IDEMPOTENCY", {
+            paynowReference: paynowTxId,
+            reference,
+          });
+          return res.status(200).send("Already processed");
+        }
+      }
+
       const order = await storage.getOrder(orderId);
       if (!order) {
         logPaymentEvent("PAYNOW_CALLBACK_REJECTED", {
@@ -430,15 +423,6 @@ export function registerPaymentRoutes(app: Express) {
           reference,
         });
         return res.status(400).send("No pending Paynow payment for this order");
-      }
-
-      if (order.status === OrderStatus.CONFIRMED || order.status === OrderStatus.COMPLETED) {
-        logPaymentEvent("PAYNOW_CALLBACK_DUPLICATE", {
-          orderId,
-          currentStatus: order.status,
-          reference,
-        });
-        return res.status(200).send("Already processed");
       }
 
       const verifiedStatus = await checkPaymentStatus(storedPollUrl);
@@ -470,20 +454,20 @@ export function registerPaymentRoutes(app: Express) {
         amount: verifiedStatus.amount,
       });
 
+      // ACID: Atomically check-and-update order status with row lock
       if (verifiedStatus.paid) {
-        if (order.status === OrderStatus.PENDING_PAYMENT) {
-          await storage.updateOrderStatus(orderId, OrderStatus.CONFIRMED);
+        const updated = await storage.confirmOrderPayment(orderId, OrderStatus.PENDING_PAYMENT, OrderStatus.CONFIRMED);
+        if (updated) {
           logPaymentEvent("PAYNOW_PAYMENT_CONFIRMED", {
             orderId,
             reference,
             paynowReference: paynowreference,
             amount: verifiedStatus.amount,
-            previousStatus: order.status,
             newStatus: OrderStatus.CONFIRMED,
           });
         }
       } else if (verifiedStatus.status === 'Cancelled') {
-        await storage.updateOrderStatus(orderId, OrderStatus.CANCELLED);
+        await storage.confirmOrderPayment(orderId, OrderStatus.PENDING_PAYMENT, OrderStatus.CANCELLED);
         logPaymentEvent("PAYNOW_PAYMENT_CANCELLED", {
           orderId,
           reference,
@@ -497,20 +481,12 @@ export function registerPaymentRoutes(app: Express) {
         });
       }
       
+      // Finalize the claimed callback record with actual status
       if (paynowTxId) {
         try {
-          await storage.recordProcessedCallback({
-            gateway: 'paynow',
-            transactionId: paynowTxId,
-            orderId,
-            status: verifiedStatus.status,
-            amount: verifiedStatus.amount ? String(verifiedStatus.amount) : null,
-            rawPayload: req.body,
-          });
+          await storage.finalizeClaimedCallback('paynow', paynowTxId, verifiedStatus.status, verifiedStatus.amount ? String(verifiedStatus.amount) : null);
         } catch (err: any) {
-          if (err.code !== '23505') {
-            console.error("Failed to record Paynow callback (non-critical):", err);
-          }
+          console.error("Failed to finalize Paynow callback record (non-critical):", err);
         }
       }
       

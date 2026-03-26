@@ -2,7 +2,7 @@ import type { Express } from "express";
 import { z } from "zod";
 import { storage } from "../storage";
 import { api } from "@shared/routes";
-import { isAuthenticated, isAdmin } from "../replit_integrations/auth";
+import { isAuthenticated, isAdmin } from "../auth";
 
 export function registerAdminRoutes(app: Express) {
   app.get(api.admin.dashboard.path, isAuthenticated, isAdmin, async (req, res) => {

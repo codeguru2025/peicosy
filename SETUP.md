@@ -4,14 +4,6 @@ This guide covers how to download, set up, and run the Peicosy luxury e-commerce
 
 ## Downloading the Source Code
 
-### Option 1: Download ZIP from Replit
-1. Open your Replit project
-2. Click on the three dots (...) menu in the Files panel
-3. Select "Download as ZIP"
-4. Extract the ZIP file to your desired location
-
-### Option 2: Clone via Git
-If your Replit project is connected to GitHub:
 ```bash
 git clone https://github.com/your-username/peicosy.git
 cd peicosy
@@ -54,6 +46,17 @@ ADMIN_PASSWORD=your-secure-password
 # Paynow Integration (Zimbabwe Payments)
 PAYNOW_INTEGRATION_ID=your-paynow-id
 PAYNOW_INTEGRATION_KEY=your-paynow-key
+
+# DigitalOcean Spaces (file uploads / CDN)
+DO_SPACES_KEY=your-spaces-access-key
+DO_SPACES_SECRET=your-spaces-secret-key
+DO_SPACES_ENDPOINT=https://nyc3.digitaloceanspaces.com
+DO_SPACES_BUCKET=your-bucket-name
+DO_SPACES_REGION=nyc3
+DO_SPACES_CDN_ENDPOINT=https://your-bucket.nyc3.cdn.digitaloceanspaces.com
+
+# Application base URL (used for payment callbacks)
+APP_BASE_URL=https://your-domain.com
 ```
 
 ### Step 4: Initialize Database
@@ -172,11 +175,13 @@ npm run db:push --force
 
 ## File Upload Configuration
 
-Product images are stored using Replit Object Storage. For self-hosted deployments:
+Product images and videos are stored using DigitalOcean Spaces (S3-compatible).
 
-1. Configure cloud storage (AWS S3, Google Cloud Storage, etc.)
-2. Update `server/storage.ts` upload handlers
-3. Set appropriate environment variables for your storage provider
+1. Create a Space in your DigitalOcean dashboard
+2. Enable the CDN on your Space for fast global delivery
+3. Generate Spaces access keys (API > Spaces Keys)
+4. Set the `DO_SPACES_*` environment variables listed above
+5. Ensure the Space has CORS configured to allow uploads from your domain
 
 ## Security Checklist
 
@@ -184,7 +189,9 @@ Before going live:
 
 - [ ] Change default admin credentials
 - [ ] Set strong SESSION_SECRET (32+ random characters)
-- [ ] Enable HTTPS (handled automatically on Replit)
+- [ ] Enable HTTPS
+- [ ] Configure DigitalOcean Spaces credentials
+- [ ] Set `APP_BASE_URL` for payment callbacks
 - [ ] Review and test Paynow integration in live mode
 - [ ] Set up database backups
 - [ ] Monitor application logs for errors
@@ -192,5 +199,4 @@ Before going live:
 ## Getting Help
 
 - Review the [README.md](./README.md) for API documentation
-- Check [replit.md](./replit.md) for technical architecture details
 - Contact support at info@peicosy.com

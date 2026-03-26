@@ -3,7 +3,7 @@ import { z } from "zod";
 import { storage } from "../storage";
 import { api } from "@shared/routes";
 import { OrderStatus } from "@shared/schema";
-import { isAuthenticated, isAdmin } from "../replit_integrations/auth";
+import { isAuthenticated, isAdmin } from "../auth";
 import { canAccessOrder, AuthenticatedRequest } from "./utils";
 
 export function registerOrderRoutes(app: Express) {

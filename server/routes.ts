@@ -2,8 +2,8 @@ import type { Express, Request, Response, NextFunction } from "express";
 import type { Server } from "http";
 import { storage } from "./storage";
 import { csrfSync } from "csrf-sync";
-import { registerAuthRoutes, setupAuth, isAuthenticated, isAdmin } from "./replit_integrations/auth";
-import { registerObjectStorageRoutes } from "./replit_integrations/object_storage";
+import { registerAuthRoutes, setupAuth, isAuthenticated, isAdmin } from "./auth";
+import { registerObjectStorageRoutes } from "./objectStorage";
 import {
   registerAuthApiRoutes,
   registerProductRoutes,
@@ -59,16 +59,19 @@ export async function registerRoutes(
     try {
       const { pool } = await import("./db");
       await pool.query("SELECT 1");
-      res.json({ 
+      const response: Record<string, any> = { 
         status: "healthy", 
         timestamp: new Date().toISOString(),
-        uptime: process.uptime(),
-        memory: process.memoryUsage(),
-      });
+      };
+      // Only expose diagnostics outside production
+      if (process.env.NODE_ENV !== "production") {
+        response.uptime = process.uptime();
+        response.memory = process.memoryUsage();
+      }
+      res.json(response);
     } catch (err) {
       res.status(503).json({ 
         status: "unhealthy", 
-        error: "Database connection failed",
         timestamp: new Date().toISOString(),
       });
     }

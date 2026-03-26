@@ -38,7 +38,7 @@ import {
   backgroundJobs
 } from "@shared/schema";
 import { eq, desc, sql, asc } from "drizzle-orm";
-import { authStorage } from "./replit_integrations/auth";
+import { authStorage } from "./auth";
 
 export type CreateOrderItem = Omit<InsertOrderItem, 'orderId'>;
 
@@ -407,23 +407,27 @@ export class DatabaseStorage implements IStorage {
   }
 
   async updateExchangeRate(from: string, to: string, rate: number): Promise<ExchangeRate> {
-    // Check if rate exists
-    const existing = await this.getExchangeRate(from, to);
-    
-    if (existing) {
-      const [updated] = await db
-        .update(exchangeRates)
-        .set({ rate: String(rate), updatedAt: new Date() })
-        .where(eq(exchangeRates.id, existing.id))
-        .returning();
-      return updated;
-    } else {
-      const [newRate] = await db
-        .insert(exchangeRates)
-        .values({ fromCurrency: from, toCurrency: to, rate: String(rate) })
-        .returning();
-      return newRate;
-    }
+    return await db.transaction(async (tx) => {
+      // Lock and check if rate exists
+      const [existing] = await tx.select().from(exchangeRates)
+        .where(sql`${exchangeRates.fromCurrency} = ${from} AND ${exchangeRates.toCurrency} = ${to}`)
+        .for('update');
+      
+      if (existing) {
+        const [updated] = await tx
+          .update(exchangeRates)
+          .set({ rate: String(rate), updatedAt: new Date() })
+          .where(eq(exchangeRates.id, existing.id))
+          .returning();
+        return updated;
+      } else {
+        const [newRate] = await tx
+          .insert(exchangeRates)
+          .values({ fromCurrency: from, toCurrency: to, rate: String(rate) })
+          .returning();
+        return newRate;
+      }
+    });
   }
 
   // Users
@@ -658,41 +662,45 @@ export class DatabaseStorage implements IStorage {
   }
 
   async addProductImage(image: InsertProductImage): Promise<ProductImage> {
-    // If this is a thumbnail, remove existing thumbnail
-    if (image.role === 'thumbnail') {
-      await db.update(productImages)
-        .set({ role: 'gallery' })
-        .where(sql`${productImages.productId} = ${image.productId} AND ${productImages.role} = 'thumbnail'`);
-    }
-    
-    // If this is a hero, remove existing hero
-    if (image.role === 'hero') {
-      await db.update(productImages)
-        .set({ role: 'gallery' })
-        .where(sql`${productImages.productId} = ${image.productId} AND ${productImages.role} = 'hero'`);
-    }
-    
-    const [newImage] = await db.insert(productImages).values(image).returning();
-    return newImage;
+    return await db.transaction(async (tx) => {
+      // If this is a thumbnail, remove existing thumbnail
+      if (image.role === 'thumbnail') {
+        await tx.update(productImages)
+          .set({ role: 'gallery' })
+          .where(sql`${productImages.productId} = ${image.productId} AND ${productImages.role} = 'thumbnail'`);
+      }
+      
+      // If this is a hero, remove existing hero
+      if (image.role === 'hero') {
+        await tx.update(productImages)
+          .set({ role: 'gallery' })
+          .where(sql`${productImages.productId} = ${image.productId} AND ${productImages.role} = 'hero'`);
+      }
+      
+      const [newImage] = await tx.insert(productImages).values(image).returning();
+      return newImage;
+    });
   }
 
   async updateProductImage(id: number, updates: Partial<InsertProductImage>): Promise<ProductImage | undefined> {
-    // If changing role to thumbnail/hero, demote existing one first
-    if (updates.role === 'thumbnail' || updates.role === 'hero') {
-      const [image] = await db.select().from(productImages).where(eq(productImages.id, id));
-      if (image) {
-        await db.update(productImages)
-          .set({ role: 'gallery' })
-          .where(sql`${productImages.productId} = ${image.productId} AND ${productImages.role} = ${updates.role} AND ${productImages.id} != ${id}`);
+    return await db.transaction(async (tx) => {
+      // If changing role to thumbnail/hero, demote existing one first
+      if (updates.role === 'thumbnail' || updates.role === 'hero') {
+        const [image] = await tx.select().from(productImages).where(eq(productImages.id, id));
+        if (image) {
+          await tx.update(productImages)
+            .set({ role: 'gallery' })
+            .where(sql`${productImages.productId} = ${image.productId} AND ${productImages.role} = ${updates.role} AND ${productImages.id} != ${id}`);
+        }
       }
-    }
-    
-    const [updated] = await db
-      .update(productImages)
-      .set(updates)
-      .where(eq(productImages.id, id))
-      .returning();
-    return updated;
+      
+      const [updated] = await tx
+        .update(productImages)
+        .set(updates)
+        .where(eq(productImages.id, id))
+        .returning();
+      return updated;
+    });
   }
 
   async deleteProductImage(id: number): Promise<void> {
@@ -710,26 +718,28 @@ export class DatabaseStorage implements IStorage {
   }
 
   async migrateProductImageUrl(productId: number): Promise<ProductImage | undefined> {
-    const product = await this.getProduct(productId);
-    if (!product || !product.imageUrl) return undefined;
-    
-    // Check if already migrated
-    const existing = await db.select().from(productImages)
-      .where(sql`${productImages.productId} = ${productId} AND ${productImages.isLegacy} = true`);
-    if (existing.length > 0) return existing[0];
-    
-    // Create legacy image entry from existing URL
-    const [legacyImage] = await db.insert(productImages).values({
-      productId,
-      role: 'thumbnail',
-      objectPath: product.imageUrl, // External URL stored as path
-      cdnUrl: product.imageUrl,
-      mimeType: 'image/jpeg', // Assume JPEG for external URLs
-      isLegacy: true,
-      sortOrder: 0,
-    }).returning();
-    
-    return legacyImage;
+    return await db.transaction(async (tx) => {
+      const [product] = await tx.select().from(products).where(eq(products.id, productId));
+      if (!product || !product.imageUrl) return undefined;
+      
+      // Check if already migrated (inside transaction to prevent duplicates)
+      const existing = await tx.select().from(productImages)
+        .where(sql`${productImages.productId} = ${productId} AND ${productImages.isLegacy} = true`);
+      if (existing.length > 0) return existing[0];
+      
+      // Create legacy image entry from existing URL
+      const [legacyImage] = await tx.insert(productImages).values({
+        productId,
+        role: 'thumbnail',
+        objectPath: product.imageUrl,
+        cdnUrl: product.imageUrl,
+        mimeType: 'image/jpeg',
+        isLegacy: true,
+        sortOrder: 0,
+      }).returning();
+      
+      return legacyImage;
+    });
   }
 
   // Inquiries
@@ -771,6 +781,61 @@ export class DatabaseStorage implements IStorage {
       .values(callback)
       .returning();
     return recorded;
+  }
+
+  /**
+   * Atomically claim a payment callback using INSERT ... ON CONFLICT DO NOTHING.
+   * Returns true if this process claimed it (first arrival), false if already claimed.
+   * This prevents duplicate callback processing in a race-safe way.
+   */
+  async tryClaimCallback(gateway: string, transactionId: string, orderId: number, rawPayload?: any): Promise<boolean> {
+    const result = await db
+      .insert(processedPaymentCallbacks)
+      .values({
+        gateway,
+        transactionId,
+        orderId,
+        status: 'claiming',
+        rawPayload: rawPayload || null,
+      })
+      .onConflictDoNothing()
+      .returning();
+    return result.length > 0;
+  }
+
+  /**
+   * Update a previously claimed callback record with final status and amount.
+   */
+  async finalizeClaimedCallback(gateway: string, transactionId: string, status: string, amount?: string | null): Promise<void> {
+    await db
+      .update(processedPaymentCallbacks)
+      .set({ status, amount: amount || null })
+      .where(sql`${processedPaymentCallbacks.gateway} = ${gateway} AND ${processedPaymentCallbacks.transactionId} = ${transactionId}`);
+  }
+
+  /**
+   * Atomically confirm an order payment: lock the order row, check it's still
+   * in the expected status, and update. Returns the updated order or undefined
+   * if the order was already in a terminal state.
+   */
+  async confirmOrderPayment(orderId: number, expectedStatus: string, newStatus: string): Promise<Order | undefined> {
+    return await db.transaction(async (tx) => {
+      const [order] = await tx
+        .select()
+        .from(orders)
+        .where(eq(orders.id, orderId))
+        .for('update');
+
+      if (!order) return undefined;
+      if (order.status !== expectedStatus) return undefined;
+
+      const [updated] = await tx
+        .update(orders)
+        .set({ status: newStatus })
+        .where(eq(orders.id, orderId))
+        .returning();
+      return updated;
+    });
   }
 
   // Login Attempts (Account Lockout)
@@ -965,20 +1030,24 @@ export class DatabaseStorage implements IStorage {
   }
 
   async failJob(id: number, error: string, scheduleRetry?: Date): Promise<void> {
-    const [job] = await db.select().from(backgroundJobs).where(eq(backgroundJobs.id, id));
-    if (!job) return;
-    
-    const isFinalAttempt = job.attempts >= job.maxAttempts;
-    
-    await db
-      .update(backgroundJobs)
-      .set({
-        status: isFinalAttempt ? "failed" : "pending",
-        lastError: error,
-        scheduledFor: scheduleRetry || new Date(),
-        startedAt: null,
-      })
-      .where(eq(backgroundJobs.id, id));
+    await db.transaction(async (tx) => {
+      const [job] = await tx.select().from(backgroundJobs)
+        .where(eq(backgroundJobs.id, id))
+        .for('update');
+      if (!job) return;
+      
+      const isFinalAttempt = job.attempts >= job.maxAttempts;
+      
+      await tx
+        .update(backgroundJobs)
+        .set({
+          status: isFinalAttempt ? "failed" : "pending",
+          lastError: error,
+          scheduledFor: scheduleRetry || new Date(),
+          startedAt: null,
+        })
+        .where(eq(backgroundJobs.id, id));
+    });
   }
 
   async cancelJob(id: number): Promise<void> {
