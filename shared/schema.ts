@@ -1,4 +1,4 @@
-import { pgTable, text, serial, integer, boolean, timestamp, numeric, varchar, jsonb } from "drizzle-orm/pg-core";
+import { pgTable, text, serial, integer, boolean, timestamp, numeric, varchar, jsonb, uniqueIndex, index } from "drizzle-orm/pg-core";
 import { relations } from "drizzle-orm";
 import { createInsertSchema } from "drizzle-zod";
 import { z } from "zod";
@@ -178,7 +178,9 @@ export const exchangeRates = pgTable("exchange_rates", {
   toCurrency: text("to_currency").notNull().default("ZAR"),
   rate: numeric("rate", { precision: 12, scale: 4 }).notNull(), // e.g., 23.50 means 1 GBP = 23.50 ZAR
   updatedAt: timestamp("updated_at").defaultNow(),
-});
+}, (table) => [
+  uniqueIndex("uq_exchange_rate_pair").on(table.fromCurrency, table.toCurrency),
+]);
 
 // === PROCESSED PAYMENT CALLBACKS (Idempotency) ===
 export const processedPaymentCallbacks = pgTable("processed_payment_callbacks", {
@@ -190,7 +192,9 @@ export const processedPaymentCallbacks = pgTable("processed_payment_callbacks", 
   amount: numeric("amount", { precision: 10, scale: 2 }),
   processedAt: timestamp("processed_at").defaultNow(),
   rawPayload: jsonb("raw_payload"),
-});
+}, (table) => [
+  uniqueIndex("uq_payment_callback_gateway_tx").on(table.gateway, table.transactionId),
+]);
 
 // === LOGIN ATTEMPTS (Account Lockout) ===
 export const loginAttempts = pgTable("login_attempts", {
@@ -199,7 +203,10 @@ export const loginAttempts = pgTable("login_attempts", {
   ipAddress: text("ip_address"),
   success: boolean("success").notNull().default(false),
   attemptedAt: timestamp("attempted_at").defaultNow(),
-});
+}, (table) => [
+  index("idx_login_attempts_username").on(table.username),
+  index("idx_login_attempts_attempted_at").on(table.attemptedAt),
+]);
 
 // Account lockout configuration
 export const LOCKOUT_CONFIG = {
@@ -215,7 +222,10 @@ export const rateLimits = pgTable("rate_limits", {
   count: integer("count").notNull().default(1),
   windowStart: timestamp("window_start").notNull().defaultNow(),
   expiresAt: timestamp("expires_at").notNull(),
-});
+}, (table) => [
+  uniqueIndex("uq_rate_limits_key").on(table.key),
+  index("idx_rate_limits_expires_at").on(table.expiresAt),
+]);
 
 // Rate limit configurations for different endpoints
 export const RATE_LIMIT_CONFIG = {
@@ -240,7 +250,9 @@ export const backgroundJobs = pgTable("background_jobs", {
   startedAt: timestamp("started_at"),
   completedAt: timestamp("completed_at"),
   createdAt: timestamp("created_at").defaultNow(),
-});
+}, (table) => [
+  index("idx_background_jobs_status_scheduled").on(table.status, table.scheduledFor),
+]);
 
 // Job configuration
 export const JOB_CONFIG = {
