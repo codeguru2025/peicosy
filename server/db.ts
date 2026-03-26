@@ -10,11 +10,14 @@ if (!process.env.DATABASE_URL) {
   );
 }
 
+const isSSL = process.env.DATABASE_URL.includes("sslmode=require") || process.env.NODE_ENV === "production";
+
 export const pool = new Pool({ 
   connectionString: process.env.DATABASE_URL,
   max: 20,
   idleTimeoutMillis: 30000,
   connectionTimeoutMillis: 10000,
+  ...(isSSL && { ssl: { rejectUnauthorized: false } }),
 });
 
 pool.on('error', (err) => {
